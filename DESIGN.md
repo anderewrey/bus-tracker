@@ -523,6 +523,19 @@ The user wants the app to act on what BusPlanner notices say, not only ring them
   - **minSdk: 29** (Android 10). The floor comes from what the app needs, not from reach: the tracking service starts with a foreground service *type* (`dataSync`), which exists from API 29 on; going lower means a second code path for phones from 2019 and before. Google's distribution of 2026-10-01 has Android 16 first (25.4 %) and Android 11 still at 10.5 %, so Android 10 and newer is the large majority of phones in use.
   - **Raise minSdk only for a feature that needs it**, and write the reason here. Lowering it isn't planned: a phone that old is a poor choice for an alarm that must ring.
   - **Build:** Java 17 bytecode (the minimum of Android Gradle Plugin 9); any JDK 17 or newer builds it.
+- **Versions** (user, 2026-11-09: no version to maintain by hand; the version only says which code is installed). Everything comes from git in `app/build.gradle.kts`:
+  - **versionCode:** the build time, in minutes since 1970-01-01 UTC: 29903851 is 2026-11-09 13:31 UTC. To read one: `date -u -d @$((29903851 * 60)) '+%F %R'`. Android installs an update only when this number goes up (or stays equal), so each new build installs over the last one, whatever its branch or commit; rebuilding an older commit installs too. Only an APK built earlier than the installed one is a downgrade, which Android refuses (`adb install -r -d` forces it for debug builds). The same commit built twice gets two numbers; the versionName says which code it is.
+  - **versionName:** `git describe --tags --long --always --dirty`: the last tag, the commits since it, the commit, and `-dirty` for uncommitted changes. `0.13-1-g5a71da1` is one commit after tag `0.13`; on the tag itself it's `0.13-0-gc987f74`. A tag is put on `main` when a step is worth naming (`git tag -a 0.14 -m "…"`, then `git push origin 0.14`); between tags nothing changes by hand. Without any tag in reach (a copy with no tags), it falls back to the commit alone.
+  - **App ID per kind of build**, so a test build never replaces the official app or its data, and there is never a downgrade to go back:
+
+    | Build | App ID | Name on the phone |
+    |---|---|---|
+    | `main`, no uncommitted changes | `io.github.anderewrey.bustracker` | Bus Tracker |
+    | Pull request 12 (GitHub Actions) | `….bustracker.pr12` | Bus Tracker PR 12 |
+    | Anything else (other branch, uncommitted changes, detached HEAD) | `….bustracker.dev` | Bus Tracker dev |
+
+    Each app has its own data (sign-in, zones, runs); if two have the same run turned on, both ring. A bad official build is undone by a `git revert` on `main`: a newer commit, so it installs as an update.
+  - **In the logs:** the Debug screen (its button was "Log" until 2026-11-09) shows the build under its title (name, versionName, build time in UTC). Each app start writes an "app start" line with the build, the app ID, the versionCode and the Android version, so a log file says which build wrote it; Copy starts with the same line, and Export adds it as `bustracker-build.txt` in the zip.
 - **UI language:** English first. Strings live in resources, so other languages can be added later.
 
 **Background work**

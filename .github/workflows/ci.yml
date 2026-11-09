@@ -15,7 +15,12 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      # Full history and tags for the version (git describe). A pull request builds its
+      # own last commit, so the version names a commit that is on its branch.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: License headers
         run: sh scripts/check-license-headers.sh

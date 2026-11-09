@@ -30,7 +30,7 @@ drew on the map, so you know when to head out to the stop.
   ever sent to the portal address you typed, over https (plain http is refused).
 - The app talks to: your portal, the map tiles server ([OpenFreeMap](https://openfreemap.org)),
   and Android's own Geocoder for street names. Nothing else; no analytics.
-- Logs stay on the phone; the Log screen can export them for debugging, and they can contain
+- Logs stay on the phone; the Debug screen can export them for debugging, and they can contain
   your children's names and positions, so share them with care.
 
 ## Building
@@ -44,6 +44,10 @@ Android 10 (API 29) or newer.
 
 The APKs are in `app/build/outputs/apk/debug/`, one per CPU type: `app-arm64-v8a-debug.apk` for
 most phones, `app-x86_64-debug.apk` for the emulator.
+
+The version comes from git; there is nothing to edit. Only a clean build of `main` is the app
+"Bus Tracker"; any other build installs beside it as "Bus Tracker dev" (or "Bus Tracker PR 12" for
+a pull request on GitHub), with its own data. See DESIGN.md §8, Versions.
 
 Every source file starts with an SPDX license header. A pre-commit hook refuses a commit without
 it; turn it on once in your clone:

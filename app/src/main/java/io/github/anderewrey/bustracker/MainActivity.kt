@@ -200,7 +200,11 @@ private fun LoginScreen(onLog: () -> Unit, onDone: () -> Unit) {
         Modifier.safeDrawingPadding().padding(24.dp).fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("BusPlanner login", style = MaterialTheme.typography.headlineSmall)
+        // Debug at the top right, as on the runs screen, away from "Log in".
+        Row(Modifier.fillMaxWidth()) {
+            Text("BusPlanner login", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+            TextButton(onClick = onLog) { Text("Debug") }
+        }
         OutlinedTextField(
             portal, { portal = it.trim() }, label = { Text("Portal address") }, singleLine = true,
             placeholder = { Text("example.mybusplanner.ca") },
@@ -239,7 +243,6 @@ private fun LoginScreen(onLog: () -> Unit, onDone: () -> Unit) {
             },
         ) { Text(if (busy) "Logging in and scanning…" else "Log in") }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        TextButton(onClick = onLog) { Text("Log") }
     }
 }
 
@@ -281,7 +284,7 @@ private fun RunsScreen(
                     }
                 }
             }) { Text(if (busy) "Scanning…" else "Rescan") }
-            TextButton(onClick = onLog) { Text("Log") }
+            TextButton(onClick = onLog) { Text("Debug") }
             TextButton(onClick = onSettings) { Text("Settings") }
         }
         message?.let { Text(it, color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -345,16 +348,17 @@ private fun LogScreen(onBack: () -> Unit) {
     Column(Modifier.safeDrawingPadding().padding(8.dp)) {
         Row(Modifier.fillMaxWidth()) {
             TextButton(onClick = onBack) { Text("Back") }
-            Text("Log", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f).padding(top = 6.dp))
+            Text("Debug", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f).padding(top = 6.dp))
             TextButton(onClick = {
                 val clip = context.getSystemService(ClipboardManager::class.java)
-                clip.setPrimaryClip(ClipData.newPlainText("Bus Tracker log", lines.joinToString("\n")))
+                clip.setPrimaryClip(ClipData.newPlainText("Bus Tracker log", (listOf(AppLog.build) + lines).joinToString("\n")))
             }) { Text("Copy") }
             TextButton(onClick = {
                 export.launch("bustracker-logs-${LocalDateTime.now().format(FILE_STAMP)}.zip")
             }) { Text("Export") }
             TextButton(onClick = { AppLog.clearScreen() }) { Text("Clear") }
         }
+        Text(AppLog.version, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 8.dp))
         OutlinedButton(onClick = { testRing(context) }, modifier = Modifier.padding(horizontal = 8.dp)) {
             Text("Test the main-zone alert")
         }

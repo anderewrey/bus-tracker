@@ -16,7 +16,7 @@
         android:name=".BusTrackerApp"
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
-        android:label="Bus Tracker"
+        android:label="${appLabel}"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity
             android:name=".MainActivity"
