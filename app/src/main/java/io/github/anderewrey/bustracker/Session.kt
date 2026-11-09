@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.time.Duration
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -62,6 +63,10 @@ private const val STALE_S = 90L
 /** An "updated" time further behind than this is shown in red, with its age. */
 const val OLD_S = 120L
 const val WAITING_NETWORK = "Waiting for network"
+/** A request that did not reach the portal (address lookup, timeout, connection) although Android says online. */
+const val NETWORK_PROBLEM = "Network problem, retrying"
+/** Network failures in a row after which the next check loads the page again, in case it is not only the network. */
+private const val NETWORK_RELOAD_AFTER = 2
 /** With no request for this long (between periods, or Android pausing the app), log in again first. */
 private const val IDLE_MS = 5 * 60_000L
 /** A login again for suspicious data (not a certain sign) happens at most this often. */
@@ -100,6 +105,8 @@ object Session {
     private val streets = HashMap<String, Pair<String, String?>>()
     /** Runs whose last check failed or came back empty: the next check loads the page first. */
     private val needsReload = HashSet<String>()
+    /** Network failures in a row, per run. */
+    private val networkFailures = HashMap<String, Int>()
     /** BusPlanner's "updated" time seen by each run's last check, and how many checks in a row repeated it. */
     private val lastUpdated = HashMap<String, String?>()
     private val stale = HashMap<String, Int>()
@@ -486,6 +493,7 @@ object Session {
                 logPoll(run, r, " (logged in again, page loaded again)")
             }
             lastUpdated[run.key] = r.updated
+            networkFailures.remove(run.key)
             logOtherStop(run, r)
             val blank = r.busLat == null && r.stopLat == null && r.updated == null && r.bulletin == null
             if (blank) needsReload += run.key else needsReload -= run.key
@@ -494,6 +502,15 @@ object Session {
         } catch (e: LoginFailed) {
             AppLog.log("poll ${run.key}: login refused")
             throw e
+        } catch (e: IOException) {
+            // Seen 2026-11-09: a few seconds of failed address lookups and timeouts while Android
+            // still said online. The portal's session is fine: the next check is the plain
+            // Refresh again, and only a second failure in a row loads the page again.
+            val failures = (networkFailures[run.key] ?: 0) + 1
+            networkFailures[run.key] = failures
+            AppLog.log("poll ${run.key}: network error ${e.javaClass.simpleName}: ${e.message}")
+            if (failures >= NETWORK_RELOAD_AFTER) needsReload += run.key
+            RunStatus(_status.value[run.key]?.reading, NETWORK_PROBLEM, now, old = true)
         } catch (e: Exception) {
             val message = e.message ?: e.javaClass.simpleName
             AppLog.log("poll ${run.key}: error $message")
@@ -582,6 +599,7 @@ object Session {
         _watchEnd.value = emptyMap()
         _notices.value = emptyMap()
         needsReload.clear()
+        networkFailures.clear()
         lastUpdated.clear()
         stale.clear()
         AppLog.log("logged out")

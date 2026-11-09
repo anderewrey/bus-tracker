@@ -110,7 +110,7 @@ Each check is one async postback, about 23 KB:
 | `__ASYNCPOST` | `true` |
 | other fields | the whole form, as the browser posts it, with hidden fields updated from the last response |
 
-The page (GET, about 64 KB) is loaded only at the first check, after a login, after a rescan, and after a failed or empty check. The page calls no separate data service: the bus position only comes in `hfBusLocation`, inside these responses.
+The page (GET, about 64 KB) is loaded only at the first check, after a login, after a rescan, after a failed or empty check, and after a second network failure in a row (a single one only retries the Refresh). The page calls no separate data service: the bus position only comes in `hfBusLocation`, inside these responses.
 Parse it by `length`, because the content can contain `|`.
 Handle these entry types:
 
@@ -134,8 +134,9 @@ Handle these entry types:
 | No request for 5 minutes (between periods, or Android pausing the app) | Certain enough | Log in again before the next request |
 | A bus with no "updated" time, or the same "updated" time twice while more than 90 s behind the clock, 2 checks in a row | Suspicious | Log in again and load the page, at most every 5 minutes |
 | No network with internet access (Android) | Phone | Status "Waiting for network", no request, no login; the check runs again 30 s later |
+| A request that never reached the portal (address lookup failed, timeout, connection refused) while Android says online (seen 2026-11-09, twice, about 30 s each) | Phone | Status "Network problem, retrying"; the next check is the plain Refresh again, and only a second network failure in a row loads the page again |
 
-**Data age on screen:** a position whose "updated" time is more than 2 minutes behind the phone's clock gets "updated N min ago" in its status line, and one with no "updated" time gets "not live"; the line is red on the run card and the map (errors and "Waiting for network" too). The tracking notification shows the same words, without color. "GPS h:mm" (the bus's own fix) stays as it is: an old one is normal for a parked bus.
+**Data age on screen:** a position whose "updated" time is more than 2 minutes behind the phone's clock gets "updated N min ago" in its status line, and one with no "updated" time gets "not live"; the line is red on the run card and the map (errors, "Waiting for network" and "Network problem, retrying" too). The tracking notification shows the same words, without color. "GPS h:mm" (the bus's own fix) stays as it is: an old one is normal for a parked bus.
 
 **Fields used**
 
