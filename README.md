@@ -45,6 +45,15 @@ Android 10 (API 29) or newer.
 The APKs are in `app/build/outputs/apk/debug/`, one per CPU type: `app-arm64-v8a-debug.apk` for
 most phones, `app-x86_64-debug.apk` for the emulator.
 
+Every source file starts with an SPDX license header. A pre-commit hook refuses a commit without
+it; turn it on once in your clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+GitHub Actions runs the same header check, the unit tests and the debug build on every push.
+
 ## Documentation
 
 - [DESIGN.md](DESIGN.md): how the portal works, what the app does and why, every finding so far.

@@ -1,0 +1,8 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 anderewrey
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Refuses a commit when a staged source file has no license header.
+# Turn it on once per clone: git config core.hooksPath .githooks
+
+exec "$(git rev-parse --show-toplevel)/scripts/check-license-headers.sh" --staged
