@@ -526,17 +526,27 @@ The user wants the app to act on what BusPlanner notices say, not only ring them
   - **Build:** Java 17 bytecode (the minimum of Android Gradle Plugin 9); any JDK 17 or newer builds it.
 - **Versions** (user, 2026-11-09: no version to maintain by hand; the version only says which code is installed). Everything comes from git in `app/build.gradle.kts`:
   - **versionCode:** the build time, in minutes since 1970-01-01 UTC: 29903851 is 2026-11-09 13:31 UTC. To read one: `date -u -d @$((29903851 * 60)) '+%F %R'`. Android installs an update only when this number goes up (or stays equal), so each new build installs over the last one, whatever its branch or commit; rebuilding an older commit installs too. Only an APK built earlier than the installed one is a downgrade, which Android refuses (`adb install -r -d` forces it for debug builds). The same commit built twice gets two numbers; the versionName says which code it is.
-  - **versionName:** `git describe --tags --long --always --dirty`: the last tag, the commits since it, the commit, and `-dirty` for uncommitted changes. `0.13-1-g5a71da1` is one commit after tag `0.13`; on the tag itself it's `0.13-0-gc987f74`. A tag is put on `main` when a step is worth naming (`git tag -a 0.14 -m "…"`, then `git push origin 0.14`); between tags nothing changes by hand. Without any tag in reach (a copy with no tags), it falls back to the commit alone.
+  - **versionName:** `git describe --tags --long --always --dirty --match "[0-9]*"`: the last version tag (the `build-N` tags of the GitHub releases don't count), the commits since it, the commit, and `-dirty` for uncommitted changes. `0.13-1-g5a71da1` is one commit after tag `0.13`; on the tag itself it's `0.13-0-gc987f74`. A tag is put on `main` when a step is worth naming (`git tag -a 0.14 -m "…"`, then `git push origin 0.14`); between tags nothing changes by hand. Without any tag in reach (a copy with no tags), it falls back to the commit alone.
   - **App ID per kind of build**, so a test build never replaces the official app or its data, and there is never a downgrade to go back:
 
     | Build | App ID | Name on the phone |
     |---|---|---|
-    | `main`, no uncommitted changes | `io.github.anderewrey.bustracker` | Bus Tracker |
+    | Release build of `main`, no uncommitted changes | `io.github.anderewrey.bustracker` | Bus Tracker |
     | Pull request 12 (GitHub Actions) | `….bustracker.pr12` | Bus Tracker PR 12 |
-    | Anything else (other branch, uncommitted changes, detached HEAD) | `….bustracker.dev` | Bus Tracker dev |
+    | Anything else (any debug build, other branch, uncommitted changes, detached HEAD) | `….bustracker.dev` | Bus Tracker dev |
 
     Each app has its own data (sign-in, zones, runs); if two have the same run turned on, both ring. A bad official build is undone by a `git revert` on `main`: a newer commit, so it installs as an update.
-  - **In the logs:** the Debug screen (its button was "Log" until 2026-11-09) shows the build under its title (name, versionName, build time in UTC). Each app start writes an "app start" line with the build, the app ID, the versionCode and the Android version, so a log file says which build wrote it; Copy starts with the same line, and Export adds it as `bustracker-build.txt` in the zip.
+- **Build types** (user, 2026-11-09): the official app is a **release** build, test apps are **debug** builds.
+  - **Release:** optimized and shrunk by R8 (16 MB instead of 46 MB for the phone), not debuggable. Names are kept (`-dontobfuscate` in `app/proguard-rules.pro`), so logs and crash traces stay readable. The app has no reflection of its own; the libraries bring their own R8 rules.
+  - **Debug:** not optimized; debuggable, so a computer with USB debugging can read the app's files (`adb shell run-as`) and force a downgrade.
+- **Signing:** an update installs only if it is signed with the same key as the installed app, and changing the official app's key means uninstalling it (its data is lost). So there is **one key for everything**, release and debug, local and GitHub; the planned configuration import (ROADMAP) also needs the same key on both apps.
+  - The key is a PKCS12 file outside the repo, made once by the owner with `keytool`, with one password for the file and the key (alias `bus-tracker`). Losing it means no more updates for the installed app: keep a backup.
+  - Local builds read it from `~/.gradle/gradle.properties` (`busTrackerKeystore`, `busTrackerKeystorePassword`, optional `busTrackerKeyAlias`). GitHub reads it from the secrets `SIGNING_KEYSTORE` (the file in base64) and `SIGNING_PASSWORD`.
+  - Without the key, builds are signed with Android's debug key: a clone builds and installs as is.
+- **GitHub Actions** (`.github/workflows/ci.yml`):
+  - Every push and pull request: license headers, unit tests, a debug build. The APKs (`bus-tracker.apk` for phones, `bus-tracker-emulator.apk`) are kept 30 days on the run's page, under Artifacts.
+  - Push to `main`: also the release build, published as a GitHub release: tag `build-<versionCode>`, title the versionName, notes the commit message, the two APKs attached. Without the key's secrets, the run fails instead of publishing an APK with a throwaway key.
+  - **In the logs:** the Debug screen (its button was "Log" until 2026-11-09) shows the build under its title (name, versionName, build time in UTC). Each app start writes an "app start" line with the build, the app ID, the versionCode, the build type (release or debug) and the Android version, so a log file says which build wrote it; Copy starts with the same line, and Export adds it as `bustracker-build.txt` in the zip.
 - **UI language:** English first. Strings live in resources, so other languages can be added later.
 
 **Background work**

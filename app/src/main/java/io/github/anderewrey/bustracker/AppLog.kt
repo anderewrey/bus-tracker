@@ -4,6 +4,7 @@
 package io.github.anderewrey.bustracker
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,7 +66,8 @@ object AppLog {
         val code = info.longVersionCode
         val built = Instant.ofEpochSecond(code * 60).atOffset(ZoneOffset.UTC).format(BUILT)
         version = "${context.applicationInfo.loadLabel(pm)} ${info.versionName}, built $built UTC"
-        build = "$version (${context.packageName}, versionCode $code, Android ${Build.VERSION.RELEASE})"
+        val type = if (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) "debug" else "release"
+        build = "$version (${context.packageName}, versionCode $code, $type build, Android ${Build.VERSION.RELEASE})"
     }
 
     private fun fileOf(day: LocalDate) = File(dir, "$day.txt")

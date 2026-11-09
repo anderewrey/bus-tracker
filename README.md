@@ -39,15 +39,23 @@ Requirements: JDK 17 or newer, the Android SDK (compile SDK 37), and a device or
 Android 10 (API 29) or newer.
 
 ```bash
-./gradlew testDebugUnitTest assembleDebug
+./gradlew testDebugUnitTest assembleDebug assembleRelease
 ```
 
-The APKs are in `app/build/outputs/apk/debug/`, one per CPU type: `app-arm64-v8a-debug.apk` for
-most phones, `app-x86_64-debug.apk` for the emulator.
+The APKs are in `app/build/outputs/apk/debug/` and `app/build/outputs/apk/release/`, one per CPU
+type: `arm64-v8a` for most phones, `x86_64` for the emulator.
 
-The version comes from git; there is nothing to edit. Only a clean build of `main` is the app
-"Bus Tracker"; any other build installs beside it as "Bus Tracker dev" (or "Bus Tracker PR 12" for
-a pull request on GitHub), with its own data. See DESIGN.md §8, Versions.
+The version comes from git; there is nothing to edit. Only a release build of a clean `main` is
+the app "Bus Tracker"; any other build installs beside it as "Bus Tracker dev" (or "Bus Tracker
+PR 12" for a pull request on GitHub), with its own data. See DESIGN.md §8, Versions.
+
+Builds are signed with your own key when `~/.gradle/gradle.properties` names it, otherwise with
+Android's debug key:
+
+```properties
+busTrackerKeystore=~/.android/bus-tracker.jks
+busTrackerKeystorePassword=...
+```
 
 Every source file starts with an SPDX license header. A pre-commit hook refuses a commit without
 it; turn it on once in your clone:
@@ -56,7 +64,9 @@ it; turn it on once in your clone:
 git config core.hooksPath .githooks
 ```
 
-GitHub Actions runs the same header check, the unit tests and the debug build on every push.
+GitHub Actions runs the same header check, the unit tests and the debug build on every push,
+and keeps the APKs on the run's page. Each push to `main` also publishes the official app's
+release build under [Releases](https://github.com/anderewrey/bus-tracker/releases).
 
 ## Documentation
 

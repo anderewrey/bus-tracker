@@ -29,7 +29,7 @@ The order of the work. **What** each feature does and **how** is in [DESIGN.md](
 3. **Run configuration page:** the working parts (§5.1)
 4. **Overview page and School page** (§5.3)
 5. **"Ringing" option per alert type** (§7.1)
-6. **Updates through [Obtainium](https://github.com/ImranR98/Obtainium)** (user, 2026-11-09): CI publishes a signed APK on the repo's GitHub Releases, and Obtainium on the phone watches them and installs each new build. Needs a fixed signing key in CI (the versionCode, the build time, already always goes up, DESIGN.md §8, Versions).
+6. **Updates through [Obtainium](https://github.com/ImranR98/Obtainium)** (user, 2026-11-09): CI publishes a signed APK on the repo's GitHub Releases, and Obtainium on the phone watches them and installs each new build. The CI part, the app's key and its GitHub secrets are done (DESIGN.md §8, GitHub Actions; 2026-11-09); left: Obtainium's settings on the phone.
 7. **Configuration import for test builds** (user, 2026-11-09): "Bus Tracker dev" and "Bus Tracker PR N" start empty. An "Import from Bus Tracker" action, shown only in those builds, copies the official app's sign-in, zones, runs and settings in one tap. The official app exports them only to apps signed with the same key (a signature-level permission). A one-way copy, not shared data: a test build can't damage the official setup. The official app needs the export first, so it ships in an official build before the import can be used.
 
 ## Waiting on a real event
