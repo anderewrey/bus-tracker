@@ -244,7 +244,7 @@ This is a dedicated screen, not a pop-up, so the user sees exactly what the resc
 - A stop counts as moved when its address differs, or its position moved more than 30 m.
 - A run whose key (bus + AM/PM) disappears is paired with a new run of the same half-day carrying one of its children: that is a replacing bus.
 - A change still waiting when the next rescan changes the same run again becomes one change, from the oldest past to the latest new. One that went back to its past values disappears.
-- The daily rescan runs when monitoring starts inside a monitoring period, once per day; automatic starts aren't built yet. It notifies on the Bus alerts channel and the notification opens the Changes screen. A manual Rescan that finds changes opens the screen directly.
+- The daily rescan runs when monitoring starts inside a monitoring period, once per day, apart from the monitoring: turning the Alarm switch off right after the start doesn't cancel it (seen 2026-11-11: "daily rescan failed: Job was cancelled"); automatic starts aren't built yet. It notifies on the Bus alerts channel and the notification opens the Changes screen. A manual Rescan that finds changes opens the screen directly.
 - A monitored run whose key disappears after a rescan stops monitoring, with the reason logged.
 - The first scan after logging in has nothing to compare with.
 
@@ -497,7 +497,12 @@ There is no decoration: no coloured icon, no map snapshot, nothing beyond what t
 - **Buttons:** Open map and **Silence** (stops the sound only).
 - **Tracking notification:** shows the same text line plus the run label, with Open map and **Turn off** (turns the run's Alarm switch off, §5). *Up to 0.10: Re-arm alarm and Stop monitoring.*
   - It updates silently on each fix.
-  - It can be dismissed (Android 14+), and dismissing it turns the run's Alarm switch off, like Turn off.
+  - Android 14+ lets the user clear it (swipe, Clear all). It comes back at once and watching goes on (user, 2026-11-14: clearing the other notifications turned the alarm off, and cancelled the daily rescan). Only Turn off and the Alarm switch stop watching. *Until 2026-11-14: clearing it turned the Alarm switch off, like Turn off.*
+- **One notification per run** (user, 2026-11-14: a tracking notification and an alarm side by side is one too many). When the bus enters the main zone, the run's tracking notification *becomes* the alarm (same notification, main zone channel, ringing): title `B101 entered <zone>`, Open map and Silence.
+  - Silence, opening it or clearing it answers it: the sound stops and the notification goes back to the tracking line, which carries on. Turning the Alarm switch off removes it.
+  - While it rings, the checks don't update it (an update would stop the sound): the text line stays the one of the entry until it is answered. Pulling the shade down stops the sound (Android), but the alarm stays shown until answered.
+  - If watching ends while it rings (a dropoff run whose bus already left the zone, the period's end), the alarm stays and keeps ringing until answered, then goes away.
+  - BusPlanner notices and the "no vehicle" warning stay separate notifications.
 - **No vehicle** (user, 2026-11-06: the full text in the header was annoying): the status line (card, map, tracking notification) just says "No vehicle". BusPlanner's full message pops up once at the top of the map area (user, 2026-11-06), just under the header, only as the answer to a tap on ↻ (user, 2026-11-06: simpler than any "once" rule); it goes away by itself after 8 s, as a snackbar that goes away by itself (not a toast: Android 12+ cuts toasts to two lines). The one-time "no vehicle" warning notification keeps the full text. Without a bulletin and without a position: "No bus position".
 
 ### 7.3 Notice hints (decided 2026-11-06, not built)
