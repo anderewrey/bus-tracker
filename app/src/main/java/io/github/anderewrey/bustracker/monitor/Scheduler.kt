@@ -3,6 +3,7 @@
 
 package io.github.anderewrey.bustracker.monitor
 
+import io.github.anderewrey.bustracker.data.dayClock
 import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationManager
@@ -71,10 +72,10 @@ object Scheduler {
         AppLog.log("automatic starts cancelled")
     }
 
-    /** The next start as shown on the screens, e.g. "Thu 2026-11-05 7:03"; null when none. */
+    /** The next start as shown on the screens, e.g. "Thu Nov 5, 7:03 AM"; null when none. */
     fun nextText(context: Context, key: String): String? {
         val run = Store(context).runs.firstOrNull { it.key == key } ?: return null
-        return nextStart(listOf(run), LocalDateTime.now(), Session.autoStart.value, Session.choices.value)?.at?.format(WHEN)
+        return nextStart(listOf(run), LocalDateTime.now(), Session.autoStart.value, Session.choices.value)?.at?.let { dayClock(it) }
     }
 }
 

@@ -49,8 +49,8 @@ class ChangesTest {
         val c = diffRuns(listOf(am(), pm()), listOf(am(time = "7:41 AM"), pm()), t1).single()
         assertEquals(setOf(ChangeKind.TIME), c.kinds)
         assertFalse(c.needsChoice)
-        assertEquals("B101 · Pickup 7:33 · 12 THIS ST", c.past!!.stopLine)
-        assertEquals("B101 · Pickup 7:41 · 12 THIS ST", c.new!!.stopLine)
+        assertEquals("B101 · Pickup 7:33 AM · 12 THIS ST", c.past!!.stopLine)
+        assertEquals("B101 · Pickup 7:41 AM · 12 THIS ST", c.new!!.stopLine)
     }
 
     @Test

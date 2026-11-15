@@ -553,6 +553,7 @@ The user wants the app to act on what BusPlanner notices say, not only ring them
   - Push to `main`: also the release build, published as a GitHub release: tag `build-<versionCode>`, title the versionName, notes the commit message, the two APKs attached. Without the key's secrets, the run fails instead of publishing an APK with a throwaway key.
   - **In the logs:** the Debug screen (its button was "Log" until 2026-11-09) shows the build under its title (name, versionName, build time in UTC). Each app start writes an "app start" line with the build, the app ID, the versionCode, the build type (release or debug) and the Android version, so a log file says which build wrote it; Copy starts with the same line, and Export adds it as `bustracker-build.txt` in the zip.
 - **UI language:** English first. Strings live in resources, so other languages can be added later.
+- **Times on screen: 12-hour style** (user, 2026-11-06 and 2026-11-14), like BusPlanner's ("2:51:12 PM"), hardcoded for now (`data/Clock.kt`): "Pickup 7:33 AM", "monitoring 7:03–8:03 AM" (AM or PM once when the range doesn't cross noon, "11:30 AM–12:30 PM" when it does), "checked 2:51:12 PM", "Watching until 8:33 AM", "Next automatic start: Mon Nov 16, 7:03 AM". The Log keeps 24-hour times.
 
 **Background work**
 - **Tracking:** a foreground service runs only during monitoring periods, with service type `dataSync`. `location` isn't used, because the app reads the bus position from the server, not the phone's GPS.

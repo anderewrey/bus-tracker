@@ -3,6 +3,7 @@
 
 package io.github.anderewrey.bustracker
 
+import io.github.anderewrey.bustracker.data.clockSeconds
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -324,7 +325,7 @@ private fun RunsScreen(
                                 it.line, style = MaterialTheme.typography.bodyMedium,
                                 color = if (it.old) MaterialTheme.colorScheme.error else Color.Unspecified,
                             )
-                            it.checkedAt?.let { t -> Text("checked ${t.format(CHECKED)}", style = MaterialTheme.typography.bodySmall) }
+                            it.checkedAt?.let { t -> Text("checked ${clockSeconds(t)}", style = MaterialTheme.typography.bodySmall) }
                         }
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             OutlinedButton(onClick = { onOpenMap(run) }) { Text("Open map") }
@@ -338,7 +339,6 @@ private fun RunsScreen(
     }
 }
 
-private val CHECKED = DateTimeFormatter.ofPattern("H:mm:ss")
 private val FILE_STAMP = DateTimeFormatter.ofPattern("yyMMdd-HHmm")
 
 @Composable

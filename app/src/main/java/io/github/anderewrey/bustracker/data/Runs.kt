@@ -15,7 +15,6 @@ import java.util.Locale
 const val MONITOR_MINUTES = 30L
 
 private val TIME_IN = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
-private val TIME_OUT = DateTimeFormatter.ofPattern("H:mm", Locale.US)
 
 /**
  * One trip of one bus at the stop near home, shared by the students on it.
@@ -54,19 +53,19 @@ data class Run(
     val isDropoff: Boolean
         get() = stopType.contains("Dropoff", ignoreCase = true)
 
-    /** e.g. "Pickup 7:33". */
+    /** e.g. "Pickup 7:33 AM". */
     val plannedLine: String
-        get() = "${stopType.substringAfter(' ', stopType)} ${planned?.format(TIME_OUT) ?: time}"
+        get() = "${stopType.substringAfter(' ', stopType)} ${planned?.let { clock(it) } ?: time}"
 
-    /** e.g. "7:03–8:03"; empty when the planned time is unknown. */
+    /** e.g. "7:03–8:03 AM"; empty when the planned time is unknown. */
     val periodRange: String
-        get() = if (planned == null) "" else "${start!!.format(TIME_OUT)}–${end!!.format(TIME_OUT)}"
+        get() = if (planned == null) "" else clockRange(start!!, end!!)
 
-    /** e.g. "monitoring 7:03–8:03"; empty when the planned time is unknown. */
+    /** e.g. "monitoring 7:03–8:03 AM"; empty when the planned time is unknown. */
     val periodLine: String
         get() = if (planned == null) "" else "monitoring $periodRange"
 
-    /** The whole stop on one line, e.g. "B101 · Pickup 7:33 · 12 THIS ST". */
+    /** The whole stop on one line, e.g. "B101 · Pickup 7:33 AM · 12 THIS ST". */
     val stopLine: String
         get() = listOf(bus, plannedLine, address).filter { it.isNotBlank() }.joinToString(" · ")
 
