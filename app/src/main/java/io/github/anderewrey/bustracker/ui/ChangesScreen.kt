@@ -3,6 +3,7 @@
 
 package io.github.anderewrey.bustracker.ui
 
+import java.util.Locale
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,7 +28,7 @@ import io.github.anderewrey.bustracker.data.Run
 import io.github.anderewrey.bustracker.data.RunChange
 import java.time.format.DateTimeFormatter
 
-private val FOUND = DateTimeFormatter.ofPattern("MM-dd H:mm")
+private val FOUND = DateTimeFormatter.ofPattern("MM-dd h:mm a", Locale.US)
 
 /** What rescans found different: the whole past stop and the whole new one, no map. */
 @Composable

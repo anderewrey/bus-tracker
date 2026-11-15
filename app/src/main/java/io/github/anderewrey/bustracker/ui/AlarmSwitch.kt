@@ -3,6 +3,8 @@
 
 package io.github.anderewrey.bustracker.ui
 
+import io.github.anderewrey.bustracker.data.clockRange
+import io.github.anderewrey.bustracker.data.clock
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,7 +44,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val TIME = DateTimeFormatter.ofPattern("H:mm")
 private val DAY = DateTimeFormatter.ofPattern("EEE", Locale.ENGLISH)
 
 /** The Alarm switch's state for one run, as the screens show it (DESIGN.md §5). */
@@ -66,15 +67,15 @@ fun rememberAlarmState(run: Run): AlarmState {
     val watching = run.key in active
     val period = if (watching) run.periodOn(now.toLocalDate()) else switchPeriod(run, now, choices.ended[run.key])
     val on = watching || (period != null && alarmOn(run, period, auto, choices))
-    val until = ends[run.key]?.let { " until ${it.format(TIME)}" } ?: ""
+    val until = ends[run.key]?.let { " until ${clock(it)}" } ?: ""
     val rangAt = rang[run.key]?.takeIf { it.toLocalDate() == now.toLocalDate() }
     val status = when {
         period == null -> "No days set"
-        watching && rangAt != null -> "Rang ${rangAt.format(TIME)} · watching$until"
+        watching && rangAt != null -> "Rang ${clock(rangAt)} · watching$until"
         watching -> "Watching$until"
         else -> {
             val day = if (period.start.toLocalDate() == now.toLocalDate()) "" else "${period.start.format(DAY)} "
-            "$day${period.start.format(TIME)}–${period.end.format(TIME)}"
+            "$day${clockRange(period.start, period.end)}"
         }
     }
     return AlarmState(period, on, status)

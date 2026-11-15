@@ -3,6 +3,7 @@
 
 package io.github.anderewrey.bustracker.ui
 
+import io.github.anderewrey.bustracker.data.clockSeconds
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,7 +28,6 @@ import org.maplibre.android.style.layers.PropertyFactory.lineWidth
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.Polygon
 import org.maplibre.android.style.layers.PropertyFactory.visibility
-import java.time.format.DateTimeFormatter
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -71,7 +71,6 @@ import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
 
-private val CHECKED = DateTimeFormatter.ofPattern("H:mm:ss")
 
 /** Keyless OpenStreetMap vector style. */
 internal const val STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
@@ -206,7 +205,7 @@ fun MapScreen(run: Run, onBack: () -> Unit) {
             Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
                 RunTitle(run, current?.reading?.runLabel ?: run.key, MaterialTheme.typography.titleMedium)
                 current?.let { if (it.line.isNotEmpty()) Text(it.line, color = if (it.old) MaterialTheme.colorScheme.error else Color.Unspecified) }
-                current?.checkedAt?.let { Text("checked ${it.format(CHECKED)}", style = MaterialTheme.typography.bodySmall) }
+                current?.checkedAt?.let { Text("checked ${clockSeconds(it)}", style = MaterialTheme.typography.bodySmall) }
             }
             AlarmSwitchCompact(run)
             RefreshRing(monitored = run.key in active, nextCheck = nextCheck, refreshing = refreshing) {
