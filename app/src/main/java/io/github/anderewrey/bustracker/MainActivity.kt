@@ -60,6 +60,7 @@ import io.github.anderewrey.bustracker.net.BadPortal
 import io.github.anderewrey.bustracker.net.portalAddress
 import io.github.anderewrey.bustracker.monitor.EXTRA_RUN
 import io.github.anderewrey.bustracker.monitor.EXTRA_SCREEN
+import io.github.anderewrey.bustracker.monitor.EXTRA_SILENCE
 import io.github.anderewrey.bustracker.monitor.MonitorService
 import io.github.anderewrey.bustracker.monitor.SCREEN_CHANGES
 import io.github.anderewrey.bustracker.ui.ChangesScreen
@@ -96,6 +97,7 @@ class MainActivity : ComponentActivity() {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
         }
         openRun.value = intent.getStringExtra(EXTRA_RUN)
+        silenceIfAsked(intent)
         openChanges.value = intent.getStringExtra(EXTRA_SCREEN) == SCREEN_CHANGES
         setContent {
             MaterialTheme {
@@ -112,9 +114,16 @@ class MainActivity : ComponentActivity() {
         if (Store(this).runs.isNotEmpty()) Session.catchUp(this)
     }
 
+    /** Opened from a ringing main-zone alarm: opening it answers it, as Silence does. */
+    private fun silenceIfAsked(intent: Intent) {
+        val key = intent.getStringExtra(EXTRA_RUN) ?: return
+        if (intent.getBooleanExtra(EXTRA_SILENCE, false)) MonitorService.silence(this, key)
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         intent.getStringExtra(EXTRA_RUN)?.let { openRun.value = it }
+        silenceIfAsked(intent)
         if (intent.getStringExtra(EXTRA_SCREEN) == SCREEN_CHANGES) {
             openRun.value = null
             openChanges.value = true
