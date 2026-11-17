@@ -17,6 +17,17 @@ import io.github.anderewrey.bustracker.data.logLine
 import io.github.anderewrey.bustracker.data.mergeChanges
 import io.github.anderewrey.bustracker.data.AutoStart
 import io.github.anderewrey.bustracker.data.WORK_DAYS
+import io.github.anderewrey.bustracker.data.EndRule
+import io.github.anderewrey.bustracker.data.MONITOR_MINUTES
+import io.github.anderewrey.bustracker.data.moved
+import io.github.anderewrey.bustracker.data.validMinutes
+import io.github.anderewrey.bustracker.data.AT_SCHOOL_M
+import io.github.anderewrey.bustracker.data.SchoolFix
+import io.github.anderewrey.bustracker.data.SchoolSpot
+import io.github.anderewrey.bustracker.data.SchoolStore
+import io.github.anderewrey.bustracker.data.plainName
+import io.github.anderewrey.bustracker.data.schoolSpots
+import io.github.anderewrey.bustracker.data.SAME_STOP_M
 import io.github.anderewrey.bustracker.data.autoText
 import io.github.anderewrey.bustracker.data.daysText
 import io.github.anderewrey.bustracker.monitor.Scheduler
@@ -55,7 +66,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** Within this distance of a school's position, the bus is shown as being at the school. */
+/** Within this distance of a school's position (or its circle, when larger), the bus is shown as being at the school. */
 const val SCHOOL_RADIUS_M = 150.0
 
 /** An "updated" time further behind the clock than this, repeated twice, means stale data. */
@@ -298,6 +309,7 @@ object Session {
         _rang.value = store.rang
         _choices.value = store.choices
         _zones.value = ZoneStore(context).zones
+        refreshSchools(context)
         settleAutoStart(context)
     }
 
@@ -311,22 +323,41 @@ object Session {
         val result = withLogin(context) { it.scan() }
         val scanned = buildRuns(result)
         val names = schoolNames(result)
+        val store = Store(context)
+        val pastSchools = store.schools
+        val fixes = SchoolStore(context).fixes
+        val options = HashMap<String, List<String>>()
         val schools = names.mapNotNull { name ->
-            runCatching { withLogin(context) { it.schoolPosition(name) } }
+            val fix = fixes.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+            val found = runCatching { withLogin(context) { it.schoolLookup(name, fix?.match) } }
                 .onFailure { AppLog.log("school $name: ${it.message ?: it.javaClass.simpleName}") }
                 .getOrNull()
+            if (found != null && found.options.isNotEmpty()) {
+                options[name] = found.options
+                AppLog.log("school $name: several BusPlanner schools could be it, to choose on its School page: ${found.options.joinToString(" | ")}")
+            }
+            found?.option?.takeIf { plainName(it) != plainName(name) }?.let { AppLog.log("school $name: found as \"$it\" in BusPlanner's school list") }
+            val school = found?.school
+                // A failed lookup (network) keeps the position from the last scan.
+                ?: if (found == null) pastSchools.firstOrNull { it.name.equals(name, ignoreCase = true) } else null
+            val before = pastSchools.firstOrNull { it.name.equals(name, ignoreCase = true) }
+            if (school != null && before != null && fix?.moved == true && distanceM(school.lat, school.lon, before.lat, before.lon) > SAME_STOP_M) {
+                AppLog.log("school $name: BusPlanner's position moved ${formatDistance(distanceM(school.lat, school.lon, before.lat, before.lon))}; the corrected position is kept")
+            }
+            school
         }
-        val store = Store(context)
         val past = store.runs
         // The first scan after logging in has nothing to compare with.
         val fresh = if (past.isEmpty()) emptyList() else diffRuns(past, scanned, LocalDateTime.now().withNano(0))
         val runs = carryConfiguration(scanned, fresh, past, _zones.value)
         store.runs = runs
         store.schools = schools
+        store.schoolOptions = options
         store.lastScan = LocalDate.now()
         if (fresh.isNotEmpty()) store.changes = mergeChanges(store.changes, fresh)
         _runs.value = runs
         _changes.value = store.changes
+        refreshSchools(context)
         fresh.forEach { AppLog.log(it.logLine()) }
         AppLog.log(if (past.isEmpty()) "scan: first scan, nothing to compare" else "scan: ${fresh.size} change(s) since the last scan")
         runs.forEach { r -> AppLog.log("${r.key} main zone: ${_zones.value.firstOrNull { it.id == r.mainZone }?.name ?: "none"}") }
@@ -343,6 +374,75 @@ object Session {
         if (result.isEmpty()) AppLog.log("scan: no student found on the account")
         Scheduler.reschedule(context)
         return ScanResult(runs, fresh)
+    }
+
+    /** The schools the app knows, with the position it uses for each (DESIGN.md §5.3). */
+    private val _schools = MutableStateFlow<List<SchoolSpot>>(emptyList())
+    val schools: StateFlow<List<SchoolSpot>> = _schools
+
+    /** Schools whose name matched several of BusPlanner's: the names to choose from, by school. */
+    private val _schoolOptions = MutableStateFlow<Map<String, List<String>>>(emptyMap())
+    val schoolOptions: StateFlow<Map<String, List<String>>> = _schoolOptions
+
+    private val _schoolFixes = MutableStateFlow<Map<String, SchoolFix>>(emptyMap())
+    val schoolFixes: StateFlow<Map<String, SchoolFix>> = _schoolFixes
+
+    /** Where the bus was last seen parked at each school. */
+    private val _parked = MutableStateFlow<Map<String, Pair<Double, Double>>>(emptyMap())
+    val parked: StateFlow<Map<String, Pair<Double, Double>>> = _parked
+
+    fun refreshSchools(context: Context) {
+        val store = Store(context)
+        val ss = SchoolStore(context)
+        _schoolFixes.value = ss.fixes
+        _parked.value = ss.parked
+        _schoolOptions.value = store.schoolOptions
+        _schools.value = schoolSpots(store.runs.map { it.school }, store.schools, ss.fixes)
+    }
+
+    /** The position the app uses for [name], or null when unknown. */
+    fun schoolSpot(name: String): SchoolSpot? = _schools.value.firstOrNull { it.name.equals(name, ignoreCase = true) }
+
+    /** Saves the user's correction of a school: its position and its "at school" circle. */
+    fun setSchoolFix(context: Context, fix: SchoolFix) {
+        val ss = SchoolStore(context)
+        ss.fixes = ss.fixes + (fix.name to fix)
+        refreshSchools(context)
+        AppLog.log(
+            "school ${fix.name}: " + (if (fix.moved) String.format(Locale.US, "corrected to %.6f,%.6f", fix.lat, fix.lon) else "BusPlanner's position") +
+                ", circle ${fix.radius.toInt()} m"
+        )
+    }
+
+    /** Back to BusPlanner's position and the default circle; a school chosen among several stays chosen. */
+    fun resetSchool(context: Context, name: String) {
+        val ss = SchoolStore(context)
+        val fix = ss.fixes[name]
+        ss.fixes = if (fix?.match != null) ss.fixes + (name to SchoolFix(name, match = fix.match)) else ss.fixes - name
+        refreshSchools(context)
+        AppLog.log("school $name: back to BusPlanner's position, circle ${AT_SCHOOL_M.toInt()} m")
+    }
+
+    /** The user chose which of BusPlanner's schools [name] is: remembered, and its position fetched now. */
+    suspend fun chooseSchool(context: Context, name: String, option: String) {
+        val ss = SchoolStore(context)
+        val fix = ss.fixes[name] ?: SchoolFix(name)
+        ss.fixes = ss.fixes + (name to fix.copy(match = option))
+        AppLog.log("school $name: chosen as \"$option\" in BusPlanner's school list")
+        val found = withLogin(context) { it.schoolLookup(name, option) }
+        val store = Store(context)
+        found.school?.let { school -> store.schools = store.schools.filterNot { it.name.equals(name, ignoreCase = true) } + school }
+        store.schoolOptions = store.schoolOptions - name
+        refreshSchools(context)
+        AppLog.log("school $name: " + (found.school?.let { String.format(Locale.US, "%.6f,%.6f", it.lat, it.lon) } ?: "position not found"))
+    }
+
+    /** The "parked at the school" rule saw the bus stop here; the School page can use it. */
+    fun markParked(context: Context, school: String, at: Pair<Double, Double>) {
+        val ss = SchoolStore(context)
+        ss.parked = ss.parked + (school to at)
+        _parked.value = ss.parked
+        AppLog.log(String.format(Locale.US, "school %s: bus parked at %.6f,%.6f", school, at.first, at.second))
     }
 
     /** Whether the run's alarm already rang in today's monitoring period. */
@@ -399,6 +499,19 @@ object Session {
         return others.map { it.key }
     }
 
+    /** The runs that use [zoneId]: as their main zone, or for their end of monitoring. */
+    fun runsUsingAny(zoneId: String): List<Run> = _runs.value.filter { it.mainZone == zoneId || it.endZone == zoneId }
+
+    /** Deletes a zone no run uses (DESIGN.md §5.3); one still in use is kept. */
+    fun deleteZone(context: Context, zoneId: String) {
+        if (runsUsingAny(zoneId).isNotEmpty()) return
+        val zs = ZoneStore(context)
+        val zone = zs.zones.firstOrNull { it.id == zoneId } ?: return
+        zs.zones = zs.zones.filterNot { it.id == zoneId }
+        _zones.value = zs.zones
+        AppLog.log("zone ${zone.name} deleted")
+    }
+
     /** Turns every automatic start on or off, or off until a day. */
     fun setAutoStart(context: Context, auto: AutoStart) {
         Store(context).autoStart = auto
@@ -429,6 +542,31 @@ object Session {
         Scheduler.reschedule(context)
     }
 
+    /**
+     * Sets the minutes watched before and after the run's planned time (DESIGN.md §5.1). The
+     * Alarm switch's choices follow the period, and a run being watched gets its new end at once.
+     */
+    fun setPeriodMinutes(context: Context, key: String, before: Int, after: Int) {
+        if (!validMinutes(before, after)) return
+        val store = Store(context)
+        val old = store.runs.firstOrNull { it.key == key } ?: return
+        val new = old.copy(before = before, after = after)
+        store.runs = store.runs.map { if (it.key == key) new else it }
+        _runs.value = store.runs
+        saveChoices(context, _choices.value.moved(old, new))
+        AppLog.log("$key: monitoring ${new.periodRange} ($before min before, $after min after)")
+        Scheduler.reschedule(context)
+    }
+
+    /** Sets what ends watching the run by itself; [zone] for a zone rule, null: the main zone. */
+    fun setEndRule(context: Context, key: String, rule: EndRule, zone: String?) {
+        val store = Store(context)
+        store.runs = store.runs.map { if (it.key == key) it.copy(endRule = rule, endZone = zone) else it }
+        _runs.value = store.runs
+        val zoneName = _zones.value.firstOrNull { it.id == (zone ?: store.runs.firstOrNull { r -> r.key == key }?.mainZone) }?.name
+        AppLog.log("$key: end of monitoring: ${rule.label}" + if (rule == EndRule.LEAVES_ZONE || rule == EndRule.ENTERS_ZONE) " (${zoneName ?: "no zone"})" else "")
+    }
+
     /** Sets the days a run starts by itself. */
     fun setDays(context: Context, key: String, days: Set<DayOfWeek>) {
         val store = Store(context)
@@ -440,14 +578,19 @@ object Session {
 
     /**
      * Acknowledges a change. For a moved stop or a replacing run, [keep] keeps the configuration
-     * of the past stop (days and main zone); otherwise the run starts again from its new stop:
-     * work days, and the zone containing the new stop, if any.
+     * of the past stop (days, main zone, period minutes, end of monitoring); otherwise the run
+     * starts again from its new stop: defaults, and the zone containing the new stop, if any.
      */
     fun answer(context: Context, change: RunChange, keep: Boolean) {
         val store = Store(context)
         if (change.needsChoice && !keep) {
             store.runs = store.runs.map {
-                if (it.key == change.new!!.key) it.copy(mainZone = defaultZone(it, _zones.value), days = WORK_DAYS) else it
+                if (it.key == change.new!!.key) {
+                    it.copy(
+                        mainZone = defaultZone(it, _zones.value), days = WORK_DAYS,
+                        before = MONITOR_MINUTES, after = MONITOR_MINUTES, endRule = null, endZone = null,
+                    )
+                } else it
             }
         }
         store.changes = store.changes.filterNot { it.id == change.id }
@@ -564,7 +707,7 @@ object Session {
         val sLat = run.lat ?: r.stopLat
         val sLon = run.lon ?: r.stopLon
         if (sLat != null && sLon != null) parts += formatDistance(distanceM(r.busLat, r.busLon, sLat, sLon))
-        val school = Store(context).schools.firstOrNull { distanceM(r.busLat, r.busLon, it.lat, it.lon) <= SCHOOL_RADIUS_M }
+        val school = _schools.value.firstOrNull { it.known && distanceM(r.busLat, r.busLon, it.lat!!, it.lon!!) <= maxOf(it.radius, SCHOOL_RADIUS_M) }
         (school?.name ?: street(context, run.key, r.busLat, r.busLon))?.let { parts += it }
         r.reported?.let { parts += "GPS $it" }
         // Old data is shown as such (in red on the screens), never as a live position.
@@ -598,6 +741,8 @@ object Session {
         _choices.value = PeriodChoices()
         _watchEnd.value = emptyMap()
         _notices.value = emptyMap()
+        _schools.value = emptyList()
+        _schoolOptions.value = emptyMap()
         needsReload.clear()
         networkFailures.clear()
         lastUpdated.clear()

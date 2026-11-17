@@ -12,7 +12,18 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-const val MONITOR_MINUTES = 30L
+/** Default minutes watched before and after the planned stop time. */
+const val MONITOR_MINUTES = 30
+/** The minutes before and after can each be set from 0 to this (DESIGN.md §5.1). */
+const val MAX_MONITOR_MINUTES = 120
+
+/** What ends watching a run by itself, besides the Alarm switch and the period's end (DESIGN.md §5.1). */
+enum class EndRule(val label: String) {
+    SCHOOL("Bus parked at the school"),
+    LEAVES_ZONE("Bus leaves a zone"),
+    ENTERS_ZONE("Bus enters a zone"),
+    PERIOD_END("Only at the end of the period"),
+}
 
 private val TIME_IN = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
 
@@ -41,10 +52,26 @@ data class Run(
      * a route serves one school. Empty in runs saved before 0.9, until the next scan.
      */
     val school: String = "",
+    /** Minutes watched before the planned stop time. */
+    val before: Int = MONITOR_MINUTES,
+    /** Minutes watched after the planned stop time. */
+    val after: Int = MONITOR_MINUTES,
+    /** What ends watching by itself; null: the stop type's default ([endOfWatch]). */
+    val endRule: EndRule? = null,
+    /** The zone of [EndRule.LEAVES_ZONE] or [EndRule.ENTERS_ZONE]; null: the run's main zone. */
+    val endZone: String? = null,
 ) {
     val planned: LocalTime? get() = parseTime(time)
-    val start: LocalTime? get() = planned?.minusMinutes(MONITOR_MINUTES)
-    val end: LocalTime? get() = planned?.plusMinutes(MONITOR_MINUTES)
+    /** The period's start; never before midnight (the period stays on its day). */
+    val start: LocalTime? get() = planned?.let { p -> if (p.toSecondOfDay() / 60 < before) LocalTime.MIN else p.minusMinutes(before.toLong()) }
+    /** The period's end; never past 23:59. */
+    val end: LocalTime? get() = planned?.let { p -> if (p.toSecondOfDay() / 60 + after > 24 * 60 - 1) LocalTime.of(23, 59) else p.plusMinutes(after.toLong()) }
+
+    /** The rule that ends watching: the one chosen, or the stop type's default (pickup: school, dropoff: leaving the main zone). */
+    val endOfWatch: EndRule get() = endRule ?: if (isDropoff) EndRule.LEAVES_ZONE else EndRule.SCHOOL
+
+    /** The zone [endOfWatch] is about, for a zone rule. */
+    val endZoneId: String? get() = endZone ?: mainZone
 
     /**
      * The children get off the bus at this run's stop (e.g. "PM Dropoff"); otherwise they get on
@@ -82,6 +109,9 @@ data class Run(
         .put("mainZone", mainZone ?: JSONObject.NULL)
         .put("days", JSONArray(days.map { it.value }.sorted()))
         .put("school", school)
+        .put("before", before).put("after", after)
+        .put("endRule", endRule?.name ?: JSONObject.NULL)
+        .put("endZone", endZone ?: JSONObject.NULL)
 
     companion object {
         fun fromJson(o: JSONObject): Run {
@@ -101,10 +131,22 @@ data class Run(
                 days = o.optJSONArray("days")?.let { a -> (0 until a.length()).map { DayOfWeek.of(a.getInt(it)) }.toSet() } ?: WORK_DAYS,
                 // Absent from runs saved by 0.8 and earlier.
                 school = o.optString("school", ""),
+                // Absent from runs saved before 2026-11-17: the defaults.
+                before = o.optInt("before", MONITOR_MINUTES),
+                after = o.optInt("after", MONITOR_MINUTES),
+                endRule = if (o.isNull("endRule")) null else EndRule.entries.firstOrNull { it.name == o.getString("endRule") },
+                endZone = if (o.isNull("endZone")) null else o.getString("endZone"),
             )
         }
     }
 }
+
+/** The shortest period allowed, so before and after can't both be 0. */
+const val MIN_PERIOD_MINUTES = 10
+
+/** Whether these minutes before and after make a valid period. */
+fun validMinutes(before: Int, after: Int): Boolean =
+    before in 0..MAX_MONITOR_MINUTES && after in 0..MAX_MONITOR_MINUTES && before + after >= MIN_PERIOD_MINUTES
 
 fun parseTime(text: String): LocalTime? =
     runCatching { LocalTime.parse(text.trim().uppercase(Locale.US), TIME_IN) }.getOrNull()

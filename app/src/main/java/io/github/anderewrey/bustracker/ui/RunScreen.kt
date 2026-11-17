@@ -36,6 +36,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import io.github.anderewrey.bustracker.Session
 import io.github.anderewrey.bustracker.data.MONITOR_MINUTES
+import io.github.anderewrey.bustracker.data.EndRule
+import io.github.anderewrey.bustracker.data.clock
+import io.github.anderewrey.bustracker.data.validMinutes
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import io.github.anderewrey.bustracker.data.Run
 import io.github.anderewrey.bustracker.data.Zone
 import io.github.anderewrey.bustracker.data.ZoneRole
@@ -49,8 +54,8 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /**
- * Everything about one run on one page (DESIGN.md §5.1). This first version shows the whole
- * layout; the parts not built yet are greyed out and say so.
+ * Everything about one run on one page (DESIGN.md §5.1): about the run, its monitoring period,
+ * automatic start, main zone and end of monitoring. Heads-up zones are not built yet.
  */
 @Composable
 fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
@@ -59,6 +64,7 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
     val changes by Session.changes.collectAsState()
     val allZones by Session.zones.collectAsState()
     val runs by Session.runs.collectAsState()
+    val schools by Session.schools.collectAsState()
     val pending = changes.firstOrNull { it.needsChoice && it.new?.key == run.key }
     val main = zonesFor(run, allZones).firstOrNull()
     // The zone screen: open with null for a new zone, or with the zone to change.
@@ -141,11 +147,22 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
         }
 
         Section("Monitoring period")
-        Text(
-            if (run.periodRange.isEmpty()) "No planned time: the run can't be monitored by itself."
-            else "${run.periodRange} · $MONITOR_MINUTES min before and after ${run.plannedLine.substringAfter(' ')}"
-        )
-        NotBuilt("Changing the minutes")
+        if (run.periodRange.isEmpty()) {
+            Text("No planned time: the run can't be monitored by itself.")
+        } else {
+            Text(run.periodRange, style = MaterialTheme.typography.bodyLarge)
+            val planned = run.planned?.let { clock(it) } ?: run.time
+            MinutesRow("before $planned", run.before, canDown = validMinutes(run.before - STEP, run.after), canUp = validMinutes(run.before + STEP, run.after)) {
+                Session.setPeriodMinutes(context, run.key, run.before + it, run.after)
+            }
+            MinutesRow("after $planned", run.after, canDown = validMinutes(run.before, run.after - STEP), canUp = validMinutes(run.before, run.after + STEP)) {
+                Session.setPeriodMinutes(context, run.key, run.before, run.after + it)
+            }
+            if (run.before != MONITOR_MINUTES || run.after != MONITOR_MINUTES) TextButton(onClick = {
+                Session.setPeriodMinutes(context, run.key, MONITOR_MINUTES, MONITOR_MINUTES)
+            }) { Text("Default: $MONITOR_MINUTES min before and after") }
+            Text("A change applies at once, also while the run is watched.", style = MaterialTheme.typography.bodySmall)
+        }
 
         Section("Automatic start")
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -211,25 +228,70 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
         NotBuilt("Heads-up zones")
 
         Section("End of monitoring")
-        val choices = listOf(
-            "Bus parked at the school" to !run.isDropoff,
-            "Bus leaves ${main?.name ?: "a zone"}" to run.isDropoff,
-            "Bus enters a zone" to false,
-            "Only at the end of the period" to false,
-        )
-        for ((label, selected) in choices) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(selected = selected, onClick = null, enabled = false, modifier = Modifier.padding(12.dp))
-                Text(label, color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Watching ends by itself when:", style = MaterialTheme.typography.bodyMedium)
+        val endZone = allZones.firstOrNull { it.id == run.endZoneId }
+        val school = schools.firstOrNull { it.name.equals(run.school, ignoreCase = true) }
+        for (rule in EndRule.entries) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().selectable(selected = run.endOfWatch == rule, role = Role.RadioButton) {
+                    Session.setEndRule(context, run.key, rule, run.endZone)
+                },
+            ) {
+                RadioButton(selected = run.endOfWatch == rule, onClick = null, modifier = Modifier.padding(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        when (rule) {
+                            EndRule.LEAVES_ZONE -> "Bus leaves ${endZone?.name ?: "a zone"}"
+                            EndRule.ENTERS_ZONE -> "Bus enters ${endZone?.name ?: "a zone"}"
+                            else -> rule.label
+                        }
+                    )
+                    val default = if (run.isDropoff) EndRule.LEAVES_ZONE else EndRule.SCHOOL
+                    val note = when {
+                        rule == EndRule.SCHOOL && school?.known != true -> "School position unknown: set it on the overview page"
+                        rule == EndRule.SCHOOL -> "${school!!.name}, within ${school.radius.toInt()} m"
+                        (rule == EndRule.LEAVES_ZONE || rule == EndRule.ENTERS_ZONE) && endZone == null -> "No zone: draw or choose one"
+                        rule == default -> "Default for a ${if (run.isDropoff) "dropoff" else "pickup"} run"
+                        else -> null
+                    }
+                    note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
             }
         }
-        Text(
-            "The Alarm switch and the period's end always apply.",
-            style = MaterialTheme.typography.bodySmall,
-        )
-        NotBuilt("Choosing: for now it follows the stop type (pickup: school, dropoff: leaving the zone)")
+        // The zone of "leaves" or "enters": the main zone unless another one is chosen.
+        if ((run.endOfWatch == EndRule.LEAVES_ZONE || run.endOfWatch == EndRule.ENTERS_ZONE) && allZones.isNotEmpty()) Box {
+            var open by remember { mutableStateOf(false) }
+            OutlinedButton(onClick = { open = true }) { Text("Zone: ${endZone?.name ?: "none"}${if (run.endZone == null) " (main zone)" else ""}") }
+            DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                DropdownMenuItem(text = { Text("The main zone (${main?.name ?: "none"})") }, onClick = {
+                    Session.setEndRule(context, run.key, run.endOfWatch, null)
+                    open = false
+                })
+                allZones.forEach { z ->
+                    DropdownMenuItem(text = { Text(z.name) }, onClick = {
+                        Session.setEndRule(context, run.key, run.endOfWatch, z.id)
+                        open = false
+                    })
+                }
+            }
+        }
+        Text("The Alarm switch and the period's end always apply.", style = MaterialTheme.typography.bodySmall)
     }
 }
+
+/** Minutes watched before or after the planned time, by steps of 5. */
+@Composable
+private fun MinutesRow(label: String, minutes: Int, canDown: Boolean, canUp: Boolean, onStep: (Int) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OutlinedButton(enabled = canDown, onClick = { onStep(-STEP) }) { Text("−") }
+        Text("$minutes min", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 12.dp).width(64.dp))
+        OutlinedButton(enabled = canUp, onClick = { onStep(STEP) }) { Text("+") }
+        Text(label, modifier = Modifier.padding(start = 12.dp))
+    }
+}
+
+private const val STEP = 5
 
 @Composable
 internal fun Section(title: String) {
