@@ -51,6 +51,22 @@ data class PeriodChoices(
 )
 
 /**
+ * The choices once [old]'s period changed to [new]'s (other minutes before and after): a choice
+ * about one of the old periods moves to the new period of the same day, so a period switched off
+ * stays off, and one that ended stays ended.
+ */
+fun PeriodChoices.moved(old: Run, new: Run): PeriodChoices {
+    fun move(m: Map<String, LocalDateTime>): Map<String, LocalDateTime> {
+        val at = m[old.key] ?: return m
+        val date = at.toLocalDate()
+        if (old.periodOn(date)?.start != at) return m
+        val to = new.periodOn(date)?.start ?: return m - old.key
+        return m + (old.key to to)
+    }
+    return PeriodChoices(move(skipped), move(forced), move(ended))
+}
+
+/**
  * The period the run's Alarm switch is about: the one under way, or else the next one on the
  * run's days. A period that already [ended] by itself is over. Null when the run has no days or
  * no planned time.

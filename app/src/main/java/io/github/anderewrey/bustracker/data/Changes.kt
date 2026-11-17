@@ -132,7 +132,8 @@ fun mergeChanges(waiting: List<RunChange>, fresh: List<RunChange>): List<RunChan
 }
 
 /**
- * The new runs as saved after a rescan. A run keeps its configuration (days and main zone), also
+ * The new runs as saved after a rescan. A run keeps its configuration (days, main zone, period
+ * minutes, end of monitoring), also
  * when its stop moved or its bus was replaced, so a rescan never changes the alarm by itself;
  * "New configuration" on the Changes screen resets it. A run seen for the first time gets the
  * zone that contains its stop, if any ([defaultZone]).
@@ -143,7 +144,7 @@ fun carryConfiguration(new: List<Run>, changes: List<RunChange>, past: List<Run>
     return new.map { run ->
         val c = changedBy[run.key]
         val from = c?.past ?: pastByKey[run.key] ?: return@map run.copy(mainZone = defaultZone(run, zones))
-        run.copy(days = from.days, mainZone = from.mainZone)
+        run.copy(days = from.days, mainZone = from.mainZone, before = from.before, after = from.after, endRule = from.endRule, endZone = from.endZone)
     }
 }
 

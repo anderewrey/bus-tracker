@@ -47,7 +47,7 @@ import io.github.anderewrey.bustracker.monitor.testRing
 
 /** Settings that apply to all runs: sound, bus alerts and the account. */
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, onOverview: () -> Unit) {
     val context = LocalContext.current
     val settings = remember { AppSettings(context) }
     // Bumped after each change, and when coming back from Android's settings, to read everything again.
@@ -96,6 +96,10 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit) {
             "The alarm and the BusPlanner notices ring as alarms: Do Not Disturb lets them through, at the alarm volume.",
             style = MaterialTheme.typography.bodySmall,
         )
+
+        Section("Children, schools, runs and zones")
+        Text("Everything the app knows, and each school's position and \"at school\" circle.", style = MaterialTheme.typography.bodySmall)
+        OutlinedButton(onClick = onOverview) { Text("Open the overview") }
 
         Section("Account")
         val store = Store(context)

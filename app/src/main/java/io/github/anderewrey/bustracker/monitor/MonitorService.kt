@@ -21,7 +21,8 @@ import io.github.anderewrey.bustracker.Session
 import io.github.anderewrey.bustracker.data.AppSettings
 import io.github.anderewrey.bustracker.data.Run
 import io.github.anderewrey.bustracker.data.RunChange
-import io.github.anderewrey.bustracker.data.SchoolArrival
+import io.github.anderewrey.bustracker.data.EndRule
+import io.github.anderewrey.bustracker.data.EndWatch
 import io.github.anderewrey.bustracker.data.Store
 import java.time.LocalDate
 import io.github.anderewrey.bustracker.data.ZoneRole
@@ -194,7 +195,11 @@ class MonitorService : Service() {
     private val inMainZone = HashMap<String, Boolean>()
     /** Runs whose notification is the ringing alarm: the checks don't update it, which would stop the sound. */
     private val ringing = HashSet<String>()
-    private val arrival = HashMap<String, SchoolArrival>()
+    /** Each watched run's end-of-monitoring rule (DESIGN.md §5.1), and the rule and zone it was made for. */
+    private val endWatch = HashMap<String, EndWatch>()
+    private val endWatchFor = HashMap<String, Pair<EndRule, String?>>()
+    /** Minutes a BusPlanner delay notice added to each watched run's period. */
+    private val delayMin = HashMap<String, Int>()
     /** Runs just started: their first check tells whether BusPlanner has a vehicle at all. */
     private val firstCheck = HashSet<String>()
 
@@ -283,10 +288,8 @@ class MonitorService : Service() {
         Session.setWatchEnd(run.key, period.end)
         inMainZone.remove(run.key)
         ringing.remove(run.key)
-        // Only pickup runs end at the school; a dropoff run ends when the bus leaves the main zone.
-        // The run's own school; every known school only for a run saved before 0.9, until the next scan.
-        val schools = Store(this).schools.filter { run.school.isEmpty() || it.name.equals(run.school, ignoreCase = true) }
-        if (run.isDropoff) arrival.remove(run.key) else arrival[run.key] = SchoolArrival(schools.map { it.lat to it.lon })
+        delayMin.remove(run.key)
+        setEndWatch(run)
         firstCheck += run.key
         AppLog.log("zones of ${run.key}: ${zonesFor(run, Session.zones.value).joinToString { "${it.name} (${it.role.name.lowercase()})" }.ifEmpty { "none" }}")
         val status = Session.status.value[run.key] ?: RunStatus(null, "Starting…", null)
@@ -309,7 +312,9 @@ class MonitorService : Service() {
             if (!byUser && start != null) Session.markEnded(this, key, start)
         }
         periodStart.remove(key)
-        arrival.remove(key)
+        endWatch.remove(key)
+        endWatchFor.remove(key)
+        delayMin.remove(key)
         Session.setWatchEnd(key, null)
         Session.setNotice(key, null)
         Session.setActive(until.keys.toSet())
@@ -366,19 +371,21 @@ class MonitorService : Service() {
         while (scope.isActive && until.isNotEmpty()) {
             Session.setNextCheck(null)
             val now = LocalDateTime.now()
-            for ((key, end) in until.toMap()) {
-                if (now.isAfter(end)) {
-                    stop(key, "monitoring period ended")
-                    continue
-                }
+            for (key in until.keys.toList()) {
                 val run = Store(this).runs.firstOrNull { it.key == key }
                 if (run == null) {
                     stop(key, "run no longer on the account after a rescan, see Changes")
                     continue
                 }
+                // First, so a period lengthened on the run's page doesn't end at its old end.
+                followConfiguration(run)
+                if (now.isAfter(until.getValue(key))) {
+                    stop(key, "monitoring period ended")
+                    continue
+                }
                 val status = read(run, manual)
                 if (key in until) checkZones(run, status)
-                if (key in until) checkSchool(run, status)
+                if (key in until) checkEnd(run, status)
                 if (key in until) {
                     showStatus(run, status)
                     if (firstCheck.remove(key)) warnIfNoVehicle(run, status)
@@ -395,9 +402,48 @@ class MonitorService : Service() {
     }
 
     /**
+     * The run's end-of-monitoring rule, for the zone and schools it is about: the school's
+     * corrected position and circle first (DESIGN.md §5.3). A school with no known position
+     * never ends it: only the period's end and the Alarm switch do.
+     */
+    private fun setEndWatch(run: Run) {
+        val rule = run.endOfWatch
+        val zone = Session.zones.value.firstOrNull { it.id == run.endZoneId }
+        // The run's own school; every known school only for a run saved before 0.9, until the next scan.
+        val schools = Session.schools.value.filter { run.school.isEmpty() || it.name.equals(run.school, ignoreCase = true) }
+        endWatch[run.key] = EndWatch(rule, zone, schools)
+        endWatchFor[run.key] = rule to run.endZoneId
+        AppLog.log(
+            "${run.key}: watching ends by itself: " + when (rule) {
+                EndRule.SCHOOL -> if (schools.any { it.known }) "${rule.label} (${schools.filter { it.known }.joinToString { "${it.name}, ${it.radius.toInt()} m" }})"
+                else "${rule.label}, but the school's position is unknown: only at the period's end"
+                EndRule.LEAVES_ZONE, EndRule.ENTERS_ZONE -> if (zone != null) "${rule.label} (${zone.name})" else "${rule.label}, but there is no zone: only at the period's end"
+                EndRule.PERIOD_END -> rule.label
+            }
+        )
+    }
+
+    /**
+     * A change made on the run's page while it is watched applies at once: the period's minutes
+     * (its end, plus any BusPlanner delay) and the end-of-monitoring rule.
+     */
+    private fun followConfiguration(run: Run) {
+        val start = periodStart[run.key] ?: return
+        val period = run.periodOn(start.toLocalDate()) ?: return
+        val end = period.end.plusMinutes((delayMin[run.key] ?: 0).toLong())
+        if (until[run.key] != end) {
+            AppLog.log("${run.key}: period changed, watching until ${end.toLocalTime()} instead of ${until[run.key]?.toLocalTime()}")
+            until[run.key] = end
+            periodStart[run.key] = period.start
+            Session.setWatchEnd(run.key, end)
+        }
+        if (endWatchFor[run.key] != (run.endOfWatch to run.endZoneId)) setEndWatch(run)
+    }
+
+    /**
      * Rings when the bus enters the run's main zone, once per monitoring period: a restart doesn't
-     * ring again, unless the Alarm switch was turned off and on. Leaving the zone ends a dropoff
-     * run's monitoring, not a pickup run's. The ringing alert stays until acknowledged.
+     * ring again, unless the Alarm switch was turned off and on. What ends watching is the run's
+     * end-of-monitoring rule (checkEnd). The ringing alert stays until acknowledged.
      */
     private fun checkZones(run: Run, status: RunStatus) {
         val r = status.reading ?: return
@@ -421,21 +467,25 @@ class MonitorService : Service() {
                 .notify(runNotificationId(run.key), zoneAlert(this, run.key, "$bus entered ${main.name}", status.line))
         } else if (!inside && wasInside) {
             inMainZone[run.key] = false
-            // A dropoff run ends here: the children are off the bus. A pickup run goes on to the school (checkSchool).
-            if (run.isDropoff) stop(run.key, "bus left main zone ${main.name}, children dropped off")
-            else AppLog.log("${run.key}: bus left main zone ${main.name}, monitoring goes on to the school")
+            AppLog.log("${run.key}: bus left main zone ${main.name}")
         }
     }
 
     /**
-     * Ends a pickup run's monitoring once the bus is parked at the school: three readings in a row
-     * at one spot within 100 m of it, after it was seen away from the school.
+     * Ends watching when the run's end-of-monitoring rule says so (DESIGN.md §5.1): e.g. the bus
+     * parked at the school (three readings in a row at one spot inside its circle, after it was
+     * seen away from it), or the bus leaving the main zone (children dropped off).
      */
-    private fun checkSchool(run: Run, status: RunStatus) {
+    private fun checkEnd(run: Run, status: RunStatus) {
         val r = status.reading ?: return
         val lat = r.busLat ?: return
         val lon = r.busLon ?: return
-        if (arrival[run.key]?.add(lat, lon) == true) stop(run.key, "bus parked at the school")
+        val watch = endWatch[run.key] ?: return
+        val reason = watch.add(lat, lon) ?: return
+        val school = watch.school
+        val spot = school?.parkedSpot
+        if (school?.parkedAt != null && spot != null) Session.markParked(this, school.parkedAt!!.name, spot)
+        stop(run.key, reason)
     }
 
     /** The ids of the last answer from the alerts page, to log it only when it changes. */
@@ -500,6 +550,7 @@ class MonitorService : Service() {
         val planned = run.periodOn(start.toLocalDate())?.end ?: return
         val end = planned.plusMinutes(minutes.toLong())
         if (run.key !in until || until[run.key] == end) return
+        delayMin[run.key] = minutes
         until[run.key] = end
         Session.setWatchEnd(run.key, end)
         AppLog.log("${run.key}: BusPlanner says delayed $minutes minutes, watching until ${end.toLocalTime()} instead of ${planned.toLocalTime()}")

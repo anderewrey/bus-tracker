@@ -63,6 +63,18 @@ class Store(context: Context) {
             prefs.edit().putString("schools", a.toString()).apply()
         }
 
+    /** Schools whose name matched several of BusPlanner's, with those names; refreshed by each scan. */
+    var schoolOptions: Map<String, List<String>>
+        get() {
+            val o = JSONObject(prefs.getString("schoolOptions", "{}"))
+            return o.keys().asSequence().map { k -> o.getJSONArray(k).let { a -> k to (0 until a.length()).map { a.getString(it) } } }.toMap()
+        }
+        set(value) {
+            val o = JSONObject()
+            value.forEach { (k, v) -> o.put(k, JSONArray(v)) }
+            prefs.edit().putString("schoolOptions", o.toString()).apply()
+        }
+
     /** Changes found by rescans that the user has not acknowledged yet. */
     var changes: List<RunChange>
         get() {

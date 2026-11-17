@@ -3,6 +3,8 @@
 
 package io.github.anderewrey.bustracker.net
 
+import io.github.anderewrey.bustracker.data.SchoolMatch
+import io.github.anderewrey.bustracker.data.matchSchool
 import io.github.anderewrey.bustracker.AppLog
 import okhttp3.Cookie
 import okhttp3.FormBody
@@ -50,6 +52,9 @@ data class StopRow(
 )
 
 data class School(val name: String, val lat: Double, val lon: Double)
+
+/** A school looked up on BusPlanner: its position, or the possible names to choose from; [option]: the name used. */
+data class SchoolLookup(val school: School?, val options: List<String>, val option: String? = null)
 
 data class Reading(
     val busLat: Double?,
@@ -256,19 +261,31 @@ class BusPlannerClient(val base: String) {
         return out
     }
 
-    /** The school's position from the SchoolInfo page: choosing it in the school dropdown, by its GUID. */
-    fun schoolPosition(name: String): School? {
+    /**
+     * Looks a school up on the SchoolInfo page by the name its stops have (DESIGN.md §5.3):
+     * [chosen] (the user's earlier choice) first, then one exact name, ignoring case and accents,
+     * or the only name containing it. Several possible names: no guess, [SchoolLookup.options]
+     * lists them for the user to choose.
+     */
+    fun schoolLookup(name: String, chosen: String? = null): SchoolLookup {
         val page = PageState(base + SCHOOL_PAGE)
         val doc = absorb(page, request(page))
-        val select = doc.selectFirst("select[name\$=cbSchool]") ?: return null
-        val option = select.select("option").firstOrNull { sameName(it.text(), name) } ?: return null
-        val form = HashMap(page.fields)
-        form[select.attr("name")] = option.attr("value")
-        form["__EVENTTARGET"] = select.attr("name")
-        form["__EVENTARGUMENT"] = ""
-        val raw = hiddenFields(Jsoup.parse(request(page, form))).entries
-            .firstOrNull { it.key.endsWith("hfSchoolPosition") }?.value ?: return null
-        return parseSchoolPosition(name, raw)
+        val select = doc.selectFirst("select[name\$=cbSchool]") ?: return SchoolLookup(null, emptyList())
+        val options = select.select("option").filter { it.attr("value").isNotBlank() }
+        return when (val m = matchSchool(options.map { it.text() }, name, chosen)) {
+            is SchoolMatch.None -> SchoolLookup(null, emptyList())
+            is SchoolMatch.Several -> SchoolLookup(null, m.options)
+            is SchoolMatch.Found -> {
+                val option = options.first { it.text() == m.option }
+                val form = HashMap(page.fields)
+                form[select.attr("name")] = option.attr("value")
+                form["__EVENTTARGET"] = select.attr("name")
+                form["__EVENTARGUMENT"] = ""
+                val raw = hiddenFields(Jsoup.parse(request(page, form))).entries
+                    .firstOrNull { it.key.endsWith("hfSchoolPosition") }?.value
+                SchoolLookup(raw?.let { parseSchoolPosition(name, it) }, emptyList(), m.option)
+            }
+        }
     }
 
     private fun resetMap() {
@@ -277,12 +294,6 @@ class BusPlannerClient(val base: String) {
         map.students = emptyList()
         map.selected = null
     }
-}
-
-private fun sameName(a: String, b: String): Boolean {
-    val x = a.trim().lowercase()
-    val y = b.trim().lowercase()
-    return x.isNotEmpty() && y.isNotEmpty() && (x == y || x.contains(y) || y.contains(x))
 }
 
 /** hfSchoolPosition is JSON with ^ in place of quotes; the position sits in a nested object. */

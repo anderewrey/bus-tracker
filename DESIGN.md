@@ -336,7 +336,7 @@ Once watching has ended, the run waits for its next monitoring period. Nothing r
 - Known gap: when the phone is off or rebooting at the period start, that period doesn't start by itself. Since the Alarm switch, opening the app during the period starts it.
 - Samsung: Battery must be "Unrestricted" for Bus Tracker, or One UI may put it to deep sleep and its alarms never fire.
 
-### 5.1 Run configuration page (planned, not built)
+### 5.1 Run configuration page (built 2026-11-17, except heads-up alerts)
 
 Everything about one run, on one page. **Tapping the run card opens it.** The card keeps what is needed quickly: Open map and the Alarm switch (§5). The global Automatic start switch stays on the run list.
 
@@ -380,6 +380,12 @@ Main Street isn't on the AM run: the bus goes through it after the stop.
 
 **Defaults when a run is first found:** no alerts unless its stop lies inside an existing zone, which then becomes an "entering → Alarm" line; the end of monitoring follows the stop type. The hardcoded zone was not carried over: since 0.12 the user draws it on the phone (§6.2).
 
+**As built (2026-11-17):**
+- **Monitoring period:** − and + buttons by 5 minutes for "before" and "after" the planned time, each 0 to 120, at least 10 minutes in all; the result shows above them ("7:18–8:18 AM"), and a "Default" button comes back to 30 and 30. The period never crosses midnight. A change applies at once, also while the run is watched (its end moves, plus any BusPlanner delay), and the Alarm switch's choices about today's period follow it (a period switched off stays off).
+- **Alerts:** the main zone only (§6.2); heads-up zones are the next step (ROADMAP).
+- **End of monitoring:** the four choices as radio buttons. "Leaves" and "enters" are about the main zone unless another zone is picked under them. "Enters" only counts once the bus was seen outside the zone in this period, like the school rule, so a bus already inside at the start doesn't end it. A zone rule with no zone, or the school rule with the school's position unknown, ends nothing: only the period's end and the switch do (the page says so in small print). Leaving the main zone no longer ends a dropoff run by itself: it is the default rule of a dropoff run. A change applies at once, also while the run is watched.
+- Period minutes and the end of monitoring are part of the run's configuration: they carry over rescans and go back to the defaults on "New configuration" (§3.2).
+
 **Not on the page:** the 30 s check interval (fixed) and per-child settings (the children on one run share the bus). Sound and bus alerts are global, not per run (user, 2026-11-05): they live on the **Settings** page.
 
 ### 5.2 Settings page (global)
@@ -390,9 +396,9 @@ Opened from **Settings** in the run list's top bar, which replaces Log out there
 - **Quiet mode:** the Quiet mode override switch (§7.1).
 - These settings are kept apart from the login: logging out keeps them.
 - **Account:** the BusPlanner email and **Log out**.
-- **Children, schools, runs and zones:** opens the overview page (§5.3).
+- **Children, schools, runs and zones:** "Open the overview" opens the overview page (§5.3).
 
-### 5.3 Overview page: children, schools, runs, zones (next improvement, not built)
+### 5.3 Overview page: children, schools, runs, zones (built 2026-11-17)
 
 Some things belong to the account, not to one run: a school's position is used by every run going there, and a zone can be used by several runs. One page lists everything the app knows, and each line opens its own page to see or change it (user, 2026-11-05).
 
@@ -418,6 +424,15 @@ Anything waiting for an answer (a stop change, a school to choose) shows in red 
 - **Several possible matches** (e.g. one name contained in another): no guess. The Changes screen shows "School: choose the right one", with each candidate's name, a small map preview of its point, and its distance from the run's stop. The choice is remembered.
 - **No match:** the school shows as "position unknown", and the user can place it on the School page.
 - Until the school's position is settled, "Bus parked at the school" is off for the runs going there: only the period's end and the Alarm switch end them, so a wrong school never ends monitoring early.
+
+**As built (2026-11-17):**
+- Opened from Settings, "Open the overview" (§5.2). A run line opens the run's page; a school line opens its School page. Zones: name and the runs using it (as main zone or end-of-monitoring zone); a zone no run uses can be deleted (with a confirmation). Drawing and changing zones stay on the run's page.
+- At the top, in red: stop changes waiting (to the Changes screen) and schools to choose among several (to the School page).
+- **School page:** the map with the school's pin (green, draggable; a tap on the map moves it there, which also places a school with no position), its circle, BusPlanner's own point (white dot) and where the bus last parked (blue dot). A slider sets the circle from 25 m to 300 m by 5 m. **Use where the bus parked**, **Reset** (BusPlanner's position, 100 m) and **Save**; nothing changes until Save. A pin left on BusPlanner's point saves only the circle.
+- **Where the bus parked:** each time the "parked at the school" rule ends a run, the middle of the readings at the spot is kept for that school, apart from the login.
+- Corrections are kept apart from the login (logging out keeps them), by the school's name. A rescan never changes them; when BusPlanner's own point of a corrected school moves more than 30 m, the Log says so (not the Changes screen, not built).
+- **Finding the school:** the name on the stop is looked up in the SchoolInfo list ignoring case, accents and extra spaces. A school chosen before comes first, then one exact name, then the only name containing it (or contained in it). Several: no guess, the school's position stays unknown and its School page lists them; a choice fetches its position at once and is remembered for the next rescans. A lookup that fails (network) keeps the position from the last scan.
+- The bus status line names the school within its circle or 150 m, whichever is larger.
 
 **Follow-up, once zone drawing exists:** the school area can be a drawn zone (e.g. the exact bus loop) instead of the circle around a point.
 

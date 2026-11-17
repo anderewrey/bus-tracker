@@ -66,6 +66,8 @@ import io.github.anderewrey.bustracker.monitor.MonitorService
 import io.github.anderewrey.bustracker.monitor.SCREEN_CHANGES
 import io.github.anderewrey.bustracker.ui.ChangesScreen
 import io.github.anderewrey.bustracker.ui.RunScreen
+import io.github.anderewrey.bustracker.ui.OverviewScreen
+import io.github.anderewrey.bustracker.ui.SchoolScreen
 import io.github.anderewrey.bustracker.ui.SettingsScreen
 import io.github.anderewrey.bustracker.ui.AllDaysScreen
 import io.github.anderewrey.bustracker.ui.AutoStartRow
@@ -144,6 +146,8 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
     var pageKey by remember { mutableStateOf<String?>(null) }
     var showSettings by remember { mutableStateOf(false) }
     var allDays by remember { mutableStateOf(false) }
+    var showOverview by remember { mutableStateOf(false) }
+    var schoolName by remember { mutableStateOf<String?>(null) }
 
     val mapRun = runs.firstOrNull { it.key == openRun }
     val pageRun = runs.firstOrNull { it.key == pageKey }
@@ -156,6 +160,8 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
             BackHandler { pageKey = null }
             RunScreen(pageRun, onBack = { pageKey = null }, onChanges = {
                 pageKey = null
+                showOverview = false
+                showSettings = false
                 onShowChanges(true)
             })
         }
@@ -164,14 +170,33 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
             AllDaysScreen(runs) { allDays = false }
         }
         !loggedIn -> LoginScreen(onLog = { showLog = true }) { loggedIn = true }
+        schoolName != null -> {
+            BackHandler { schoolName = null }
+            SchoolScreen(schoolName!!) { schoolName = null }
+        }
+        showOverview -> {
+            BackHandler { showOverview = false }
+            OverviewScreen(
+                onBack = { showOverview = false },
+                onChanges = {
+                    showOverview = false
+                    showSettings = false
+                    onShowChanges(true)
+                },
+                onSchool = { schoolName = it },
+                onRun = { pageKey = it.key },
+            )
+        }
         showSettings -> {
             BackHandler { showSettings = false }
             SettingsScreen(onBack = { showSettings = false }, onLogout = {
                 runs.forEach { MonitorService.stop(context, it.key) }
                 Session.logout(context)
                 showSettings = false
+                showOverview = false
+                schoolName = null
                 loggedIn = false
-            })
+            }, onOverview = { showOverview = true })
         }
         mapRun != null -> {
             BackHandler { onOpenRun(null) }
