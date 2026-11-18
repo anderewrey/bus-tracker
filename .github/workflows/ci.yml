@@ -2,13 +2,16 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # On every push and pull request: license headers, unit tests and a debug build, whose APKs are
-# kept on the run's page. On a push to main: also the release build of the official app,
-# published as a GitHub release (tag build-<versionCode>) for Obtainium. DESIGN.md §8.
+# kept on the run's page. On a push to main, or "Run workflow" on main (Actions tab): also the
+# release build of the official app, published as a GitHub release (tag build-<versionCode>)
+# for Obtainium. DESIGN.md §8.
 name: CI
 
 on:
   push:
   pull_request:
+  # The "Run workflow" button: builds main again, e.g. after putting a version tag on it.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -21,7 +24,7 @@ jobs:
       # throwaway debug key and main publishes nothing.
       SIGNING_KEYSTORE: ${{ secrets.SIGNING_KEYSTORE }}
       ORG_GRADLE_PROJECT_busTrackerKeystorePassword: ${{ secrets.SIGNING_PASSWORD }}
-      MAIN_PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      MAIN_PUSH: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' }}
     steps:
       # Full history and tags for the version (git describe). A pull request builds its
       # own last commit, so the version names a commit that is on its branch.
@@ -69,6 +72,8 @@ jobs:
           cp "$dir/app-x86_64-$type.apk" out/bus-tracker-emulator.apk
           jq -r '.elements[0] | "\(.versionCode) \(.versionName)"' "$dir/output-metadata.json" > out/version.txt
           cat out/version.txt
+          # The release notes: the commit's message (a "Run workflow" has no pushed commit).
+          git log -1 --format=%B > out/notes.txt
 
       - uses: actions/upload-artifact@v4
         with:
@@ -78,7 +83,7 @@ jobs:
 
   release:
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -90,8 +95,7 @@ jobs:
       - name: GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           read code name < version.txt
           gh release create "build-$code" bus-tracker.apk bus-tracker-emulator.apk \
-            -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$name" --notes "$MESSAGE"
+            -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$name" --notes-file notes.txt

@@ -66,7 +66,8 @@ git config core.hooksPath .githooks
 
 GitHub Actions runs the same header check, the unit tests and the debug build on every push,
 and keeps the APKs on the run's page. Each push to `main` also publishes the official app's
-release build under [Releases](https://github.com/anderewrey/bus-tracker/releases).
+release build under [Releases](https://github.com/anderewrey/bus-tracker/releases); **Run
+workflow** on `main` (Actions tab › CI) does it again on demand, e.g. after a version tag.
 
 ## Documentation
 
