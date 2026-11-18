@@ -30,8 +30,8 @@ fun formatDistance(m: Double): String =
     if (m < 1000) "${(m / 10).roundToInt() * 10} m" else String.format(Locale.US, "%.1f km", m / 1000)
 
 /**
- * Street name at a point, from the phone's built-in Geocoder; null when unavailable. Asks for 5
- * candidates: near a bus stop the first one is the stop, not a street (DESIGN.md §7.2).
+ * Street name(s) at a point, from the phone's built-in Geocoder; null when unavailable. Asks for
+ * 5 candidates: near a bus stop the first one is the stop, not a street (DESIGN.md §7.2).
  */
 suspend fun streetAt(context: Context, lat: Double, lon: Double): String? =
     addressesAt(context, lat, lon, 5)?.let { found ->
