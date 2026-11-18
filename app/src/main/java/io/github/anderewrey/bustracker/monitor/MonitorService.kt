@@ -218,6 +218,15 @@ class MonitorService : Service() {
     override fun onCreate() {
         super.onCreate()
         ensureChannels(this)
+        // A street found after its check: the tracking line shows it at once, in silence. A
+        // ringing alarm is left alone (showStatus), as an update would stop its sound.
+        scope.launch {
+            Session.streetFound.collect { key ->
+                if (key !in until) return@collect
+                val run = Store(this@MonitorService).runs.firstOrNull { it.key == key } ?: return@collect
+                Session.status.value[key]?.let { showStatus(run, it) }
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

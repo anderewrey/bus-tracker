@@ -3,6 +3,38 @@
 
 package io.github.anderewrey.bustracker.monitor
 
+import java.util.Locale
+
+const val FINDING_STREET = "finding street…"
+const val STREET_UNKNOWN = "street unknown"
+
+/** Where a run's street lookup stands; it never holds up a check (DESIGN.md §7.2). */
+sealed interface StreetState {
+    data object Finding : StreetState
+    data class Found(val name: String) : StreetState
+    data object Unknown : StreetState
+}
+
+/** A run's street lookup, for the bus position [at] (see [positionKey]). */
+data class StreetLookup(val at: String, val state: StreetState)
+
+/** A bus position as the street lookups key it: to 5 decimals, about 1 m. */
+fun positionKey(lat: Double, lon: Double): String = String.format(Locale.US, "%.5f,%.5f", lat, lon)
+
+/** A lookup's answer counts only while the run's bus is still where it was asked for. */
+fun stillCurrent(answerFor: String, current: StreetLookup?): Boolean = current?.at == answerFor
+
+/**
+ * The status line's place part: the school's name when the bus is at the school (no lookup),
+ * else where the street lookup for the current position stands; null with neither.
+ */
+fun placeText(school: String?, street: StreetState?): String? = school ?: when (street) {
+    StreetState.Finding -> FINDING_STREET
+    is StreetState.Found -> street.name
+    StreetState.Unknown -> STREET_UNKNOWN
+    null -> null
+}
+
 /** Streets whose candidate is within this distance of the nearest one are all shown. */
 const val STREET_MARGIN_M = 25.0
 

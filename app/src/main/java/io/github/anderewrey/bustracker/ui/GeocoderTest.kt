@@ -27,7 +27,10 @@ import androidx.compose.ui.unit.sp
 import io.github.anderewrey.bustracker.Session
 import io.github.anderewrey.bustracker.monitor.addressesAt
 import io.github.anderewrey.bustracker.monitor.distanceM
-import io.github.anderewrey.bustracker.monitor.streetAt
+import io.github.anderewrey.bustracker.monitor.GEOCODER_TIMEOUT_MS
+import io.github.anderewrey.bustracker.monitor.STREET_UNKNOWN
+import io.github.anderewrey.bustracker.monitor.streetFrom
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -43,6 +46,7 @@ fun GeocoderTest(modifier: Modifier = Modifier) {
     var open by remember { mutableStateOf(false) }
     var point by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
+    var lookup by remember { mutableStateOf<Job?>(null) }
     Column(modifier) {
         OutlinedButton(onClick = {
             open = !open
@@ -64,11 +68,13 @@ fun GeocoderTest(modifier: Modifier = Modifier) {
                     answer = "Type latitude,longitude, e.g. 44.65292,-63.64984"
                     return@TextButton
                 }
-                answer = "Asking…"
-                scope.launch {
+                answer = "Finding…"
+                // Off the main thread (addressesAt never blocks it); a new Look up replaces the last one.
+                lookup?.cancel()
+                lookup = scope.launch {
                     val found = addressesAt(context, ll[0], ll[1], 5)
                     answer = when {
-                        found == null -> "No answer (no geocoder on this phone, an error, or more than 5 s)"
+                        found == null -> "No answer (no geocoder on this phone, an error, or more than ${GEOCODER_TIMEOUT_MS / 1000} s)"
                         found.isEmpty() -> "No candidate"
                         else -> found.mapIndexed { i, a ->
                             "${i + 1}. feature: ${a.featureName}\n" +
@@ -78,7 +84,7 @@ fun GeocoderTest(modifier: Modifier = Modifier) {
                                 "   at: " + if (a.hasLatitude() && a.hasLongitude()) String.format(
                                     Locale.US, "%.5f,%.5f, %.0f m", a.latitude, a.longitude, distanceM(ll[0], ll[1], a.latitude, a.longitude),
                                 ) else "unknown"
-                        }.joinToString("\n", prefix = "Shown: ${streetAt(context, ll[0], ll[1])}\n")
+                        }.joinToString("\n", prefix = "Shown: ${streetFrom(found, ll[0], ll[1]) ?: STREET_UNKNOWN}\n")
                     }
                 }
             }) { Text("Look up") }

@@ -4,9 +4,16 @@
 package io.github.anderewrey.bustracker
 
 import io.github.anderewrey.bustracker.monitor.Place
+import io.github.anderewrey.bustracker.monitor.StreetLookup
+import io.github.anderewrey.bustracker.monitor.StreetState
 import io.github.anderewrey.bustracker.monitor.chooseStreet
+import io.github.anderewrey.bustracker.monitor.placeText
+import io.github.anderewrey.bustracker.monitor.positionKey
+import io.github.anderewrey.bustracker.monitor.stillCurrent
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StreetTest {
@@ -50,5 +57,37 @@ class StreetTest {
 
     @Test fun nothing() {
         assertNull(chooseStreet(emptyList()))
+    }
+
+    // The status line's place part, which never waits for the geocoder.
+
+    @Test fun theSchoolWinsWithoutALookup() {
+        assertEquals("Porters Lake School", placeText("Porters Lake School", null))
+        assertEquals("Porters Lake School", placeText("Porters Lake School", StreetState.Finding))
+    }
+
+    @Test fun whereTheLookupStands() {
+        assertEquals("finding street…", placeText(null, StreetState.Finding))
+        assertEquals("This Street / That Street", placeText(null, StreetState.Found("This Street / That Street")))
+        assertEquals("street unknown", placeText(null, StreetState.Unknown))
+        assertNull(placeText(null, null))
+    }
+
+    // An answer counts only for the position it was asked for.
+
+    @Test fun anAnswerForTheCurrentPositionCounts() {
+        val at = positionKey(44.7, -63.3)
+        assertTrue(stillCurrent(at, StreetLookup(at, StreetState.Finding)))
+    }
+
+    @Test fun anAnswerForAPositionTheBusLeftIsDropped() {
+        val asked = positionKey(44.7, -63.3)
+        assertFalse(stillCurrent(asked, StreetLookup(positionKey(44.70012, -63.3), StreetState.Finding)))
+        assertFalse(stillCurrent(asked, null))
+    }
+
+    @Test fun positionsTo5Decimals() {
+        assertEquals("44.70000,-63.30000", positionKey(44.7, -63.3))
+        assertEquals(positionKey(44.700001, -63.3), positionKey(44.700004, -63.3))
     }
 }
