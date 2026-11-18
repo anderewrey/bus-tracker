@@ -21,15 +21,19 @@ The order of the work. **What** each feature does and **how** is in [DESIGN.md](
 | Public | 2026-11-09 | On GitHub as `anderewrey/bus-tracker` (GPL-3.0-or-later, SPDX header in every source file), one fresh first commit: the family's details scrubbed (examples on This / That / The Other Street, Porters Lake NS), portal address on the login screen, README and LICENSE, package `io.github.anderewrey.bustracker`; the earlier history stays private |
 | — | 2026-11-14 | One notification per run (the main-zone alarm takes the tracking notification's place), clearing it no longer turns the Alarm switch off, the daily rescan no longer cancelled by the switch; times on screen in 12-hour style |
 | — | 2026-11-17 | Run page: monitoring period minutes (before and after), end of monitoring (school, leaving or entering a zone, period end); overview page (children, schools, runs, zones; delete unused zones); School page (move the point, circle 25–300 m, where the bus parked, reset, choose among several BusPlanner schools) |
+| — | 2026-11-18 | Main-zone alarm: rings 1 minute at most, goes away when the bus leaves the zone, never again at the end of watching |
+| — | 2026-11-18 | Zones drawn and changed from the overview page; "Import from Bus Tracker" in test builds (§8, Configuration import) |
 
 0.12 and 0.13 were committed together on 2026-11-06. 0.13 (with 0.11 and 0.12 in it) passed its first real run on the phone on 2026-11-09: automatic start, live checks, the main-zone alarm, and recovery from a short network loss.
 
 ## Next, in order
 
-1. **Zones, the rest:** heads-up zones (§6.1), and drawing or changing a zone from the overview page (listing and deleting unused zones are done)
+1. **Heads-up zones** (§6.1)
 2. **"Ringing" option per alert type** (§7.1)
-3. **Updates through [Obtainium](https://github.com/ImranR98/Obtainium)** (user, 2026-11-09): CI publishes a signed APK on the repo's GitHub Releases, and Obtainium on the phone watches them and installs each new build. The CI part, the app's key and its GitHub secrets are done (DESIGN.md §8, GitHub Actions; 2026-11-09); left: Obtainium's settings on the phone.
-4. **Configuration import for test builds** (user, 2026-11-09): "Bus Tracker dev" and "Bus Tracker PR N" start empty. An "Import from Bus Tracker" action, shown only in those builds, copies the official app's sign-in, zones, runs and settings in one tap. The official app exports them only to apps signed with the same key (a signature-level permission). A one-way copy, not shared data: a test build can't damage the official setup. The official app needs the export first, so it ships in an official build before the import can be used.
+
+## Later
+
+- **Updates through [Obtainium](https://github.com/ImranR98/Obtainium)** (user, 2026-11-09; not a short-term goal, user 2026-11-18): CI publishes a signed APK on the repo's GitHub Releases, and Obtainium on the phone watches them and installs each new build. The CI part, the app's key and its GitHub secrets are done (DESIGN.md §8, GitHub Actions; 2026-11-09); left: Obtainium's settings on the phone.
 
 ## Waiting on a real event
 

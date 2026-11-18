@@ -481,21 +481,43 @@ object Session {
      * - [copy] true: a new zone for this run only; the others keep the old one.
      */
     fun saveZone(context: Context, key: String, zone: Zone, copy: Boolean = false): List<String> {
+        val existing = _zones.value.any { it.id == zone.id }
+        val saved = storeZone(context, zone, copy, "for $key")
+        setMainZone(context, key, saved.id)
+        return if (existing && !copy) emptyList() else adoptZone(context, saved)
+    }
+
+    /**
+     * Saves a zone from the overview page (DESIGN.md §5.3), for no run in particular. A changed
+     * zone changes for every run using it. A new one becomes the main zone of every run without
+     * one whose stop is inside it; returns those runs' keys.
+     */
+    fun saveZone(context: Context, zone: Zone): List<String> {
+        val existing = _zones.value.any { it.id == zone.id }
+        val saved = storeZone(context, zone, copy = false, why = "from the overview")
+        return if (existing) emptyList() else adoptZone(context, saved)
+    }
+
+    /** Writes the zone (a new id when new or a copy) and logs its corners. */
+    private fun storeZone(context: Context, zone: Zone, copy: Boolean, why: String): Zone {
         val zs = ZoneStore(context)
         val existing = zs.zones.any { it.id == zone.id }
         val saved = if (copy || !existing) zone.copy(id = UUID.randomUUID().toString()) else zone
         zs.zones = if (existing && !copy) zs.zones.map { if (it.id == zone.id) saved else it } else zs.zones + saved
         _zones.value = zs.zones
         AppLog.log(
-            "zone ${saved.name} ${if (existing && !copy) "changed" else "saved"} for $key, ${saved.corners.size} corners: " +
+            "zone ${saved.name} ${if (existing && !copy) "changed" else "saved"} $why, ${saved.corners.size} corners: " +
                 saved.corners.joinToString(" ") { (lat, lon) -> String.format(Locale.US, "%.6f,%.6f", lat, lon) }
         )
-        setMainZone(context, key, saved.id)
-        if (existing) return emptyList()
+        return saved
+    }
+
+    /** A new zone becomes the main zone of the runs without one whose stop is inside it. */
+    private fun adoptZone(context: Context, zone: Zone): List<String> {
         val others = _runs.value.filter { r ->
-            r.key != key && r.mainZone == null && r.lat != null && r.lon != null && saved.contains(r.lat, r.lon)
+            r.mainZone == null && r.lat != null && r.lon != null && zone.contains(r.lat, r.lon)
         }
-        others.forEach { setMainZone(context, it.key, saved.id) }
+        others.forEach { setMainZone(context, it.key, zone.id) }
         return others.map { it.key }
     }
 

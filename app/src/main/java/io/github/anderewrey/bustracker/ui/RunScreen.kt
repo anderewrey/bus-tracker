@@ -76,7 +76,9 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
 
     if (editing) {
         BackHandler { editing = false }
-        ZoneEditorScreen(run, editZone, taken = { nameTaken(allZones, it, editZone?.id) }, onCancel = { editing = false }) { name, corners ->
+        val stop = if (run.lat != null && run.lon != null) run.lat to run.lon else null
+        val title = editZone?.let { "Main zone · ${it.name}" } ?: "New main zone · ${run.key}"
+        ZoneEditorScreen(stop, title, editZone, taken = { nameTaken(allZones, it, editZone?.id) }, onCancel = { editing = false }) { name, corners ->
             val zone = Zone(editZone?.id ?: "", name, ZoneRole.MAIN, corners)
             val base = editZone
             if (base != null && Session.runsUsing(base.id).any { it.key != run.key }) {

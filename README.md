@@ -47,7 +47,9 @@ type: `arm64-v8a` for most phones, `x86_64` for the emulator.
 
 The version comes from git; there is nothing to edit. Only a release build of a clean `main` is
 the app "Bus Tracker"; any other build installs beside it as "Bus Tracker dev" (or "Bus Tracker
-PR 12" for a pull request on GitHub), with its own data. See DESIGN.md §8, Versions.
+PR 12" for a pull request on GitHub), with its own data. Such a test build can copy the official
+app's setup in one tap ("Import from Bus Tracker"), when both are signed with the same key. See
+DESIGN.md §8, Versions and Configuration import.
 
 Builds are signed with your own key when `~/.gradle/gradle.properties` names it, otherwise with
 Android's debug key:

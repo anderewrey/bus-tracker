@@ -407,7 +407,7 @@ Some things belong to the account, not to one run: a school's position is used b
 | **Children** | name, school, runs | read-only: everything comes from BusPlanner |
 | **Schools** | name, position source ("BusPlanner" or "corrected"), runs going there | the School page (below) |
 | **Runs** | bus, stop, time | the run page (§5.1) |
-| **Zones** | name, runs using it | the zone page (draw, edit, delete; §6.2) |
+| **Zones** | name, runs using it | the zone screen (draw, edit, delete; §6.2) |
 
 Anything waiting for an answer (a stop change, a school to choose) shows in red at the top, linking to the Changes screen.
 
@@ -426,7 +426,8 @@ Anything waiting for an answer (a stop change, a school to choose) shows in red 
 - Until the school's position is settled, "Bus parked at the school" is off for the runs going there: only the period's end and the Alarm switch end them, so a wrong school never ends monitoring early.
 
 **As built (2026-11-17):**
-- Opened from Settings, "Open the overview" (§5.2). A run line opens the run's page; a school line opens its School page. Zones: name and the runs using it (as main zone or end-of-monitoring zone); a zone no run uses can be deleted (with a confirmation). Drawing and changing zones stay on the run's page.
+- Opened from Settings, "Open the overview" (§5.2). A run line opens the run's page; a school line opens its School page. Zones: name and the runs using it (as main zone or end-of-monitoring zone); a zone no run uses can be deleted (with a confirmation).
+- **Zones from the overview** (2026-11-18): a zone line opens the zone screen (§6.2) on that zone; Save changes it for every run using it (there is no "this run only" here: that stays on the run's page). **Draw new zone** opens the zone screen on the first run's stop; the new zone becomes the main zone of every run without one whose stop is inside it (the page says which), else it waits to be chosen on a run's page.
 - At the top, in red: stop changes waiting (to the Changes screen) and schools to choose among several (to the School page).
 - **School page:** the map with the school's pin (green, draggable; a tap on the map moves it there, which also places a school with no position), its circle, BusPlanner's own point (white dot) and where the bus last parked (blue dot). A slider sets the circle from 25 m to 300 m by 5 m. **Use where the bus parked**, **Reset** (BusPlanner's position, 100 m) and **Save**; nothing changes until Save. A pin left on BusPlanner's point saves only the circle.
 - **Where the bus parked:** each time the "parked at the school" rule ends a run, the middle of the readings at the spot is kept for that school, apart from the login.
@@ -520,7 +521,7 @@ There is no decoration: no coloured icon, no map snapshot, nothing beyond what t
   - BusPlanner notices and the "no vehicle" warning stay separate notifications.
 - **No vehicle** (user, 2026-11-06: the full text in the header was annoying): the status line (card, map, tracking notification) just says "No vehicle". BusPlanner's full message pops up once at the top of the map area (user, 2026-11-06), just under the header, only as the answer to a tap on ↻ (user, 2026-11-06: simpler than any "once" rule); it goes away by itself after 8 s, as a snackbar that goes away by itself (not a toast: Android 12+ cuts toasts to two lines). The one-time "no vehicle" warning notification keeps the full text. Without a bulletin and without a position: "No bus position".
 
-### 7.3 Notice hints (decided 2026-11-06, not built)
+### 7.3 Notice hints (decided 2026-11-06, built in 0.11 except the cancelled bus)
 
 The user wants the app to act on what BusPlanner notices say, not only ring them. The newest notice for the run's bus (§2.4) is the one that counts.
 
@@ -556,10 +557,15 @@ The user wants the app to act on what BusPlanner notices say, not only ring them
     | Anything else (any debug build, other branch, uncommitted changes, detached HEAD) | `….bustracker.dev` | Bus Tracker dev |
 
     Each app has its own data (sign-in, zones, runs); if two have the same run turned on, both ring. A bad official build is undone by a `git revert` on `main`: a newer commit, so it installs as an update.
+- **Configuration import** (user, 2026-11-09; built 2026-11-18): a test build starts empty, so it offers **Import from Bus Tracker**, on the login screen (one tap) and at the bottom of the Settings page ("Test build", after a confirmation). The official app never shows it.
+  - It copies the official app's sign-in, runs, zones, schools (corrections, where the bus parked), the Alarm switch's choices and the settings, including the ringing alerts' sound and vibration. This build's own are replaced; its monitoring stops first, and its automatic starts follow the copy.
+  - A one-way copy, not shared data: the official app only answers, so a test build can't change it. The official app logs "configuration exported to <app id>", the test build "configuration imported".
+  - **How:** the official app has a `ContentProvider` (`content://io.github.anderewrey.bustracker.export`, method `export`) that answers only apps holding the permission `io.github.anderewrey.bustracker.permission.EXPORT_CONFIG`, whose protection level is *signature*: Android grants it only to apps signed with the app's key. Every build declares and holds it under that one name. The answer is JSON: each preference file with its values' types, the password decrypted (each app encrypts it with its own Keystore key, so it travels apart and is encrypted again on arrival), and the ringing channels' sound and vibration (the channel versions stay each app's own).
+  - The official app needs a build with the export first; until then the import says "Bus Tracker isn't installed, or its version can't export yet". A build signed with another key (a clone without the key, §Signing) can't be installed next to the official app at all, as both declare the permission.
 - **Build types** (user, 2026-11-09): the official app is a **release** build, test apps are **debug** builds.
   - **Release:** optimized and shrunk by R8 (16 MB instead of 46 MB for the phone), not debuggable. Names are kept (`-dontobfuscate` in `app/proguard-rules.pro`), so logs and crash traces stay readable. The app has no reflection of its own; the libraries bring their own R8 rules.
   - **Debug:** not optimized; debuggable, so a computer with USB debugging can read the app's files (`adb shell run-as`) and force a downgrade.
-- **Signing:** an update installs only if it is signed with the same key as the installed app, and changing the official app's key means uninstalling it (its data is lost). So there is **one key for everything**, release and debug, local and GitHub; the planned configuration import (ROADMAP) also needs the same key on both apps.
+- **Signing:** an update installs only if it is signed with the same key as the installed app, and changing the official app's key means uninstalling it (its data is lost). So there is **one key for everything**, release and debug, local and GitHub; the configuration import (above) also needs the same key on both apps.
   - The key is a PKCS12 file outside the repo, made once by the owner with `keytool`, with one password for the file and the key (alias `bus-tracker`). Losing it means no more updates for the installed app: keep a backup.
   - Local builds read it from `~/.gradle/gradle.properties` (`busTrackerKeystore`, `busTrackerKeystorePassword`, optional `busTrackerKeyAlias`). GitHub reads it from the secrets `SIGNING_KEYSTORE` (the file in base64) and `SIGNING_PASSWORD`.
   - Without the key, builds are signed with Android's debug key: a clone builds and installs as is.

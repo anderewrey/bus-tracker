@@ -12,6 +12,20 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- Configuration import (DESIGN.md §8): the official app shares its setup only with apps
+         signed with the same key. Every build declares and holds the permission; the name is
+         fixed, so the official app and the test builds share it. -->
+    <permission
+        android:name="io.github.anderewrey.bustracker.permission.EXPORT_CONFIG"
+        android:label="Read Bus Tracker's configuration"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="io.github.anderewrey.bustracker.permission.EXPORT_CONFIG" />
+
+    <!-- A test build asks the official app for its configuration. -->
+    <queries>
+        <package android:name="io.github.anderewrey.bustracker" />
+    </queries>
+
     <application
         android:name=".BusTrackerApp"
         android:allowBackup="false"
@@ -36,6 +50,12 @@
         <receiver
             android:name=".monitor.StartAlarmReceiver"
             android:exported="false" />
+
+        <provider
+            android:name=".ConfigExport"
+            android:authorities="${applicationId}.export"
+            android:exported="true"
+            android:permission="io.github.anderewrey.bustracker.permission.EXPORT_CONFIG" />
 
         <receiver
             android:name=".monitor.RescheduleReceiver"

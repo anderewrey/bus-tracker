@@ -3,6 +3,7 @@
 
 package io.github.anderewrey.bustracker.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -30,11 +32,14 @@ import io.github.anderewrey.bustracker.Session
 import io.github.anderewrey.bustracker.data.PositionSource
 import io.github.anderewrey.bustracker.data.Run
 import io.github.anderewrey.bustracker.data.Zone
+import io.github.anderewrey.bustracker.data.ZoneRole
+import io.github.anderewrey.bustracker.data.nameTaken
 
 /**
  * Everything the app knows, by kind (DESIGN.md §5.3): children, schools, runs and zones. Each
- * school opens its School page and each run its page; a zone no run uses can be deleted.
- * Anything waiting for an answer shows in red at the top.
+ * school opens its School page and each run its page. A zone opens the zone screen, to change it
+ * for every run using it; Draw new zone adds one; a zone no run uses can be deleted. Anything
+ * waiting for an answer shows in red at the top.
  */
 @Composable
 fun OverviewScreen(onBack: () -> Unit, onChanges: () -> Unit, onSchool: (String) -> Unit, onRun: (Run) -> Unit) {
@@ -45,6 +50,26 @@ fun OverviewScreen(onBack: () -> Unit, onChanges: () -> Unit, onSchool: (String)
     val zones by Session.zones.collectAsState()
     val changes by Session.changes.collectAsState()
     var deleting by remember { mutableStateOf<Zone?>(null) }
+    // The zone screen: open with null for a new zone, or with the zone to change.
+    var editing by remember { mutableStateOf(false) }
+    var editZone by remember { mutableStateOf<Zone?>(null) }
+    var notice by remember { mutableStateOf<String?>(null) }
+
+    if (editing) {
+        BackHandler { editing = false }
+        val base = editZone
+        // A new zone opens on the first run's stop; a zone being changed, on itself.
+        val center = if (base == null) runs.firstOrNull { it.lat != null && it.lon != null }?.let { it.lat!! to it.lon!! } else null
+        ZoneEditorScreen(
+            center, base?.let { "Zone · ${it.name}" } ?: "New zone", base,
+            taken = { nameTaken(zones, it, base?.id) }, onCancel = { editing = false },
+        ) { name, corners ->
+            val others = Session.saveZone(context, Zone(base?.id ?: "", name, base?.role ?: ZoneRole.MAIN, corners))
+            notice = if (others.isEmpty()) null else "$name is now the main zone of ${others.joinToString()}: its stop is inside."
+            editing = false
+        }
+        return
+    }
 
     Column(
         Modifier.safeDrawingPadding().padding(16.dp).verticalScroll(rememberScrollState()),
@@ -96,12 +121,17 @@ fun OverviewScreen(onBack: () -> Unit, onChanges: () -> Unit, onSchool: (String)
         runs.forEach { run -> Line("${run.bus} · ${run.plannedLine} ›", run.address) { onRun(run) } }
 
         Section("Zones")
-        if (zones.isEmpty()) Text("None: draw one on a run's page.")
+        if (zones.isEmpty()) Text("None yet.")
         zones.forEach { zone ->
             val users = runs.filter { it.mainZone == zone.id || it.endZone == zone.id }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f).padding(vertical = 6.dp)) {
-                    Text(zone.name, style = MaterialTheme.typography.bodyLarge)
+                Column(
+                    Modifier.weight(1f).clickable {
+                        editZone = zone
+                        editing = true
+                    }.padding(vertical = 6.dp),
+                ) {
+                    Text("${zone.name} ›", style = MaterialTheme.typography.bodyLarge)
                     Text(
                         if (users.isEmpty()) "Used by no run" else "Used by ${users.joinToString { it.key }}",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -110,7 +140,15 @@ fun OverviewScreen(onBack: () -> Unit, onChanges: () -> Unit, onSchool: (String)
                 if (users.isEmpty()) TextButton(onClick = { deleting = zone }) { Text("Delete") }
             }
         }
-        Text("Draw and change zones on a run's page.", style = MaterialTheme.typography.bodySmall)
+        notice?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        OutlinedButton(onClick = {
+            editZone = null
+            editing = true
+        }) { Text("Draw new zone") }
+        Text(
+            "A change here applies to every run using the zone. To give a run its own zone, or another one, use the run's page.",
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 
     deleting?.let { zone ->
