@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.anderewrey.bustracker.Session
 import io.github.anderewrey.bustracker.monitor.addressesAt
+import io.github.anderewrey.bustracker.monitor.distanceM
 import io.github.anderewrey.bustracker.monitor.streetAt
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -73,7 +74,10 @@ fun GeocoderTest(modifier: Modifier = Modifier) {
                             "${i + 1}. feature: ${a.featureName}\n" +
                                 "   thoroughfare: ${a.thoroughfare}\n" +
                                 "   subThoroughfare: ${a.subThoroughfare}\n" +
-                                "   line 0: ${if (a.maxAddressLineIndex >= 0) a.getAddressLine(0) else null}"
+                                "   line 0: ${if (a.maxAddressLineIndex >= 0) a.getAddressLine(0) else null}\n" +
+                                "   at: " + if (a.hasLatitude() && a.hasLongitude()) String.format(
+                                    Locale.US, "%.5f,%.5f, %.0f m", a.latitude, a.longitude, distanceM(ll[0], ll[1], a.latitude, a.longitude),
+                                ) else "unknown"
                         }.joinToString("\n", prefix = "Shown: ${streetAt(context, ll[0], ll[1])}\n")
                     }
                 }

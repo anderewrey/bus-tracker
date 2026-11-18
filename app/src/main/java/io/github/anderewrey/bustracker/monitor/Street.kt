@@ -3,20 +3,28 @@
 
 package io.github.anderewrey.bustracker.monitor
 
-/** One geocoder candidate: its street (thoroughfare) and its first address line. */
-data class Place(val street: String?, val line: String?)
+/** Streets whose candidate is within this distance of the nearest one are all shown. */
+const val STREET_MARGIN_M = 25.0
 
 /**
- * The street text for a bus position, from the geocoder's candidates in its own order
- * (DESIGN.md §7.2). A hint for the user, not a fact: every distinct street name among the
- * candidates, the most frequent first (ties in the geocoder's order), joined by " / ". With no
- * street at all (near a bus stop the first candidate is often the stop itself), the first
+ * One geocoder candidate: its street (thoroughfare), how far its own position is from the point
+ * asked (null when the geocoder gave none), and its first address line.
+ */
+data class Place(val street: String?, val distanceM: Double?, val line: String?)
+
+/**
+ * The street text for a bus position (DESIGN.md §7.2), a hint for the user, not a fact. Among
+ * the candidates with a street and a position, the nearest one sets d; every street within
+ * d + [STREET_MARGIN_M] is shown, nearest first, each name once, joined by " / ". With no such
+ * candidate (near a bus stop the first one is often the stop, with no street), the first
  * candidate's address line before its first comma.
  */
 fun chooseStreet(places: List<Place>): String? {
-    val streets = places.mapNotNull { it.street?.trim()?.takeIf(String::isNotEmpty) }
-    if (streets.isEmpty()) return places.firstOrNull()?.line?.substringBefore(',')?.trim()?.takeIf { it.isNotEmpty() }
-    val counts = streets.groupingBy { it }.eachCount()
-    // distinct() keeps the geocoder's order; sortedByDescending is stable, so ties keep it.
-    return streets.distinct().sortedByDescending { counts.getValue(it) }.joinToString(" / ")
+    val near = places.mapNotNull { p ->
+        val street = p.street?.trim()?.takeIf { it.isNotEmpty() }
+        if (street != null && p.distanceM != null) street to p.distanceM else null
+    }
+    if (near.isEmpty()) return places.firstOrNull()?.line?.substringBefore(',')?.trim()?.takeIf { it.isNotEmpty() }
+    val d = near.minOf { it.second }
+    return near.filter { it.second < d + STREET_MARGIN_M }.sortedBy { it.second }.map { it.first }.distinct().joinToString(" / ")
 }

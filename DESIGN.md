@@ -510,14 +510,10 @@ There is no decoration: no coloured icon, no map snapshot, nothing beyond what t
   - the distance from the stop
   - the street name from the phone's built-in Geocoder (see **Street name** below)
   - the raw GPS fix time as reported by the server, with no "X s ago"
-- **Street name** (2026-11-18): near a bus stop, Google's geocoder answers with the stop first, with no street (`thoroughfare` empty) and a stop name as its address line, like `This St After That St (1234), Porters Lake, NS…`. That was 45 of 529 lookups in a week of logs, and the status line showed the whole stop line. The street name is a hint for the user, not a fact (user, 2026-11-18: no code judging finer and finer cases), so when the geocoder is ambiguous the app shows several names. It asks for 5 candidates (`getFromLocation(lat, lon, 5)`):
-  - one street name among them: that name (`This Street`);
-  - several: all of them, the most frequent first, ties in the geocoder's order, joined by " / " (`That Street / This Street` at a stop where three houses on the cross street came before one on the bus's street);
-  - none: the first candidate's address line before its first comma (the stop's name).
-  
-  Nothing is specific to one city. *Until 2026-11-18: one candidate, its street or else its whole address line.* Nominatim (OpenStreetMap) was compared and not kept as the main source: it gave Google's street for only 15 of 25 ordinary points, often a cross street.
-  - **Exceptions looked for, none kept** (2026-11-18, 14 positions from the logs on the emulator: mid-block, corners, stops): would the first candidate alone be better? Sometimes (an apartment on a nearby street added as a 5th candidate), but not by a simple visible criterion: a first candidate with a house number (`subThoroughfare`) was also, once, a trail beside the road while the bus was on the main road named by the others. So the rule stays as above.
-  - **Test geocoder** (Debug screen): looks up a point (filled in with the last bus position) and lists the 5 candidates (`featureName`, `thoroughfare`, `subThoroughfare`, first address line) and the street the app would show. On the screen only, never in the Log.
+- **Street name** (2026-11-18): near a bus stop, Google's geocoder answers with the stop first, with no street (`thoroughfare` empty) and a stop name as its address line, like `This St After That St (1234), Porters Lake, NS…`. That was 45 of 529 lookups in a week of logs, and the status line showed the whole stop line. The street name is a hint for the user, not a fact (user, 2026-11-18: no code judging finer and finer cases): when the geocoder is ambiguous the app shows several names. It asks for 5 candidates (`getFromLocation(lat, lon, 5)`) and measures how far each one's own position (a building, not the street) is from the bus; among those with a street, the nearest sets d, and every street within d + 25 m (`STREET_MARGIN_M`) is shown, nearest first, each name once, joined by " / " (`This Street / That Street`). With no candidate that has a street and a position: the first candidate's address line before its first comma (the stop's name). Nothing is specific to one city.
+  - **Why distance** (2026-11-18, 17 positions from the logs on the emulator: mid-block, corners, stops): Google's order is not the distance order (fully sorted in 4 of 17; the first candidate is the nearest in 14), and the streets that didn't belong were among the farthest: a house on a nearby street at 59 m or 78 m while the bus's street had one at 15 m, an apartment at 157–184 m, and a candidate whose street is just "2" at 61 m against 17 m. With the margin: 12 positions show one name, 5 show two or three (corners, and a junction where a trail and two roads meet). Accepted: at one stop it shows only the cross street (47 m against 93 m for the bus's street).
+  - *Earlier on 2026-11-18, not kept:* the street whose words come first in the stop's name (judging too fine), then every name among the 5, the most frequent first (kept far-away streets). *Until 2026-11-18: one candidate, its street or else its whole address line.* Nominatim (OpenStreetMap) was compared and not kept as the main source: it gave Google's street for only 15 of 25 ordinary points, often a cross street.
+  - **Test geocoder** (Debug screen): looks up a point (filled in with the last bus position) and lists the 5 candidates (`featureName`, `thoroughfare`, `subThoroughfare`, first address line, position and distance) and the street text the app would show. On the screen only, never in the Log.
 - **Buttons:** Open map and **Silence** (stops the sound only).
 - **Tracking notification:** shows the same text line plus the run label, with Open map and **Turn off** (turns the run's Alarm switch off, §5). *Up to 0.10: Re-arm alarm and Stop monitoring.*
   - It updates silently on each fix.
@@ -604,7 +600,7 @@ The user wants the app to act on what BusPlanner notices say, not only ring them
   - the stop marker
   - the zone polygons (heads-up and main styled differently)
   - the drawing-mode overlay
-- **Street names:** `android.location.Geocoder`, which is free and needs no key; 5 candidates per lookup, their street names shown as in §7.2. A phone (or emulator image) without Google services has no geocoder: no street in the status line.
+- **Street names:** `android.location.Geocoder`, which is free and needs no key; 5 candidates per lookup, the nearest streets shown as in §7.2. A phone (or emulator image) without Google services has no geocoder: no street in the status line.
 
 ---
 

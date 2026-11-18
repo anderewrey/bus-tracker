@@ -35,7 +35,13 @@ fun formatDistance(m: Double): String =
  */
 suspend fun streetAt(context: Context, lat: Double, lon: Double): String? =
     addressesAt(context, lat, lon, 5)?.let { found ->
-        chooseStreet(found.map { Place(it.thoroughfare, if (it.maxAddressLineIndex >= 0) it.getAddressLine(0) else it.featureName) })
+        chooseStreet(found.map {
+            Place(
+                it.thoroughfare,
+                if (it.hasLatitude() && it.hasLongitude()) distanceM(lat, lon, it.latitude, it.longitude) else null,
+                if (it.maxAddressLineIndex >= 0) it.getAddressLine(0) else it.featureName,
+            )
+        })
     }
 
 /**
