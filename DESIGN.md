@@ -508,8 +508,15 @@ There is no decoration: no coloured icon, no map snapshot, nothing beyond what t
 - **Title:** `B101 entered <zone name as typed by the user>`.
 - **Text:** `1.1 km · <street> · GPS 7:41:20`. The parts are:
   - the distance from the stop
-  - the street name from the phone's built-in Geocoder
+  - the street name from the phone's built-in Geocoder (see **Street name** below)
   - the raw GPS fix time as reported by the server, with no "X s ago"
+- **Street name** (2026-11-18): near a bus stop, Google's geocoder answers with the stop first, with no street (`thoroughfare` empty) and a stop name as its address line, like `This St After That St (1234), Porters Lake, NS…`. That was 45 of 529 lookups in a week of logs, and the status line showed the whole stop line. The app now asks for 5 candidates (`getFromLocation(lat, lon, 5)`):
+  - a first candidate with a street: that street, as before;
+  - a stop first: the next candidates are houses, often on the cross street first (seen on the emulator at a public stop: three houses on the cross street, then one on the bus's street). The bus is on the street a stop's name gives first, so the candidates' street whose name (its words of 4 letters or more, whole words) shows up earliest in the stop's name wins; with none in it, the first candidate with a street;
+  - no street at all: the stop's name, the line before its first comma.
+  
+  Nothing is specific to one city. Tested on 3 stops on the emulator (Google APIs image): the right street each time, where "the first street" alone took the cross street once. *Until 2026-11-18: one candidate, its street or else its whole address line.* Nominatim (OpenStreetMap) was compared and not kept as the main source: it gave Google's street for only 15 of 25 ordinary points, often a cross street.
+  - **Test geocoder** (Debug screen): looks up a point (filled in with the last bus position) and lists the 5 candidates (`featureName`, `thoroughfare`, `subThoroughfare`, first address line) and the street the app would show. On the screen only, never in the Log.
 - **Buttons:** Open map and **Silence** (stops the sound only).
 - **Tracking notification:** shows the same text line plus the run label, with Open map and **Turn off** (turns the run's Alarm switch off, §5). *Up to 0.10: Re-arm alarm and Stop monitoring.*
   - It updates silently on each fix.
@@ -596,7 +603,7 @@ The user wants the app to act on what BusPlanner notices say, not only ring them
   - the stop marker
   - the zone polygons (heads-up and main styled differently)
   - the drawing-mode overlay
-- **Street names:** `android.location.Geocoder`, which is free and needs no key.
+- **Street names:** `android.location.Geocoder`, which is free and needs no key; 5 candidates per lookup, the street chosen as in §7.2. A phone (or emulator image) without Google services has no geocoder: no street in the status line.
 
 ---
 

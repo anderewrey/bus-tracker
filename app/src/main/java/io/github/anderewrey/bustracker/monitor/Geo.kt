@@ -29,22 +29,33 @@ fun distanceM(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
 fun formatDistance(m: Double): String =
     if (m < 1000) "${(m / 10).roundToInt() * 10} m" else String.format(Locale.US, "%.1f km", m / 1000)
 
-/** Street name at a point, from the phone's built-in Geocoder; null when unavailable. */
-suspend fun streetAt(context: Context, lat: Double, lon: Double): String? {
+/**
+ * Street name at a point, from the phone's built-in Geocoder; null when unavailable. Asks for 5
+ * candidates: near a bus stop the first one is the stop, not a street (DESIGN.md §7.2).
+ */
+suspend fun streetAt(context: Context, lat: Double, lon: Double): String? =
+    addressesAt(context, lat, lon, 5)?.let { found ->
+        chooseStreet(found.map { Place(it.thoroughfare, if (it.maxAddressLineIndex >= 0) it.getAddressLine(0) else it.featureName) })
+    }
+
+/**
+ * Up to [max] candidates from the phone's built-in Geocoder, in its own order; null when there
+ * is no geocoder, it failed, or it took more than 5 s.
+ */
+suspend fun addressesAt(context: Context, lat: Double, lon: Double, max: Int): List<Address>? {
     if (!Geocoder.isPresent()) return null
     val geocoder = Geocoder(context, Locale.getDefault())
-    val address: Address? = withTimeoutOrNull(5000) {
+    return withTimeoutOrNull(5000) {
         if (Build.VERSION.SDK_INT >= 33) {
             suspendCancellableCoroutine { cont ->
-                geocoder.getFromLocation(lat, lon, 1, object : Geocoder.GeocodeListener {
-                    override fun onGeocode(addresses: MutableList<Address>) = cont.resume(addresses.firstOrNull())
+                geocoder.getFromLocation(lat, lon, max, object : Geocoder.GeocodeListener {
+                    override fun onGeocode(addresses: MutableList<Address>) = cont.resume(addresses.toList())
                     override fun onError(errorMessage: String?) = cont.resume(null)
                 })
             }
         } else {
             @Suppress("DEPRECATION")
-            runCatching { geocoder.getFromLocation(lat, lon, 1)?.firstOrNull() }.getOrNull()
+            runCatching { geocoder.getFromLocation(lat, lon, max)?.toList() }.getOrNull()
         }
     }
-    return address?.thoroughfare ?: address?.getAddressLine(0)
 }
