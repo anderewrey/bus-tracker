@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import io.github.anderewrey.bustracker.data.AppSettings
+import io.github.anderewrey.bustracker.isTestBuild
 import io.github.anderewrey.bustracker.data.Store
 import io.github.anderewrey.bustracker.monitor.Ringing
 import io.github.anderewrey.bustracker.monitor.channelId
@@ -47,7 +48,7 @@ import io.github.anderewrey.bustracker.monitor.testRing
 
 /** Settings that apply to all runs: sound, bus alerts and the account. */
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, onOverview: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, onOverview: () -> Unit, onImported: () -> Unit) {
     val context = LocalContext.current
     val settings = remember { AppSettings(context) }
     // Bumped after each change, and when coming back from Android's settings, to read everything again.
@@ -106,6 +107,14 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, onOverview: () -> U
         Text(store.email ?: "")
         Text(store.portal?.removePrefix("https://") ?: "", style = MaterialTheme.typography.bodySmall)
         OutlinedButton(onClick = onLogout) { Text("Log out") }
+
+        if (isTestBuild(context)) {
+            Section("Test build")
+            ImportRow(confirm = true) {
+                version++
+                onImported()
+            }
+        }
     }
 }
 

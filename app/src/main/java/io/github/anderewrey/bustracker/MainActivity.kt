@@ -65,6 +65,7 @@ import io.github.anderewrey.bustracker.monitor.EXTRA_SILENCE
 import io.github.anderewrey.bustracker.monitor.MonitorService
 import io.github.anderewrey.bustracker.monitor.SCREEN_CHANGES
 import io.github.anderewrey.bustracker.ui.ChangesScreen
+import io.github.anderewrey.bustracker.ui.ImportRow
 import io.github.anderewrey.bustracker.ui.RunScreen
 import io.github.anderewrey.bustracker.ui.OverviewScreen
 import io.github.anderewrey.bustracker.ui.SchoolScreen
@@ -169,7 +170,7 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
             BackHandler { allDays = false }
             AllDaysScreen(runs) { allDays = false }
         }
-        !loggedIn -> LoginScreen(onLog = { showLog = true }) { loggedIn = true }
+        !loggedIn -> LoginScreen(onLog = { showLog = true }, onImported = { loggedIn = Store(context).hasLogin }) { loggedIn = true }
         schoolName != null -> {
             BackHandler { schoolName = null }
             SchoolScreen(schoolName!!) { schoolName = null }
@@ -196,7 +197,7 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
                 showOverview = false
                 schoolName = null
                 loggedIn = false
-            }, onOverview = { showOverview = true })
+            }, onOverview = { showOverview = true }, onImported = { loggedIn = Store(context).hasLogin })
         }
         mapRun != null -> {
             BackHandler { onOpenRun(null) }
@@ -220,7 +221,7 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
 }
 
 @Composable
-private fun LoginScreen(onLog: () -> Unit, onDone: () -> Unit) {
+private fun LoginScreen(onLog: () -> Unit, onImported: () -> Unit, onDone: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     // A login saved before the portal field keeps its email: only the portal and password are typed.
@@ -278,6 +279,8 @@ private fun LoginScreen(onLog: () -> Unit, onDone: () -> Unit) {
             },
         ) { Text(if (busy) "Logging in and scanning…" else "Log in") }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        // A test build starts empty: one tap copies the official app's setup instead.
+        ImportRow(confirm = false, onDone = onImported)
     }
 }
 

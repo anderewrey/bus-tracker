@@ -46,7 +46,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import io.github.anderewrey.bustracker.AppLog
-import io.github.anderewrey.bustracker.data.Run
 import io.github.anderewrey.bustracker.data.Zone
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
@@ -81,11 +80,13 @@ private const val DOT_DP = 28
  * each tap on the map places the next corner, joined to the previous one by a straight line;
  * Undo removes the last one; Done closes the shape (last corner back to the first). Corners are
  * dots that can be dragged, before and after Done. [taken] tells a name another zone already has
- * (Save waits for a new one). [onSave] gets the name and corners.
+ * (Save waits for a new one). [onSave] gets the name and corners. The map opens on [center] (a
+ * run's stop), else on the zone, and [title] heads the screen.
  */
 @Composable
 fun ZoneEditorScreen(
-    run: Run,
+    center: Pair<Double, Double>?,
+    title: String,
     zone: Zone?,
     taken: (String) -> Boolean,
     onCancel: () -> Unit,
@@ -107,7 +108,7 @@ fun ZoneEditorScreen(
         MapView(context).apply {
             onCreate(null)
             getMapAsync { map ->
-                val stop = if (run.lat != null && run.lon != null) LatLng(run.lat, run.lon) else null
+                val stop = center?.let { (lat, lon) -> LatLng(lat, lon) }
                 val target = stop ?: corners.firstOrNull() ?: LatLng(0.0, 0.0)
                 map.cameraPosition = CameraPosition.Builder().target(target).zoom(if (stop != null || corners.isNotEmpty()) 14.5 else 2.0).build()
                 map.addOnCameraMoveListener { cameraTick++ }
@@ -159,7 +160,7 @@ fun ZoneEditorScreen(
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onCancel) { Text("Cancel") }
             Text(
-                if (zone == null) "New main zone · ${run.key}" else "Main zone · ${zone.name}",
+                title,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f),
             )
