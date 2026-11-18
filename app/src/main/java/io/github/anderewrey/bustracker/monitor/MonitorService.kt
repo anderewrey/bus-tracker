@@ -56,6 +56,11 @@ const val EXTRA_SILENCE = "silence"
 const val EXTRA_SCREEN = "screen"
 const val SCREEN_CHANGES = "changes"
 private const val CHANGES_ID = 0x5C4E
+/**
+ * How long the main-zone alarm takes the place of the tracking line: then the line comes back
+ * and any sound left stops (DESIGN.md §7.2). A volume key stops the sound sooner.
+ */
+const val RING_MS = 60_000L
 /** Time between two checks of a monitored run; the map's countdown ring shows it. */
 const val POLL_MS = 30_000L
 private const val MAX_WAKE_MS = 3 * 60 * 60 * 1000L
@@ -193,8 +198,13 @@ class MonitorService : Service() {
     private var loop: Job? = null
     private var foregroundKey: String? = null
     private val inMainZone = HashMap<String, Boolean>()
-    /** Runs whose notification is the ringing alarm: the checks don't update it, which would stop the sound. */
-    private val ringing = HashSet<String>()
+    /**
+     * Runs whose notification is the main-zone alarm, with when it rang (elapsedRealtime). The
+     * checks don't update it (that would stop the sound) for [RING_MS]; then it goes back to the
+     * tracking line by itself, as the app can't tell when the sound was stopped with a volume key
+     * or by pulling the shade down (seen 2026-11-18).
+     */
+    private val ringing = HashMap<String, Long>()
     /** Each watched run's end-of-monitoring rule (DESIGN.md §5.1), and the rule and zone it was made for. */
     private val endWatch = HashMap<String, EndWatch>()
     private val endWatchFor = HashMap<String, Pair<EndRule, String?>>()
@@ -256,9 +266,14 @@ class MonitorService : Service() {
         }
     }
 
-    /** Shows the run's latest status, unless its notification is the ringing alarm. */
+    /** Shows the run's latest status, unless its notification is the alarm that just rang. */
     private fun showStatus(run: Run, status: RunStatus) {
-        if (run.key in ringing) return
+        val rang = ringing[run.key]
+        if (rang != null) {
+            if (SystemClock.elapsedRealtime() - rang < RING_MS) return
+            AppLog.log("${run.key}: alarm rang ${RING_MS / 1000} s, back to the tracking line")
+            ringing.remove(run.key)
+        }
         getSystemService(NotificationManager::class.java).notify(runNotificationId(run.key), notification(run, status))
     }
 
@@ -318,10 +333,12 @@ class MonitorService : Service() {
         Session.setWatchEnd(key, null)
         Session.setNotice(key, null)
         Session.setActive(until.keys.toSet())
-        // An alarm still ringing stays until answered, even once watching has ended (a dropoff
-        // run can end at the next check after the bus entered the zone).
-        val keepAlarm = ringing.remove(key)
-        if (keepAlarm) AppLog.log("$key: alarm left ringing until answered")
+        // An alarm that just rang stays until answered, even once watching has ended (a dropoff run
+        // can end at the next check after the bus entered the zone). An older one goes away in
+        // silence: keeping it would make Android ring it again (seen 2026-11-18 at 7:55).
+        val rang = ringing.remove(key)
+        val keepAlarm = rang != null && SystemClock.elapsedRealtime() - rang < RING_MS
+        if (keepAlarm) AppLog.log("$key: alarm just rang, left until answered")
         if (foregroundKey == key) {
             val next = until.keys.firstOrNull()
             val run = next?.let { k -> Store(this).runs.firstOrNull { it.key == k } }
@@ -443,7 +460,7 @@ class MonitorService : Service() {
     /**
      * Rings when the bus enters the run's main zone, once per monitoring period: a restart doesn't
      * ring again, unless the Alarm switch was turned off and on. What ends watching is the run's
-     * end-of-monitoring rule (checkEnd). The ringing alert stays until acknowledged.
+     * end-of-monitoring rule (checkEnd). The alarm rings until answered, or for [RING_MS] at most.
      */
     private fun checkZones(run: Run, status: RunStatus) {
         val r = status.reading ?: return
@@ -462,7 +479,7 @@ class MonitorService : Service() {
             AppLog.log("${run.key}: bus entered main zone ${main.name}, ringing")
             val bus = r.runLabel?.substringBefore(' ') ?: run.bus
             // In place of the tracking notification: one notification per run, not two.
-            ringing += run.key
+            ringing[run.key] = SystemClock.elapsedRealtime()
             getSystemService(NotificationManager::class.java)
                 .notify(runNotificationId(run.key), zoneAlert(this, run.key, "$bus entered ${main.name}", status.line))
         } else if (!inside && wasInside) {
