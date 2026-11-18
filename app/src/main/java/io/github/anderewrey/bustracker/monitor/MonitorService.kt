@@ -460,7 +460,8 @@ class MonitorService : Service() {
     /**
      * Rings when the bus enters the run's main zone, once per monitoring period: a restart doesn't
      * ring again, unless the Alarm switch was turned off and on. What ends watching is the run's
-     * end-of-monitoring rule (checkEnd). The alarm rings until answered, or for [RING_MS] at most.
+     * end-of-monitoring rule (checkEnd). The alarm rings until answered, for [RING_MS] at most, or
+     * until the bus leaves the zone.
      */
     private fun checkZones(run: Run, status: RunStatus) {
         val r = status.reading ?: return
@@ -485,6 +486,11 @@ class MonitorService : Service() {
         } else if (!inside && wasInside) {
             inMainZone[run.key] = false
             AppLog.log("${run.key}: bus left main zone ${main.name}")
+            // The alarm was about the bus being in the zone: it goes away with it (user, 2026-11-18).
+            if (run.key in ringing) {
+                AppLog.log("${run.key}: alarm removed, the bus left the zone")
+                backToTracking(run.key, run)
+            }
         }
     }
 
