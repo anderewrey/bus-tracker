@@ -23,6 +23,7 @@ The order of the work. **What** each feature does and **how** is in [DESIGN.md](
 | — | 2026-11-17 | Run page: monitoring period minutes (before and after), end of monitoring (school, leaving or entering a zone, period end); overview page (children, schools, runs, zones; delete unused zones); School page (move the point, circle 25–300 m, where the bus parked, reset, choose among several BusPlanner schools) |
 | — | 2026-11-18 | Main-zone alarm: rings 1 minute at most, goes away when the bus leaves the zone, never again at the end of watching |
 | — | 2026-11-18 | Zones drawn and changed from the overview page; "Import from Bus Tracker" in test builds (§8, Configuration import) |
+| — | 2026-11-18 | Street name from 5 geocoder candidates by distance: the nearest street, and the others within 25 m of it ("This Street / That Street"), never a stop's whole address line (§7.2, Street name); the lookup never holds up a check or the alarm ("finding street…", "street unknown"); Test geocoder on the Debug screen |
 
 0.12 and 0.13 were committed together on 2026-11-06. 0.13 (with 0.11 and 0.12 in it) passed its first real run on the phone on 2026-11-09: automatic start, live checks, the main-zone alarm, and recovery from a short network loss.
 

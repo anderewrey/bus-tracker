@@ -7,6 +7,11 @@ import android.content.Context
 import android.location.Address
 import android.location.Geocoder
 import android.os.Build
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
@@ -29,22 +34,63 @@ fun distanceM(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
 fun formatDistance(m: Double): String =
     if (m < 1000) "${(m / 10).roundToInt() * 10} m" else String.format(Locale.US, "%.1f km", m / 1000)
 
-/** Street name at a point, from the phone's built-in Geocoder; null when unavailable. */
-suspend fun streetAt(context: Context, lat: Double, lon: Double): String? {
+/** The longest a street lookup may take; after it the street is "unknown" (DESIGN.md §7.2). */
+const val GEOCODER_TIMEOUT_MS = 10_000L
+
+/**
+ * Street name(s) at a point, from the phone's built-in Geocoder; null when unavailable. Asks for
+ * 5 candidates: near a bus stop the first one is the stop, not a street (DESIGN.md §7.2). Safe
+ * to call from the main thread: it never blocks it.
+ */
+suspend fun streetAt(context: Context, lat: Double, lon: Double): String? =
+    addressesAt(context, lat, lon, 5)?.let { streetFrom(it, lat, lon) }
+
+/** The street text from the geocoder's candidates for the point [lat], [lon] (chooseStreet). */
+fun streetFrom(found: List<Address>, lat: Double, lon: Double): String? =
+    chooseStreet(found.map {
+        Place(
+            it.thoroughfare,
+            if (it.hasLatitude() && it.hasLongitude()) distanceM(lat, lon, it.latitude, it.longitude) else null,
+            if (it.maxAddressLineIndex >= 0) it.getAddressLine(0) else it.featureName,
+        )
+    })
+
+/**
+ * Where Android 10 to 12's blocking Geocoder call runs: never the main thread, and not tied to the
+ * caller, so a call given up on finishes by itself in the background and its answer is dropped.
+ */
+private val blockingGeocoder = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+/**
+ * Up to [max] candidates from the phone's built-in Geocoder, in its own order; null when there
+ * is no geocoder, it failed, or it took more than [timeoutMs]. Never blocks the calling thread:
+ * Android 13+ answers through a listener (given up on at once), Android 10 to 12 runs the
+ * blocking call on a background thread.
+ */
+suspend fun addressesAt(
+    context: Context, lat: Double, lon: Double, max: Int, timeoutMs: Long = GEOCODER_TIMEOUT_MS,
+): List<Address>? {
     if (!Geocoder.isPresent()) return null
-    val geocoder = Geocoder(context, Locale.getDefault())
-    val address: Address? = withTimeoutOrNull(5000) {
+    val geocoder = Geocoder(context.applicationContext, Locale.getDefault())
+    return withTimeoutOrNull(timeoutMs) {
         if (Build.VERSION.SDK_INT >= 33) {
             suspendCancellableCoroutine { cont ->
-                geocoder.getFromLocation(lat, lon, 1, object : Geocoder.GeocodeListener {
-                    override fun onGeocode(addresses: MutableList<Address>) = cont.resume(addresses.firstOrNull())
-                    override fun onError(errorMessage: String?) = cont.resume(null)
+                geocoder.getFromLocation(lat, lon, max, object : Geocoder.GeocodeListener {
+                    override fun onGeocode(addresses: MutableList<Address>) {
+                        if (cont.isActive) cont.resume(addresses.toList())
+                    }
+                    override fun onError(errorMessage: String?) {
+                        if (cont.isActive) cont.resume(null)
+                    }
                 })
             }
         } else {
-            @Suppress("DEPRECATION")
-            runCatching { geocoder.getFromLocation(lat, lon, 1)?.firstOrNull() }.getOrNull()
+            val answer = CompletableDeferred<List<Address>?>()
+            blockingGeocoder.launch {
+                @Suppress("DEPRECATION")
+                answer.complete(runCatching { geocoder.getFromLocation(lat, lon, max)?.toList() }.getOrNull())
+            }
+            answer.await()
         }
     }
-    return address?.thoroughfare ?: address?.getAddressLine(0)
 }

@@ -80,6 +80,7 @@ import androidx.compose.ui.Alignment
 import io.github.anderewrey.bustracker.monitor.ensureChannels
 import io.github.anderewrey.bustracker.monitor.testRing
 import io.github.anderewrey.bustracker.ui.MapScreen
+import io.github.anderewrey.bustracker.ui.GeocoderTest
 import io.github.anderewrey.bustracker.ui.AlarmRow
 import io.github.anderewrey.bustracker.ui.RunTitle
 import kotlinx.coroutines.launch
@@ -399,6 +400,7 @@ private fun LogScreen(onBack: () -> Unit) {
         OutlinedButton(onClick = { testRing(context) }, modifier = Modifier.padding(horizontal = 8.dp)) {
             Text("Test the main-zone alert")
         }
+        GeocoderTest(Modifier.padding(horizontal = 8.dp))
         if (lines.isEmpty()) Text("Nothing logged yet.", Modifier.padding(8.dp))
         LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
             items(lines) { Text(it, fontFamily = FontFamily.Monospace, fontSize = 11.sp) }

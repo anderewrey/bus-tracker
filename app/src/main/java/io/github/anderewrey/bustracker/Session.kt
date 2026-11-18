@@ -53,10 +53,22 @@ import io.github.anderewrey.bustracker.net.BusAlert
 import io.github.anderewrey.bustracker.net.LoginFailed
 import io.github.anderewrey.bustracker.net.Reading
 import io.github.anderewrey.bustracker.net.SessionExpired
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import io.github.anderewrey.bustracker.monitor.FINDING_STREET
+import io.github.anderewrey.bustracker.monitor.StreetLookup
+import io.github.anderewrey.bustracker.monitor.StreetState
+import io.github.anderewrey.bustracker.monitor.placeText
+import io.github.anderewrey.bustracker.monitor.positionKey
+import io.github.anderewrey.bustracker.monitor.stillCurrent
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -113,7 +125,14 @@ object Session {
             client = it
             loggedIn = false
         }
-    private val streets = HashMap<String, Pair<String, String?>>()
+    /** Each run's street lookup: the bus position it is for and where it stands. Main thread only. */
+    private val streets = HashMap<String, StreetLookup>()
+    private val streetJobs = HashMap<String, Job>()
+    /** Street lookups run here, apart from the checks: a slow geocoder never holds a check up. */
+    private val streetScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val _streetFound = MutableSharedFlow<String>(extraBufferCapacity = 16)
+    /** A run whose status line just got its street, after the check that asked for it. */
+    val streetFound: SharedFlow<String> = _streetFound
     /** Runs whose last check failed or came back empty: the next check loads the page first. */
     private val needsReload = HashSet<String>()
     /** Network failures in a row, per run. */
@@ -721,7 +740,7 @@ object Session {
         )
     }
 
-    private suspend fun line(context: Context, run: Run, r: Reading): String {
+    private fun line(context: Context, run: Run, r: Reading): String {
         // Short: the map shows BusPlanner's full message after a tap on ↻; the "no vehicle" warning has it too.
         if (r.busLat == null || r.busLon == null) return if (r.bulletin != null) "No vehicle" else "No bus position"
         val parts = ArrayList<String>()
@@ -730,7 +749,8 @@ object Session {
         val sLon = run.lon ?: r.stopLon
         if (sLat != null && sLon != null) parts += formatDistance(distanceM(r.busLat, r.busLon, sLat, sLon))
         val school = _schools.value.firstOrNull { it.known && distanceM(r.busLat, r.busLon, it.lat!!, it.lon!!) <= maxOf(it.radius, SCHOOL_RADIUS_M) }
-        (school?.name ?: street(context, run.key, r.busLat, r.busLon))?.let { parts += it }
+        // Never waits for the geocoder: what is known for this position, or "finding street…".
+        placeText(school?.name, if (school == null) street(context, run.key, r.busLat, r.busLon) else null)?.let { parts += it }
         r.reported?.let { parts += "GPS $it" }
         // Old data is shown as such (in red on the screens), never as a live position.
         when {
@@ -740,14 +760,33 @@ object Session {
         return parts.joinToString(" · ")
     }
 
-    /** Looks the street up again only when the bus moved. */
-    private suspend fun street(context: Context, key: String, lat: Double, lon: Double): String? {
-        val at = String.format(Locale.US, "%.5f,%.5f", lat, lon)
-        streets[key]?.let { (where, name) -> if (where == at) return name }
-        val name = streetAt(context, lat, lon)
-        AppLog.log("street at $at: ${name ?: "unknown"}")
-        streets[key] = at to name
-        return name
+    /**
+     * Where the run's street lookup stands for this bus position, without waiting for it
+     * (DESIGN.md §7.2). A new position starts a lookup in the background and gives up the
+     * run's previous one; an answer for a position the bus has left is dropped.
+     */
+    private fun street(context: Context, key: String, lat: Double, lon: Double): StreetState {
+        val at = positionKey(lat, lon)
+        streets[key]?.let { if (it.at == at) return it.state }
+        streetJobs.remove(key)?.cancel()
+        streets[key] = StreetLookup(at, StreetState.Finding)
+        val app = context.applicationContext
+        streetJobs[key] = streetScope.launch {
+            val name = streetAt(app, lat, lon)
+            if (!stillCurrent(at, streets[key])) return@launch
+            AppLog.log("street at $at: ${name ?: "unknown"}")
+            streets[key] = StreetLookup(at, name?.let { StreetState.Found(it) } ?: StreetState.Unknown)
+            streetJobs.remove(key)
+            // The status line now has the street: the screens at once, the tracking
+            // notification through the service (not while its alarm is ringing).
+            val status = _status.value[key] ?: return@launch
+            val r = status.reading ?: return@launch
+            val run = _runs.value.firstOrNull { it.key == key } ?: return@launch
+            if (FINDING_STREET !in status.line || r.busLat == null || r.busLon == null || positionKey(r.busLat, r.busLon) != at) return@launch
+            setStatus(key, status.copy(line = line(app, run, r)))
+            _streetFound.tryEmit(key)
+        }
+        return StreetState.Finding
     }
 
     fun logout(context: Context) {
@@ -767,6 +806,9 @@ object Session {
         _schoolOptions.value = emptyMap()
         needsReload.clear()
         networkFailures.clear()
+        streetJobs.values.forEach { it.cancel() }
+        streetJobs.clear()
+        streets.clear()
         lastUpdated.clear()
         stale.clear()
         AppLog.log("logged out")
