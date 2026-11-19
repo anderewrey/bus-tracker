@@ -35,6 +35,19 @@ fun placeText(school: String?, street: StreetState?): String? = school ?: when (
     null -> null
 }
 
+/** A street lookup's answer: the street text, null with none; [expired] when the geocoder didn't answer in time. */
+data class StreetAnswer(val name: String?, val expired: Boolean = false)
+
+/**
+ * The Log's account of a street lookup, with how long it took: `Gesner Street (182 ms)`,
+ * `unknown (95 ms)` when the geocoder answered without a street or failed, `expired` when it
+ * didn't answer within the timeout.
+ */
+fun streetLogText(answer: StreetAnswer, ms: Long): String = when {
+    answer.expired -> "expired"
+    else -> "${answer.name ?: "unknown"} ($ms ms)"
+}
+
 /** Streets whose candidate is within this distance of the nearest one are all shown. */
 const val STREET_MARGIN_M = 25.0
 

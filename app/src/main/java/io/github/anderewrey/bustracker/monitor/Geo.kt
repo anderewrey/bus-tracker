@@ -38,12 +38,15 @@ fun formatDistance(m: Double): String =
 const val GEOCODER_TIMEOUT_MS = 10_000L
 
 /**
- * Street name(s) at a point, from the phone's built-in Geocoder; null when unavailable. Asks for
+ * Street name(s) at a point, from the phone's built-in Geocoder: no name when there is none, and
+ * expired after [GEOCODER_TIMEOUT_MS]. Asks for
  * 5 candidates: near a bus stop the first one is the stop, not a street (DESIGN.md §7.2). Safe
  * to call from the main thread: it never blocks it.
  */
-suspend fun streetAt(context: Context, lat: Double, lon: Double): String? =
-    addressesAt(context, lat, lon, 5)?.let { streetFrom(it, lat, lon) }
+suspend fun streetAt(context: Context, lat: Double, lon: Double): StreetAnswer {
+    val answer = lookup(context, lat, lon, 5, GEOCODER_TIMEOUT_MS) ?: return StreetAnswer(null, expired = true)
+    return StreetAnswer(answer.addresses?.let { streetFrom(it, lat, lon) })
+}
 
 /** The street text from the geocoder's candidates for the point [lat], [lon] (chooseStreet). */
 fun streetFrom(found: List<Address>, lat: Double, lon: Double): String? =
@@ -69,11 +72,16 @@ private val blockingGeocoder = CoroutineScope(SupervisorJob() + Dispatchers.IO)
  */
 suspend fun addressesAt(
     context: Context, lat: Double, lon: Double, max: Int, timeoutMs: Long = GEOCODER_TIMEOUT_MS,
-): List<Address>? {
-    if (!Geocoder.isPresent()) return null
+): List<Address>? = lookup(context, lat, lon, max, timeoutMs)?.addresses
+
+/** The geocoder's answer, [addresses] null when it has none or failed; the whole is null when it took more than the timeout. */
+private class Answered(val addresses: List<Address>?)
+
+private suspend fun lookup(context: Context, lat: Double, lon: Double, max: Int, timeoutMs: Long): Answered? {
+    if (!Geocoder.isPresent()) return Answered(null)
     val geocoder = Geocoder(context.applicationContext, Locale.getDefault())
     return withTimeoutOrNull(timeoutMs) {
-        if (Build.VERSION.SDK_INT >= 33) {
+        Answered(if (Build.VERSION.SDK_INT >= 33) {
             suspendCancellableCoroutine { cont ->
                 geocoder.getFromLocation(lat, lon, max, object : Geocoder.GeocodeListener {
                     override fun onGeocode(addresses: MutableList<Address>) {
@@ -91,6 +99,6 @@ suspend fun addressesAt(
                 answer.complete(runCatching { geocoder.getFromLocation(lat, lon, max)?.toList() }.getOrNull())
             }
             answer.await()
-        }
+        })
     }
 }
