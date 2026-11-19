@@ -34,17 +34,23 @@ fun distanceM(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
 fun formatDistance(m: Double): String =
     if (m < 1000) "${(m / 10).roundToInt() * 10} m" else String.format(Locale.US, "%.1f km", m / 1000)
 
+/**
+ * Candidates asked per lookup. Google fills ranks 8 to 10 with a postal code or an area, but ranks
+ * 6 and 7 often hold an address nearer the bus than the first 5 (DESIGN.md §7.2).
+ */
+const val GEOCODER_CANDIDATES = 10
+
 /** The longest a street lookup may take; after it the street is "unknown" (DESIGN.md §7.2). */
 const val GEOCODER_TIMEOUT_MS = 10_000L
 
 /**
  * Street name(s) at a point, from the phone's built-in Geocoder: no name when there is none, and
  * expired after [GEOCODER_TIMEOUT_MS]. Asks for
- * 5 candidates: near a bus stop the first one is the stop, not a street (DESIGN.md §7.2). Safe
+ * [GEOCODER_CANDIDATES]: near a bus stop the first one is the stop, not a street (DESIGN.md §7.2). Safe
  * to call from the main thread: it never blocks it.
  */
 suspend fun streetAt(context: Context, lat: Double, lon: Double): StreetAnswer {
-    val answer = lookup(context, lat, lon, 5, GEOCODER_TIMEOUT_MS) ?: return StreetAnswer(null, expired = true)
+    val answer = lookup(context, lat, lon, GEOCODER_CANDIDATES, GEOCODER_TIMEOUT_MS) ?: return StreetAnswer(null, expired = true)
     return StreetAnswer(answer.addresses?.let { streetFrom(it, lat, lon) })
 }
 
