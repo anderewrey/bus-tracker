@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import io.github.anderewrey.bustracker.Session
 import io.github.anderewrey.bustracker.monitor.addressesAt
 import io.github.anderewrey.bustracker.monitor.distanceM
+import io.github.anderewrey.bustracker.monitor.GEOCODER_CANDIDATES
 import io.github.anderewrey.bustracker.monitor.GEOCODER_TIMEOUT_MS
 import io.github.anderewrey.bustracker.monitor.STREET_UNKNOWN
 import io.github.anderewrey.bustracker.monitor.streetFrom
@@ -72,7 +73,7 @@ fun GeocoderTest(modifier: Modifier = Modifier) {
                 // Off the main thread (addressesAt never blocks it); a new Look up replaces the last one.
                 lookup?.cancel()
                 lookup = scope.launch {
-                    val found = addressesAt(context, ll[0], ll[1], 5)
+                    val found = addressesAt(context, ll[0], ll[1], GEOCODER_CANDIDATES)
                     answer = when {
                         found == null -> "No answer (no geocoder on this phone, an error, or more than ${GEOCODER_TIMEOUT_MS / 1000} s)"
                         found.isEmpty() -> "No candidate"

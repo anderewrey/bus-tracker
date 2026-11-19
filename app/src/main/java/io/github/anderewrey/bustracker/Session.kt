@@ -38,6 +38,7 @@ import io.github.anderewrey.bustracker.data.schoolNames
 import io.github.anderewrey.bustracker.monitor.distanceM
 import io.github.anderewrey.bustracker.monitor.formatDistance
 import io.github.anderewrey.bustracker.monitor.streetAt
+import io.github.anderewrey.bustracker.monitor.streetLogText
 import io.github.anderewrey.bustracker.net.BusPlannerClient
 import io.github.anderewrey.bustracker.data.Period
 import io.github.anderewrey.bustracker.data.Zone
@@ -772,9 +773,12 @@ object Session {
         streets[key] = StreetLookup(at, StreetState.Finding)
         val app = context.applicationContext
         streetJobs[key] = streetScope.launch {
-            val name = streetAt(app, lat, lon)
+            val started = SystemClock.elapsedRealtime()
+            val answer = streetAt(app, lat, lon)
+            val ms = SystemClock.elapsedRealtime() - started
             if (!stillCurrent(at, streets[key])) return@launch
-            AppLog.log("street at $at: ${name ?: "unknown"}")
+            AppLog.log("street at $at: ${streetLogText(answer, ms)}")
+            val name = answer.name
             streets[key] = StreetLookup(at, name?.let { StreetState.Found(it) } ?: StreetState.Unknown)
             streetJobs.remove(key)
             // The status line now has the street: the screens at once, the tracking

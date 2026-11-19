@@ -4,12 +4,14 @@
 package io.github.anderewrey.bustracker
 
 import io.github.anderewrey.bustracker.monitor.Place
+import io.github.anderewrey.bustracker.monitor.StreetAnswer
 import io.github.anderewrey.bustracker.monitor.StreetLookup
 import io.github.anderewrey.bustracker.monitor.StreetState
 import io.github.anderewrey.bustracker.monitor.chooseStreet
 import io.github.anderewrey.bustracker.monitor.placeText
 import io.github.anderewrey.bustracker.monitor.positionKey
 import io.github.anderewrey.bustracker.monitor.stillCurrent
+import io.github.anderewrey.bustracker.monitor.streetLogText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -89,5 +91,13 @@ class StreetTest {
     @Test fun positionsTo5Decimals() {
         assertEquals("44.70000,-63.30000", positionKey(44.7, -63.3))
         assertEquals(positionKey(44.700001, -63.3), positionKey(44.700004, -63.3))
+    }
+
+    // The Log's line: the answer and how long it took; a lookup past the timeout says so, with no time.
+
+    @Test fun logLineWithTheLookupTime() {
+        assertEquals("This Street / That Street (182 ms)", streetLogText(StreetAnswer("This Street / That Street"), 182))
+        assertEquals("unknown (95 ms)", streetLogText(StreetAnswer(null), 95))
+        assertEquals("expired", streetLogText(StreetAnswer(null, expired = true), 10_000))
     }
 }
