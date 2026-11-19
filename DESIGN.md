@@ -273,6 +273,7 @@ The AM and PM runs of the same bus are separate runs, each with its own alerts, 
 - **Interval:** 30 s by default, with a minimum of 20 s.
 - **On an expired session:** log in again silently, then carry on.
 - **Map refresh = countdown ring** (top right of the map). While the run is monitored, a ring empties over the 30 s until the next automatic check, with the seconds left in the middle; it spins during a check. A tap checks now, through the monitoring loop, and the 30 s start again from that tap (no second check a few seconds later). A tap during a check is ignored. Not monitored: a plain ↻; a tap checks once. Left of it, the run's Alarm switch with a bell in its thumb and no label (user, 2026-11-06: the "Alarm" label above it looked odd).
+- **Bus position only while watched** (user, 2026-11-19): once a run's monitoring stops, its map shows no bus and its card and map say `Not monitored` instead of the tracking line; the run's stop and zones stay. Opening the map of a run not monitored shows no bus either, even with a position in memory. A tap on ↻ there shows the bus and the line until the map is closed; on the next opening they are gone again. The rule is decided when the screen is drawn (`shownStatus`): monitored, or the answer to a ↻ made since this map was opened. Nothing is erased, so a check that ends just after the monitoring stopped (seen 2026-11-19: a street answer one second after the stop) can't bring the bus back. The Log keeps every reading.
 
 ---
 

@@ -46,7 +46,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import io.github.anderewrey.bustracker.NOT_MONITORED
 import io.github.anderewrey.bustracker.Session
+import io.github.anderewrey.bustracker.shownStatus
 import io.github.anderewrey.bustracker.data.Run
 import org.maplibre.android.MapLibre
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -110,8 +112,11 @@ internal fun hideTransit(s: Style): List<String> {
 fun MapScreen(run: Run, onBack: () -> Unit) {
     val context = LocalContext.current
     val status by Session.status.collectAsState()
-    val current = status[run.key]
     val active by Session.active.collectAsState()
+    // When this map was opened: off monitoring, only a ↻ made since then shows the bus (DESIGN.md §4).
+    val openedAt = remember { System.nanoTime() }
+    val latest = status[run.key]
+    val current = shownStatus(latest, run.key in active, openedAt)
     val nextCheck by Session.nextCheck.collectAsState()
     val style = remember { mutableStateOf<Style?>(null) }
     val mapRef = remember { mutableStateOf<MapLibreMap?>(null) }
@@ -181,12 +186,13 @@ fun MapScreen(run: Run, onBack: () -> Unit) {
     MapLifecycle(mapView)
 
     // Moves the dots whenever a new reading arrives, and keeps them and the zones in view while following.
-    LaunchedEffect(style.value, current, follow.value) {
+    LaunchedEffect(style.value, current, latest, follow.value) {
         val s = style.value ?: return@LaunchedEffect
         val r = current?.reading
         // The run's own stop: the live page is per child and shows one stop for the AM and PM runs alike.
-        val stopLat = run.lat ?: r?.stopLat
-        val stopLon = run.lon ?: r?.stopLon
+        // The stop is no bus position: also from a reading no longer shown.
+        val stopLat = run.lat ?: latest?.reading?.stopLat
+        val stopLon = run.lon ?: latest?.reading?.stopLon
         val stop = if (stopLat != null && stopLon != null) LatLng(stopLat, stopLon) else null
         val bus = if (r?.busLat != null && r.busLon != null) LatLng(r.busLat, r.busLon) else null
         (s.getSource("stop") as? GeoJsonSource)?.setGeoJson(
@@ -203,9 +209,10 @@ fun MapScreen(run: Run, onBack: () -> Unit) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp)) {
             TextButton(onClick = onBack) { Text("Back") }
             Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
-                RunTitle(run, current?.reading?.runLabel ?: run.key, MaterialTheme.typography.titleMedium)
+                RunTitle(run, latest?.reading?.runLabel ?: run.key, MaterialTheme.typography.titleMedium)
                 current?.let { if (it.line.isNotEmpty()) Text(it.line, color = if (it.old) MaterialTheme.colorScheme.error else Color.Unspecified) }
                 current?.checkedAt?.let { Text("checked ${clockSeconds(it)}", style = MaterialTheme.typography.bodySmall) }
+                if (current == null && latest != null) Text(NOT_MONITORED, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             AlarmSwitchCompact(run)
             RefreshRing(monitored = run.key in active, nextCheck = nextCheck, refreshing = refreshing) {
@@ -236,7 +243,7 @@ fun MapScreen(run: Run, onBack: () -> Unit) {
                     val r = current?.reading
                     val points = listOfNotNull(
                         if (r?.busLat != null && r.busLon != null) LatLng(r.busLat, r.busLon) else null,
-                        (run.lat ?: r?.stopLat)?.let { lat -> (run.lon ?: r?.stopLon)?.let { LatLng(lat, it) } },
+                        (run.lat ?: latest?.reading?.stopLat)?.let { lat -> (run.lon ?: latest?.reading?.stopLon)?.let { LatLng(lat, it) } },
                     ) + zoneCorners
                     mapRef.value?.let { fit(it, points, (FIT_PADDING_DP * context.resources.displayMetrics.density).toInt()) }
                 },

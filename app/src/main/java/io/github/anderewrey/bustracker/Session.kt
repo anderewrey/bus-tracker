@@ -101,8 +101,26 @@ private val PERIOD = DateTimeFormatter.ofPattern("EEE H:mm", Locale.ENGLISH)
 /** The runs saved by a scan, and what it found different from the previous scan. */
 data class ScanResult(val runs: List<Run>, val changes: List<RunChange>)
 
-/** Live status of one run, shared by the service, the notification and the screens. */
-data class RunStatus(val reading: Reading?, val line: String, val checkedAt: LocalTime?, val old: Boolean = false)
+/**
+ * Live status of one run, shared by the service, the notification and the screens. [byHand]: the
+ * answer to a tap on ↻; [at]: when it was set, on the monotonic clock ([System.nanoTime]).
+ */
+data class RunStatus(
+    val reading: Reading?, val line: String, val checkedAt: LocalTime?, val old: Boolean = false,
+    val byHand: Boolean = false, val at: Long = System.nanoTime(),
+)
+
+/** What the screens show instead of the line of a run that isn't watched (DESIGN.md §4). */
+const val NOT_MONITORED = "Not monitored"
+
+/**
+ * The status the screens show for a run, bus position and line included (DESIGN.md §4): while
+ * the run is [monitored], its last one; otherwise only the answer to a tap on ↻ made since its
+ * map was opened ([mapOpenedAt], same clock as [RunStatus.at]; null off the map). Decided when
+ * drawn, so a check that ends after the monitoring stopped can't bring the bus back.
+ */
+fun shownStatus(status: RunStatus?, monitored: Boolean, mapOpenedAt: Long?): RunStatus? =
+    status?.takeIf { monitored || (it.byHand && mapOpenedAt != null && it.at >= mapOpenedAt) }
 
 /** The one BusPlanner session of the app; logs in again by itself when the server drops it. */
 object Session {
@@ -655,7 +673,7 @@ object Session {
         // No network (e.g. just after the phone woke up): wait for it, it is not the session's fault.
         if (!online(context)) {
             if (_status.value[run.key]?.line != WAITING_NETWORK) AppLog.log("poll ${run.key}: no network, waiting")
-            val status = RunStatus(_status.value[run.key]?.reading, WAITING_NETWORK, now, old = true)
+            val status = RunStatus(_status.value[run.key]?.reading, WAITING_NETWORK, now, old = true, byHand = refreshButton)
             setStatus(run.key, status)
             return status
         }
@@ -683,7 +701,7 @@ object Session {
             val blank = r.busLat == null && r.stopLat == null && r.updated == null && r.bulletin == null
             if (blank) needsReload += run.key else needsReload -= run.key
             val old = r.busLat != null && (r.updated == null || secondsBehind(r.updated) > OLD_S)
-            RunStatus(r, line(context, run, r), now, old)
+            RunStatus(r, line(context, run, r), now, old, byHand = refreshButton)
         } catch (e: LoginFailed) {
             AppLog.log("poll ${run.key}: login refused")
             throw e
@@ -695,12 +713,12 @@ object Session {
             networkFailures[run.key] = failures
             AppLog.log("poll ${run.key}: network error ${e.javaClass.simpleName}: ${e.message}")
             if (failures >= NETWORK_RELOAD_AFTER) needsReload += run.key
-            RunStatus(_status.value[run.key]?.reading, NETWORK_PROBLEM, now, old = true)
+            RunStatus(_status.value[run.key]?.reading, NETWORK_PROBLEM, now, old = true, byHand = refreshButton)
         } catch (e: Exception) {
             val message = e.message ?: e.javaClass.simpleName
             AppLog.log("poll ${run.key}: error $message")
             needsReload += run.key
-            RunStatus(_status.value[run.key]?.reading, "Error: $message", now, old = true)
+            RunStatus(_status.value[run.key]?.reading, "Error: $message", now, old = true, byHand = refreshButton)
         }
         setStatus(run.key, status)
         return status
