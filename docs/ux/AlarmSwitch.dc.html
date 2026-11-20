@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Alarm switch</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.ph{width:220px;height:440px;border:2px solid #444;border-radius:22px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;background:#fff;font-size:12px}
+.bx{border:1.5px dashed #888;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:4px}
+.row{display:flex;justify-content:space-between;align-items:center}
+.sw{width:30px;height:16px;border-radius:9px;background:#2a6fdb}
+.sw.off{background:#bbb}
+.ar{width:110px;height:440px;margin-top:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;color:#333;text-align:center}
+.cap{width:220px;font-size:12px;color:#333;line-height:1.4}
+.mut{color:#666}
+.hd{opacity:.3;display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:2px 2px 4px}
+.col{display:flex;flex-direction:column;gap:10px}
+.nt{width:220px;height:100px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px}
+.nb{background:#fff;border:1.5px solid #888;border-radius:10px;padding:6px 8px;font-size:11px;display:flex;flex-direction:column;gap:2px}
+.nl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.04em}
+.h2{font-size:16px;font-weight:600}
+</style>
+</helmet>
+<div style="width:1000px;height:1560px;box-sizing:border-box;padding:28px 32px;font-family:Inter,system-ui,sans-serif;background:#f6f6f4;display:flex;flex-direction:column;gap:18px">
+<div style="font-size:20px;font-weight:600">The Alarm switch (bell): about one period only, the one under way or else the next</div>
+
+<div class="h2">Row 1.2.1 · Skip a period ahead (e.g. the child stays home this morning)</div>
+<div style="display:flex;align-items:flex-start">
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>Rescan · Debug · Settings</span></div>
+<div class="bx"><div class="row"><b>Automatic start</b><span class="sw"></span></div><span class="mut">Mon–Fri ›</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>6:50 AM.</b> The pickup bell is about this morning's period (7:03–8:08).</div>
+</div>
+
+<div class="ar"><b>pickup bell → off</b><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>Rescan · Debug · Settings</span></div>
+<div class="bx"><div class="row"><b>Automatic start</b><span class="sw"></span></div><span class="mut">Mon–Fri ›</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw off"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>This period is skipped.</b> 7:03 starts nothing, opening the app doesn't either. The dropoff isn't touched. Bell back on before 8:08 = undo.</div>
+</div>
+
+<div class="ar"><i>8:08, the period is over</i><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>Rescan · Debug · Settings</span></div>
+<div class="bx"><div class="row"><b>Automatic start</b><span class="sw"></span></div><span class="mut">Mon–Fri ›</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>Back on by itself.</b> The pickup bell now is about tomorrow's period, which watches as usual.</div>
+</div>
+
+</div>
+
+<div class="h2" style="margin-top:12px">Row 1.2.2 · Stop watching, then restart it in the same period</div>
+<div style="display:flex;align-items:flex-start">
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications</span><div class="nb"><b>B101 · watching</b><span>1.1 km · This Street · GPS 7:12</span><span class="mut">[Open map] [Turn off]</span></div></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>Rescan · Debug · Settings</span></div>
+<div class="bx"><div class="row"><b>Automatic start</b><span class="sw"></span></div><span class="mut">Mon–Fri ›</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM</b><span class="mut">123 This Street</span><span>1.1 km · This Street · GPS 7:12</span><span class="mut">checked 7:12:40 AM</span><div class="row"><span>[Open map]</span><span class="mut">Watching until 8:08</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>7:12 AM, watching.</b></div>
+</div>
+
+<div class="ar"><b>pickup bell → off</b><span class="mut">(or Turn off on the notification)</span><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>Rescan · Debug · Settings</span></div>
+<div class="bx"><div class="row"><b>Automatic start</b><span class="sw"></span></div><span class="mut">Mon–Fri ›</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM</b><span class="mut">123 This Street</span><span class="mut">Not monitored</span><div class="row"><span>[Open map]</span><span class="sw off"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>Stopped, period skipped.</b> The notification goes away; nothing restarts this period by itself, not even opening the app.</div>
+</div>
+
+<div class="ar"><b>pickup bell → on</b><span class="mut">(before 8:08)</span><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications</span><div class="nb"><b>B101 · watching</b><span>900 m · This Street · GPS 7:15</span><span class="mut">[Open map] [Turn off]</span></div></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>Rescan · Debug · Settings</span></div>
+<div class="bx"><div class="row"><b>Automatic start</b><span class="sw"></span></div><span class="mut">Mon–Fri ›</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM</b><span class="mut">123 This Street</span><span>900 m · This Street · GPS 7:15</span><span class="mut">checked 7:15:02 AM</span><div class="row"><span>[Open map]</span><span class="mut">Watching until 8:08</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>Watching again, at once.</b> The alarm may ring again, even if it already rang this period: at the next check if the bus is still in the zone, otherwise when it next enters.</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":1560}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

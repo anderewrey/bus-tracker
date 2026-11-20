@@ -7,6 +7,8 @@ and sends a dedicated notification when the bus enters zones drawn by the user.
 
 The protocol has been proven with the Python prototype `busprobe.py`.
 
+UX flow sketches (screens joined by the user's actions) are in [`docs/ux/`](docs/ux/README.md): navigation between views in Artboard 0.1 (§3, §5.1–5.3), the notifications in 0.2 (§7), a normal school day in 1.1 (§4, §5, §7), the Alarm switch in 1.2 (§5), Automatic start in 1.3 (§5), the map in 1.4 (§4). A change to one of these behaviours updates its artboard in the same pull request, following [`docs/ux/CONVENTIONS.md`](docs/ux/CONVENTIONS.md).
+
 ---
 
 ## 1. Scope
@@ -273,6 +275,7 @@ The AM and PM runs of the same bus are separate runs, each with its own alerts, 
 - **Interval:** 30 s by default, with a minimum of 20 s.
 - **On an expired session:** log in again silently, then carry on.
 - **Map refresh = countdown ring** (top right of the map). While the run is monitored, a ring empties over the 30 s until the next automatic check, with the seconds left in the middle; it spins during a check. A tap checks now, through the monitoring loop, and the 30 s start again from that tap (no second check a few seconds later). A tap during a check is ignored. Not monitored: a plain ↻; a tap checks once. Left of it, the run's Alarm switch with a bell in its thumb and no label (user, 2026-11-06: the "Alarm" label above it looked odd).
+- **Bus position only while watched** (user, 2026-11-19): once a run's monitoring stops, its map shows no bus and its card and map say `Not monitored` instead of the tracking line; the run's stop and zones stay. Opening the map of a run not monitored shows no bus either, even with a position in memory. A tap on ↻ there shows the bus and the line until the map is closed; on the next opening they are gone again. The rule is decided when the screen is drawn (`shownStatus`): monitored, or the answer to a ↻ made since this map was opened. Nothing is erased, so a check that ends just after the monitoring stopped (seen 2026-11-19: a street answer one second after the stop) can't bring the bus back. The Log keeps every reading.
 
 ---
 
@@ -302,7 +305,7 @@ A monitoring period is the time span during which the app polls BusPlanner for o
 - **Silence** (on the ringing alarm only) stops the sound; the app keeps watching. It never changes the switch.
 - The tracking notification's button turns the switch off.
 - "Monitor now" for an hour outside a period is dropped. The map's ↻ ring checks the bus at any time; a late bus is covered by the notice hints (§7.3).
-- While the global Automatic start switch is off (holidays), every run's Alarm switch is off; turning one on applies to that run's next period only.
+- While the global Automatic start switch is off (holidays), every run's Alarm switch is off; turning one on applies to that run's next period only. Turning it off (or off until a day) also stops a run being watched that started by itself; one whose Alarm switch the user turned on for this period goes on (user, 2026-11-20: on a day without school, the morning run kept watching until its switch was turned off by hand).
 - *As written 2026-11-06 (not built):* the choices are kept per period (skipped, forced on, ended by itself), as the period's start; older than two days they're dropped. The switch's period moves on every 30 s on screen. Opening the app during a period whose switch is on but which isn't watching (phone off at the start) starts it.
 
 **Watching ends by itself when the first of these happens** (the switch then shows the next period):
@@ -331,7 +334,7 @@ Once watching has ended, the run waits for its next monitoring period. Nothing r
   - **Cancel**
 
   Per-run days are kept untouched while the switch is off. A run's Alarm switch can still be turned on for its next period.
-- The line under the switch shows the days of all runs ("Mon–Fri", or "Custom per run" when they differ). It opens the **All runs** days page, where a day some runs have shows as mixed, and tapping it gives that day to every run.
+- The line under the switch shows the days of all runs ("Mon–Fri", or "Custom per run" when they differ). The whole Automatic start card opens the **All runs** days page, like a run card opens its page; the switch keeps its own action (user, 2026-11-20: only the days line opened it, while the card reads as one block). On that page a day some runs have shows as mixed, and tapping it gives that day to every run.
 - While the switch is off, each card reads "Automatic start: off · 14:09–15:09 ›".
 - Known gap: when the phone is off or rebooting at the period start, that period doesn't start by itself. Since the Alarm switch, opening the app during the period starts it.
 - Samsung: Battery must be "Unrestricted" for Bus Tracker, or One UI may put it to deep sleep and its alarms never fire.

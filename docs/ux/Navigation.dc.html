@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Navigation between views</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.ph{width:170px;height:300px;border:2px solid #444;border-radius:18px;padding:10px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;background:#fff;font-size:11px}
+.t{font-weight:700;font-size:12px;display:flex;justify-content:space-between}
+.bx{border:1.5px dashed #888;border-radius:6px;padding:5px;display:flex;flex-direction:column;gap:2px}
+.mut{color:#666}
+.col{display:flex;flex-direction:column;gap:6px;width:170px}
+.lb{font-size:11px;color:#333;min-height:30px}
+.ar{display:flex;align-items:center;justify-content:center;width:110px;height:336px;font-size:12px;text-align:center;flex-direction:column;flex-shrink:0}
+.row{display:flex;gap:20px;align-items:flex-start}
+.grp{border:1.5px dashed #888;border-radius:14px;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.gn{font-size:11px;color:#666}
+.ref{height:300px;display:flex;align-items:center}
+.chip{border:1.5px dashed #888;border-radius:10px;padding:10px 12px;font-size:12px;background:#fff}
+.h2{font-size:15px;font-weight:600}
+</style>
+</helmet>
+<div style="width:1900px;height:1020px;box-sizing:border-box;padding:28px 32px;font-family:Inter,system-ui,sans-serif;background:#f6f6f4;display:flex;flex-direction:column;gap:20px">
+<div style="font-size:20px;font-weight:600">Views and navigation · a dashed frame holds views opened from the same view; each one's Back returns there</div>
+
+<div class="h2">From the app's start</div>
+<div class="row">
+<div class="col"><div class="lb"><b>Login</b> · when not logged in</div>
+<div class="ph"><div class="t"><span>BusPlanner login</span><span class="mut">Debug</span></div>
+<div class="bx">Portal address</div><div class="bx">Email</div><div class="bx">Password</div><div class="bx" style="border-style:solid;text-align:center">Log in</div>
+<span class="mut">Test builds: Import from Bus Tracker</span></div></div>
+<div class="ar"><b>Log in</b><span class="mut">logs in, then scans</span><span style="font-size:22px">→</span></div>
+<div class="col"><div class="lb"><b>Bus runs</b> · the main hub; the app opens here once logged in</div>
+<div class="ph"><div class="t"><span>Bus runs</span><span class="mut">Rescan Debug Settings</span></div>
+<div class="bx" style="border-color:#c0392b">Bus schedule changed · See changes</div>
+<div class="bx"><b>Automatic start ›</b><span class="mut">days</span></div>
+<div class="bx"><b>B101 · Pickup</b><span class="mut">[Open map] bell</span></div>
+<div class="bx"><b>B101 · Dropoff</b><span class="mut">[Open map] bell</span></div></div></div>
+<div class="ar"><b>opens one of</b><span style="font-size:22px">→</span></div>
+<div class="grp"><span class="gn">Opened from Bus runs</span>
+<div class="row">
+<div class="col"><div class="lb"><b>a run card</b> → Run page</div>
+<div class="ph"><div class="t"><span>B101 · Pickup</span><span class="mut">Back</span></div>
+<div class="bx">About</div><div class="bx">Automatic start: days</div><div class="bx">Monitoring period − / +</div><div class="bx">Main zone · Draw new · Edit</div><div class="bx">End of monitoring</div></div></div>
+<div class="col"><div class="lb"><b>Open map</b> → Map <span class="mut">(also from the notification)</span></div>
+<div class="ph"><div class="t"><span>B101 · Pickup</span><span class="mut">bell ↻</span></div>
+<span class="mut">status line</span><div class="bx" style="flex-grow:1;align-items:center;justify-content:center">map: stop, zones, bus</div></div></div>
+<div class="col"><div class="lb"><b>See changes</b>, or a Rescan that finds some → Changes</div>
+<div class="ph"><div class="t"><span>Changes</span><span class="mut">Back</span></div>
+<div class="bx">What changed per run (stop, time)</div><div class="bx">Keep same configuration</div><div class="bx">New configuration</div></div></div>
+<div class="col"><div class="lb"><b>Automatic start ›</b> → Automatic start</div>
+<div class="ph"><div class="t"><span>Automatic start</span><span class="mut">Back</span></div>
+<span class="mut">All runs</span>
+<div class="bx">Mon Tue Wed Thu Fri Sat Sun</div><span class="mut">a day some runs have shows as mixed</span></div></div>
+<div class="col"><div class="lb"><b>Settings</b> → Settings</div>
+<div class="ref"><div class="chip">↓ <b>Settings</b><br><span class="mut">drawn below, with what it opens</span></div></div></div>
+<div class="col"><div class="lb"><b>Debug</b> → Debug <span class="mut">(also from Login)</span></div>
+<div class="ph"><div class="t"><span>Debug</span><span class="mut">Back</span></div>
+<span class="mut">Copy · Export · Clear</span><div class="bx">Test the main-zone alert</div><div class="bx">Test geocoder</div><div class="bx" style="flex-grow:1">Log lines…</div></div></div>
+</div>
+</div>
+</div>
+
+<div class="h2">From Settings</div>
+<div class="row">
+<div class="col"><div class="lb"><b>Settings</b> · opened from Bus runs</div>
+<div class="ph"><div class="t"><span>Settings</span><span class="mut">Back</span></div>
+<div class="bx">Main zone alarm: Sound <span class="mut">[Change] [Use default]</span> · Vibration · [Test] · [Android settings]</div><div class="bx">BusPlanner late or cancelled notices</div><div class="bx">Quiet mode override</div><div class="bx">Children, schools, runs and zones: [Open the overview]</div><div class="bx">Account: [Log out]</div><span class="mut">Test builds: Import</span></div></div>
+<div class="ar"><b>opens one of</b><span style="font-size:22px">→</span></div>
+<div class="grp"><span class="gn">Opened from Settings</span>
+<div class="row">
+<div class="col"><div class="lb"><b>Open the overview</b> → Overview · a hub of its own</div>
+<div class="ph"><div class="t"><span>Overview</span><span class="mut">Back</span></div>
+<div class="bx">Children</div><div class="bx">Schools ›</div><div class="bx">Runs ›</div><div class="bx">Zones › · Draw new zone</div></div></div>
+<div class="col"><div class="lb"><b>Change</b> (sound) → Android's sound picker</div>
+<div class="ref"><div class="chip"><b>Android</b> system view<br><span class="mut">picks the alarm's sound; back to Settings</span></div></div></div>
+<div class="col"><div class="lb"><b>Android settings</b> → the alarm channel's settings</div>
+<div class="ref"><div class="chip"><b>Android</b> system view<br><span class="mut">channel sound, vibration, Do Not Disturb</span></div></div></div>
+</div>
+</div>
+<div class="ar"><b>Overview opens one of</b><span style="font-size:22px">→</span></div>
+<div class="grp"><span class="gn">Opened from Overview</span>
+<div class="row">
+<div class="col"><div class="lb"><b>a school ›</b> → School page</div>
+<div class="ph"><div class="t"><span>School</span><span class="mut">Back</span></div>
+<div class="bx" style="flex-grow:1;align-items:center;justify-content:center">map: pin, circle</div><span class="mut">Circle 25–300 m · Use where the bus parked · Reset · Save</span></div></div>
+<div class="col"><div class="lb"><b>a zone ›, Draw new zone</b> → Zone editor <span class="mut">(also from the Run page)</span></div>
+<div class="ph"><div class="t"><span>Zone · name</span><span class="mut">Cancel</span></div>
+<div class="bx" style="flex-grow:1;align-items:center;justify-content:center">map: draw the zone</div><span class="mut">Name · Save</span></div></div>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1900,"height":1020}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

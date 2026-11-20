@@ -299,6 +299,7 @@ private fun RunsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val status by Session.status.collectAsState()
+    val active by Session.active.collectAsState()
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var failed by remember { mutableStateOf(false) }
@@ -349,12 +350,16 @@ private fun RunsScreen(
                         RunTitle(run, "${run.bus} · ${run.plannedLine}", MaterialTheme.typography.titleMedium)
                         Text(run.address)
                         Text(run.students.joinToString(" · ") { it.name }, style = MaterialTheme.typography.bodySmall)
-                        status[run.key]?.let {
+                        // A run no longer watched shows no line about its bus (DESIGN.md §4).
+                        val shown = shownStatus(status[run.key], run.key in active, null)
+                        if (shown != null) {
                             Text(
-                                it.line, style = MaterialTheme.typography.bodyMedium,
-                                color = if (it.old) MaterialTheme.colorScheme.error else Color.Unspecified,
+                                shown.line, style = MaterialTheme.typography.bodyMedium,
+                                color = if (shown.old) MaterialTheme.colorScheme.error else Color.Unspecified,
                             )
-                            it.checkedAt?.let { t -> Text("checked ${clockSeconds(t)}", style = MaterialTheme.typography.bodySmall) }
+                            shown.checkedAt?.let { t -> Text("checked ${clockSeconds(t)}", style = MaterialTheme.typography.bodySmall) }
+                        } else if (status[run.key] != null) {
+                            Text(NOT_MONITORED, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             OutlinedButton(onClick = { onOpenMap(run) }) { Text("Open map") }
