@@ -332,7 +332,7 @@ Once watching has ended, the run waits for its next monitoring period. Nothing r
   - **Cancel**
 
   Per-run days are kept untouched while the switch is off. A run's Alarm switch can still be turned on for its next period.
-- The line under the switch shows the days of all runs ("Mon–Fri", or "Custom per run" when they differ). It opens the **All runs** days page, where a day some runs have shows as mixed, and tapping it gives that day to every run.
+- The line under the switch shows the days of all runs ("Mon–Fri", or "Custom per run" when they differ). The whole Automatic start card opens the **All runs** days page, like a run card opens its page; the switch keeps its own action (user, 2026-11-20: only the days line opened it, while the card reads as one block). On that page a day some runs have shows as mixed, and tapping it gives that day to every run.
 - While the switch is off, each card reads "Automatic start: off · 14:09–15:09 ›".
 - Known gap: when the phone is off or rebooting at the period start, that period doesn't start by itself. Since the Alarm switch, opening the app during the period starts it.
 - Samsung: Battery must be "Unrestricted" for Bus Tracker, or One UI may put it to deep sleep and its alarms never fire.

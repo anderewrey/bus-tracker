@@ -5,7 +5,6 @@ package io.github.anderewrey.bustracker.ui
 
 import android.app.DatePickerDialog
 import android.content.Context
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,7 +43,8 @@ fun AutoStartRow(runs: List<Run>, onDays: () -> Unit) {
     var asking by remember { mutableStateOf(false) }
     val days = runs.map { it.days }.distinct().let { if (it.size <= 1) daysText(it.firstOrNull() ?: emptySet()) else "Custom per run" }
 
-    Card(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+    // The whole card opens the days page, like a run card opens its page; the switch keeps its own action.
+    Card(onClick = onDays, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
         Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("Automatic start", style = MaterialTheme.typography.titleSmall)
@@ -52,7 +52,7 @@ fun AutoStartRow(runs: List<Run>, onDays: () -> Unit) {
                     (if (auto.on) days else "${autoText(auto).replaceFirstChar { it.uppercase() }} · $days") + " ›",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable(onClick = onDays).padding(vertical = 4.dp),
+                    modifier = Modifier.padding(vertical = 4.dp),
                 )
             }
             Switch(checked = auto.on, onCheckedChange = { on ->
