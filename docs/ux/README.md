@@ -9,6 +9,7 @@ control does in each context.
 | 1 · Flows | 1.1 · A normal school day | `Main.dc.html` |
 | | 1.2 · The Alarm switch (bell) | `AlarmSwitch.dc.html` |
 | | 1.3 · Automatic start off | `AutoStart.dc.html` |
+| | 1.4 · The map | `MapView.dc.html` |
 
 `canvas.json` lists the pages and artboards (names, positions, sizes). Each `.dc.html` is one
 artboard in the Design canvas format: it renders in the owner's Design canvas, not on its own

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The map</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.ph{width:220px;height:440px;border:2px solid #444;border-radius:22px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;background:#fff;font-size:12px;position:relative}
+.row{display:flex;justify-content:space-between;align-items:center}
+.sw{width:30px;height:16px;border-radius:9px;background:#2a6fdb}
+.sw.off{background:#bbb}
+.ring{width:22px;height:22px;border-radius:50%;border:2.5px solid #2a6fdb;font-size:9px;display:flex;align-items:center;justify-content:center}
+.rf{width:22px;height:22px;border-radius:50%;border:1.5px solid #888;display:flex;align-items:center;justify-content:center;font-size:13px}
+.ar{width:110px;height:440px;margin-top:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;color:#333;text-align:center;flex-shrink:0}
+.cap{width:220px;font-size:12px;color:#333;line-height:1.4}
+.mut{color:#666}
+.dim{opacity:.3}
+.col{display:flex;flex-direction:column;gap:10px}
+.nt{width:220px;height:100px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px}
+.nb{background:#fff;border:1.5px solid #888;border-radius:10px;padding:6px 8px;font-size:11px;display:flex;flex-direction:column;gap:2px}
+.nl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.04em}
+.h2{font-size:16px;font-weight:600}
+.map{flex-grow:1;border:1.5px dashed #888;border-radius:8px;position:relative;background:#fafafa}
+.zone{position:absolute;left:30px;top:150px;width:110px;height:90px;border:1.5px dashed #2a6fdb;border-radius:6px}
+.stop{position:absolute;left:78px;top:188px;width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid #333}
+.bus{position:absolute;left:120px;top:60px;width:14px;height:14px;border-radius:50%;background:#2a6fdb}
+.snack{position:absolute;left:6px;right:6px;top:6px;background:#333;color:#fff;border-radius:6px;padding:6px;font-size:10px}
+</style>
+</helmet>
+<div style="width:1000px;height:2150px;box-sizing:border-box;padding:28px 32px;font-family:Inter,system-ui,sans-serif;background:#f6f6f4;display:flex;flex-direction:column;gap:18px">
+<div style="font-size:20px;font-weight:600">The map: the bus shows only while watched, or after a ↻ on this map</div>
+<div class="h2">Row 1.4.1 · Watching ends while the map is open</div>
+<div style="display:flex;align-items:flex-start">
+<div class="col">
+<div class="nt"><span class="nl">System notifications</span><div class="nb"><b>B101 · watching</b><span>1.1 km · This Street · GPS 7:12</span><span class="mut">[Open map] [Turn off]</span></div></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>B101 · Pickup 7:33 AM</b></div>
+<div class="row"><span>1.1 km · This Street · GPS 7:12</span><span style="display:flex;gap:6px;align-items:center"><span class="sw"></span><span class="ring">18</span></span></div>
+<span class="mut">checked 7:12:40 AM</span>
+<div class="map"><div class="zone"></div><div class="stop"></div><div class="bus"></div></div>
+</div>
+<div class="cap"><b>7:12, watching.</b> The ring counts down to the next check (30 s); the view follows the bus, the stop and the zones.</div>
+</div>
+<div class="ar"><i>bus parked at the school</i><span style="font-size:22px">→</span></div>
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>B101 · Pickup 7:33 AM</b></div>
+<div class="row"><span>Not monitored</span><span style="display:flex;gap:6px;align-items:center"><span class="sw"></span><span class="rf">↻</span></span></div>
+<span class="mut">&#160;</span>
+<div class="map"><div class="zone"></div><div class="stop"></div></div>
+</div>
+<div class="cap"><b>The bus goes away at once.</b> Its last position would say nothing true any more. The stop and the zones stay; the ring becomes a plain ↻; the bell is now about the next period.</div>
+</div>
+</div>
+<div class="h2" style="margin-top:12px">Row 1.4.2 · Looking without watching</div>
+<div style="display:flex;align-items:flex-start">
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>B101 · Pickup 7:33 AM</b></div>
+<div class="row"><span>Not monitored</span><span style="display:flex;gap:6px;align-items:center"><span class="sw"></span><span class="rf">↻</span></span></div>
+<span class="mut">&#160;</span>
+<div class="map"><div class="zone"></div><div class="stop"></div></div>
+</div>
+<div class="cap"><b>10:00, Open map.</b> No bus, even with a position in memory from this morning.</div>
+</div>
+<div class="ar"><b>↻</b><span style="font-size:22px">→</span></div>
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>B101 · Pickup 7:33 AM</b></div>
+<div class="row"><span>3.4 km · That Street · GPS 9:59</span><span style="display:flex;gap:6px;align-items:center"><span class="sw"></span><span class="rf">↻</span></span></div>
+<span class="mut">checked 10:00:05 AM</span>
+<div class="map"><div class="zone"></div><div class="stop"></div><div class="bus"></div></div>
+</div>
+<div class="cap"><b>One check, by hand.</b> The bus and the line show until this map is closed. No watching starts, no alarm can ring.</div>
+</div>
+<div class="ar"><b>Back</b>, later <b>Open map</b><span style="font-size:22px">→</span></div>
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>B101 · Pickup 7:33 AM</b></div>
+<div class="row"><span>Not monitored</span><span style="display:flex;gap:6px;align-items:center"><span class="sw"></span><span class="rf">↻</span></span></div>
+<span class="mut">&#160;</span>
+<div class="map"><div class="zone"></div><div class="stop"></div></div>
+</div>
+<div class="cap"><b>Gone again.</b> A ↻ only counts for the map it was made on.</div>
+</div>
+</div>
+<div class="h2" style="margin-top:12px">Row 1.4.3 · No vehicle yet</div>
+<div style="display:flex;align-items:flex-start">
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>B101 · Pickup 7:33 AM</b></div>
+<div class="row"><span>Not monitored</span><span style="display:flex;gap:6px;align-items:center"><span class="sw"></span><span class="rf">↻</span></span></div>
+<span class="mut">&#160;</span>
+<div class="map"><div class="zone"></div><div class="stop"></div></div>
+</div>
+<div class="cap"><b>6:40, before the bus leaves.</b> The parent wants to see if it is on its way.</div>
+</div>
+<div class="ar"><b>↻</b><span style="font-size:22px">→</span></div>
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>B101 · Pickup 7:33 AM</b></div>
+<div class="row"><span>No vehicle</span><span style="display:flex;gap:6px;align-items:center"><span class="sw"></span><span class="rf">↻</span></span></div>
+<span class="mut">checked 6:40:12 AM</span>
+<div class="map"><div class="zone"></div><div class="stop"></div><div class="snack">Information about the vehicle associated to your child's transportation is unavailable at this time.</div></div>
+</div>
+<div class="cap"><b>BusPlanner's own message</b> pops up over the map, only as the answer to ↻; the line just says "No vehicle".</div>
+</div>
+<div class="ar"><i>8 s</i><span style="font-size:22px">→</span></div>
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>B101 · Pickup 7:33 AM</b></div>
+<div class="row"><span>No vehicle</span><span style="display:flex;gap:6px;align-items:center"><span class="sw"></span><span class="rf">↻</span></span></div>
+<span class="mut">checked 6:40:12 AM</span>
+<div class="map"><div class="zone"></div><div class="stop"></div></div>
+</div>
+<div class="cap"><b>The message goes away by itself.</b> Normal before the bus leaves; at 7:03 watching starts as usual.</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":2150}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

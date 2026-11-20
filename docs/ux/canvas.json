@@ -33,6 +33,14 @@
       "w": 1900,
       "x": 0,
       "y": 0
+    },
+    "MapView.dc.html": {
+      "h": 2150,
+      "page": "flows",
+      "title": "Artboard 1.4 · The map",
+      "w": 1000,
+      "x": 0,
+      "y": 5120
     }
   },
   "createdOnFiles": {
@@ -48,7 +56,8 @@
     "Navigation.dc.html",
     "Main.dc.html",
     "AlarmSwitch.dc.html",
-    "AutoStart.dc.html"
+    "AutoStart.dc.html",
+    "MapView.dc.html"
   ],
   "pages": [
     {
