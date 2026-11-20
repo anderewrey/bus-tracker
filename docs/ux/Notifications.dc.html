@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Notifications</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.nb{width:300px;box-sizing:border-box;background:#fff;border:1.5px solid #888;border-radius:12px;padding:10px 12px;font-size:12px;display:flex;flex-direction:column;gap:3px}
+.ring{border-color:#c0392b;background:#fbeceb}
+.app{font-size:10px;color:#666}
+.mut{color:#666}
+.it{display:flex;flex-direction:column;gap:8px;width:300px}
+.cap{font-size:12px;color:#333;line-height:1.45}
+.ch{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.04em}
+</style>
+</helmet>
+<div style="width:1100px;height:860px;box-sizing:border-box;padding:28px 32px;font-family:Inter,system-ui,sans-serif;background:#f6f6f4;display:flex;flex-direction:column;gap:28px">
+<div style="font-size:20px;font-weight:600">Notifications: what each one says, when it comes and what it does</div>
+<div style="display:flex;gap:40px;align-items:flex-start">
+<div class="it">
+<span class="ch">Tracking · silent, ongoing</span>
+<div class="nb"><span class="app">Bus Tracker</span><b>B101 · Pickup 7:33 AM</b><span>1.1 km · This Street · GPS 7:12</span><span class="mut">[Open map] [Turn off]</span></div>
+<div class="cap"><b>While a run is watched</b>, one per run, updated in silence at each check. Tap or Open map → the map. <b>Turn off</b> = the bell off: watching stops. Swiped away, it comes back: watching goes on.</div>
+</div>
+<div class="it">
+<span class="ch">Main zone · rings until answered</span>
+<div class="nb ring"><span class="app">Bus Tracker</span><b>B101 entered Home zone</b><span>400 m · This Street · GPS 7:30</span><span class="mut">[Open map] [Silence]</span></div>
+<div class="cap"><b>The bus enters the main zone</b>, once per period. It takes the tracking notification's place and rings 1 min at most. Silence, a volume key, opening or swiping it stop the sound; watching goes on. Back to the tracking line after 1 min or when the bus leaves the zone.</div>
+</div>
+<div class="it">
+<span class="ch">BusPlanner notices · rings until answered</span>
+<div class="nb ring"><span class="app">Bus Tracker</span><b>B101: Delayed 15 minutes from original time</b><span>Bus is running 15 minutes late due to traffic.</span><span class="mut">B101 · posted 7:36 AM</span><span class="mut">[Open map] [Silence]</span></div>
+<div class="cap"><b>BusPlanner posts a late or cancelled notice</b> for a watched run, once per notice. A notification of its own, beside the tracking one. Watching may last longer (the delay); the run's title shows the notice in red.</div>
+</div>
+</div>
+<div style="display:flex;gap:40px;align-items:flex-start">
+<div class="it">
+<span class="ch">Bus alerts · sounds once</span>
+<div class="nb"><span class="app">Bus Tracker</span><b>B101: BusPlanner reports no vehicle</b><span>Information about the vehicle associated to your child's transportation is unavailable at this time.</span></div>
+<div class="cap"><b>Watching starts and BusPlanner shows no vehicle.</b> A warning only: watching goes on and picks the bus up once it appears. No button; swipe it away.</div>
+</div>
+<div class="it">
+<span class="ch">Bus alerts · sounds once</span>
+<div class="nb"><span class="app">Bus Tracker</span><b>Bus schedule changed</b><span>B101 · Pickup: see what changed</span></div>
+<div class="cap"><b>A rescan found changes</b> (a stop, a time). Tap → Changes, to keep the configuration or take the new one.</div>
+</div>
+<div class="it">
+<span class="ch">Bus alerts · sounds once</span>
+<div class="nb"><span class="app">Bus Tracker</span><b>B101 · Pickup: monitoring didn't start</b><span>Tap to open the app: it starts it.</span></div>
+<div class="cap"><b>Android refused to start watching by itself</b> (exact alarms off, battery restrictions). Tap → the app, which starts the period under way.</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1100,"height":860}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

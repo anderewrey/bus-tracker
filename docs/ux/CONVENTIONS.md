@@ -35,7 +35,12 @@ changing a flow, an artboard or the navigation page.
   by itself, the next period, watching restarting).
 - One row per scenario; split two unrelated gestures into two rows.
 
-## Navigation page (Page 0)
+## Reference page (Page 0)
+
+What the app has, as opposed to Page 1 · Flows, what happens over time: the views and how to move
+between them (0.1), the notifications (0.2).
+
+### Navigation (0.1)
 
 - Hubs and spokes: a view, then "opens one of →", then a dashed frame holding every view opened
   from it, side by side. Each one's Back returns to the view that opened it.

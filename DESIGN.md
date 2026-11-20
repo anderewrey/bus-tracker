@@ -7,7 +7,7 @@ and sends a dedicated notification when the bus enters zones drawn by the user.
 
 The protocol has been proven with the Python prototype `busprobe.py`.
 
-UX flow sketches (screens joined by the user's actions) are in [`docs/ux/`](docs/ux/README.md): navigation between views in Artboard 0.1 (§3, §5.1–5.3), a normal school day in 1.1 (§4, §5, §7), the Alarm switch in 1.2 (§5), Automatic start in 1.3 (§5), the map in 1.4 (§4). A change to one of these behaviours updates its artboard in the same pull request, following [`docs/ux/CONVENTIONS.md`](docs/ux/CONVENTIONS.md).
+UX flow sketches (screens joined by the user's actions) are in [`docs/ux/`](docs/ux/README.md): navigation between views in Artboard 0.1 (§3, §5.1–5.3), the notifications in 0.2 (§7), a normal school day in 1.1 (§4, §5, §7), the Alarm switch in 1.2 (§5), Automatic start in 1.3 (§5), the map in 1.4 (§4). A change to one of these behaviours updates its artboard in the same pull request, following [`docs/ux/CONVENTIONS.md`](docs/ux/CONVENTIONS.md).
 
 ---
 
