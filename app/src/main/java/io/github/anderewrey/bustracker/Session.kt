@@ -572,11 +572,24 @@ object Session {
         AppLog.log("zone ${zone.name} deleted")
     }
 
-    /** Turns every automatic start on or off, or off until a day. */
+    /**
+     * Turns every automatic start on or off, or off until a day. Turned off, it also stops the runs
+     * being watched whose Alarm switch it turns off: those that started by themselves, not one the
+     * user turned on for this period (DESIGN.md §5, user 2026-11-20).
+     */
     fun setAutoStart(context: Context, auto: AutoStart) {
         Store(context).autoStart = auto
         _autoStart.value = auto
         AppLog.log("automatic start: " + autoText(auto))
+        val today = LocalDate.now()
+        for (run in _runs.value) {
+            if (run.key !in _active.value) continue
+            val p = run.periodOn(today) ?: continue
+            if (!isAlarmOn(run, p)) {
+                AppLog.log("${run.key}: automatic start off, watching stops")
+                MonitorService.stop(context, run.key)
+            }
+        }
         Scheduler.reschedule(context)
     }
 

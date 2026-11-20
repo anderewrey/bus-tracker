@@ -303,7 +303,7 @@ A monitoring period is the time span during which the app polls BusPlanner for o
 - **Silence** (on the ringing alarm only) stops the sound; the app keeps watching. It never changes the switch.
 - The tracking notification's button turns the switch off.
 - "Monitor now" for an hour outside a period is dropped. The map's ↻ ring checks the bus at any time; a late bus is covered by the notice hints (§7.3).
-- While the global Automatic start switch is off (holidays), every run's Alarm switch is off; turning one on applies to that run's next period only.
+- While the global Automatic start switch is off (holidays), every run's Alarm switch is off; turning one on applies to that run's next period only. Turning it off (or off until a day) also stops a run being watched that started by itself; one whose Alarm switch the user turned on for this period goes on (user, 2026-11-20: on a day without school, the morning run kept watching until its switch was turned off by hand).
 - *As written 2026-11-06 (not built):* the choices are kept per period (skipped, forced on, ended by itself), as the period's start; older than two days they're dropped. The switch's period moves on every 30 s on screen. Opening the app during a period whose switch is on but which isn't watching (phone off at the start) starts it.
 
 **Watching ends by itself when the first of these happens** (the switch then shows the next period):
