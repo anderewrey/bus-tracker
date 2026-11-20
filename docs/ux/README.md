@@ -16,7 +16,7 @@ or on GitHub. These files are the source; the canvas is published from them, and
 the canvas are copied back here.
 
 How the sketches are drawn (what to show, notifications, labels, scenarios, naming):
-[`.claude/skills/ux-flows/SKILL.md`](../../.claude/skills/ux-flows/SKILL.md).
+[CONVENTIONS.md](CONVENTIONS.md).
 
 An app change that alters a flow updates its artboard in the same pull request (DESIGN.md says
 which artboard goes with which section).

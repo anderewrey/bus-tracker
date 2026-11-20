@@ -1,13 +1,8 @@
----
-name: ux-flows
-description: How to draw and update Bus Tracker's UX flow sketches (docs/ux/), the way the project owner wants them. Use when asked to sketch, add or change a UX flow, a navigation map or an artboard, or when an app change alters what the user sees or does (Alarm switch, Automatic start, notifications, navigation).
----
 
-# Bus Tracker UX flows
+# UX flows: conventions
 
-Sketches of the app's screens joined by arrows, to explain what each control does in each
-context. The source is in `docs/ux/` (one `.dc.html` per artboard, plus `canvas.json`); it is
-viewed and commented on in the owner's Design canvas, published from these files.
+How the sketches in this folder are drawn and kept up to date. Read it before adding or
+changing a flow, an artboard or the navigation page.
 
 ## What a sketch shows
 
