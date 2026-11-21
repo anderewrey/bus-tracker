@@ -14,6 +14,7 @@ import io.github.anderewrey.bustracker.data.diffRuns
 import io.github.anderewrey.bustracker.data.PeriodChoices
 import io.github.anderewrey.bustracker.data.alarmOn
 import io.github.anderewrey.bustracker.data.nextStart
+import io.github.anderewrey.bustracker.data.ownDaysText
 import io.github.anderewrey.bustracker.data.periodOn
 import io.github.anderewrey.bustracker.data.switchPeriod
 import org.junit.Assert.assertEquals
@@ -134,5 +135,12 @@ class ScheduleTest {
         val scanned = listOf(run("B101 AM", "7:41 AM"))
         val saved = carryConfiguration(scanned, diffRuns(past, scanned, at(4, 13, 0)), past)
         assertEquals(setOf(MONDAY), saved[0].days)
+    }
+
+    @Test fun aRunsOwnDaysShowOnlyWhenNotTheUsualWeek() {
+        assertNull(ownDaysText(WORK_DAYS))
+        assertNull(ownDaysText(emptySet()))
+        assertEquals("Mon, Wed, Fri", ownDaysText(setOf(MONDAY, WEDNESDAY, FRIDAY)))
+        assertEquals("Wed", ownDaysText(setOf(WEDNESDAY)))
     }
 }

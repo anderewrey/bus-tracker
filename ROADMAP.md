@@ -31,6 +31,7 @@ The order of the work. **What** each feature does and **how** is in [DESIGN.md](
 | — | 2026-11-20 | UX flow sketches in docs/ux/ (navigation, a normal day, the Alarm switch, Automatic start), with the drawing rules in docs/ux/CONVENTIONS.md |
 | — | 2026-11-21 | Words and labels made consistent (§8): "watching" everywhere, Stop watching, Test alarm, Reload from BusPlanner, Watching days; "›" on tappable cards; watching status on the map; the "No vehicle" notification opens the app; Debug moved into Settings |
 | — | 2026-11-21 | The Log's poll line shows the place the screen showed: "(This Street)", "(finding street…)" (§7.2) |
+| — | 2026-11-21 | A run's own Watching days show on its card when they aren't Mon–Fri (§8); Artboard 1.5 · Per-run rules |
 
 0.12 and 0.13 were committed together on 2026-11-06. 0.13 (with 0.11 and 0.12 in it) passed its first real run on the phone on 2026-11-09: automatic start, live checks, the main-zone alarm, and recovery from a short network loss.
 

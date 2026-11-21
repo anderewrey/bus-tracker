@@ -57,6 +57,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import io.github.anderewrey.bustracker.data.Run
+import io.github.anderewrey.bustracker.data.ownDaysText
 import io.github.anderewrey.bustracker.data.Store
 import io.github.anderewrey.bustracker.net.BadPortal
 import io.github.anderewrey.bustracker.net.portalAddress
@@ -351,6 +352,8 @@ private fun RunsScreen(
                             Text("›", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                         }
                         Text(run.address)
+                        // The run's own days, when they aren't the usual Mon–Fri (user, 2026-11-21).
+                        ownDaysText(run.days)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         Text(run.students.joinToString(" · ") { it.name }, style = MaterialTheme.typography.bodySmall)
                         // A run no longer watched shows no line about its bus (DESIGN.md §4).
                         val shown = shownStatus(status[run.key], run.key in active, null)
