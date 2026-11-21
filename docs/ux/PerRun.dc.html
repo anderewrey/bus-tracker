@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Per-run rules</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.ph{width:220px;height:440px;border:2px solid #444;border-radius:22px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;background:#fff;font-size:12px}
+.bx{border:1.5px dashed #888;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:4px}
+.row{display:flex;justify-content:space-between;align-items:center}
+.sw{width:30px;height:16px;border-radius:9px;background:#2a6fdb}
+.sw.off{background:#bbb}
+.sw.na{background:#e4e4e4}
+.ar{width:110px;height:440px;margin-top:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;color:#333;text-align:center;flex-shrink:0}
+.cap{width:220px;font-size:12px;color:#333;line-height:1.4}
+.mut{color:#666}
+.new{color:#2a6fdb}
+.hd{opacity:.3;display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:2px 2px 4px}
+.dim{opacity:.3}
+.col{display:flex;flex-direction:column;gap:10px}
+.nt{width:220px;height:100px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px}
+.nb{background:#fff;border:1.5px solid #888;border-radius:10px;padding:6px 8px;font-size:11px;display:flex;flex-direction:column;gap:2px}
+.nl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.04em}
+.h2{font-size:16px;font-weight:600}
+.who{font-size:12px;font-weight:600;color:#333}
+.days{display:flex;gap:3px;flex-wrap:wrap}
+.d{border:1.5px solid #888;border-radius:10px;padding:1px 5px;font-size:10px}
+.d.on{background:#2a6fdb;border-color:#2a6fdb;color:#fff}
+</style>
+</helmet>
+<div style="width:1060px;height:2240px;box-sizing:border-box;padding:28px 32px;font-family:Inter,system-ui,sans-serif;background:#f6f6f4;display:flex;flex-direction:column;gap:18px">
+<div style="font-size:20px;font-weight:600">Per-run rules: Automatic start for everyone, each run's Watching days for its own needs, the bell for one-off exceptions</div>
+<div class="h2">Row 1.5.1 · Afternoons only</div>
+<div style="display:flex;align-items:flex-start">
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>Reload from BusPlanner · Settings</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>Out of the box.</b> Both runs follow the global days (Mon–Fri). Most parents stop here.</div>
+</div>
+<div class="ar"><b>Pickup card ›</b>, then untick every day<span style="font-size:22px">→</span></div>
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>B101 · Pickup 7:33 AM</b></div>
+<div class="bx dim">About</div>
+<div class="bx"><b>Watching days</b><div class="days"><span class="d">Mon</span><span class="d">Tue</span><span class="d">Wed</span><span class="d">Thu</span><span class="d">Fri</span><span class="d">Sat</span><span class="d">Sun</span></div></div>
+<div class="bx dim">Watching period</div>
+<div class="bx dim">Main zone</div>
+<div class="bx dim">End of watching</div>
+</div>
+<div class="cap"><b>The run's own Watching days.</b> A permanent rule for this run only; the other run and Automatic start are untouched.</div>
+</div>
+<div class="ar"><b>Back</b><span style="font-size:22px">→</span></div>
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>Reload from BusPlanner · Settings</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span class="new">No days set</span><div class="row"><span>[Open map]</span><span class="sw na"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>Pickup never starts by itself</b>; its bell is greyed. The dropoff watches every school afternoon. <span class="new">Blue: proposed</span>, the run's own days shown on its card when they differ.</div>
+</div>
+</div>
+<div class="h2" style="margin-top:12px">Row 1.5.2 · Two parents, two phones, each with their own rules</div>
+<div style="display:flex;align-items:flex-start">
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<span class="who">Parent A's phone</span><div class="ph">
+<div class="hd"><b>Bus runs</b><span>Reload from BusPlanner · Settings</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><span class="new">Mon, Tue, Thu, Fri</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap">Watches every morning and every afternoon except Wednesday.</div>
+</div>
+<div style="width:40px;flex-shrink:0"></div>
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<span class="who">Parent B's phone</span><div class="ph">
+<div class="hd"><b>Bus runs</b><span>Reload from BusPlanner · Settings</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span class="new">No days set</span><div class="row"><span>[Open map]</span><span class="sw na"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><span class="new">Wed only</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap">Takes the Wednesday afternoon, nothing else. Both phones keep Automatic start on: each run follows its own days.</div>
+</div>
+<div class="ar"><i>Wednesday 2:09 PM, by itself</i><span style="font-size:22px">→</span></div>
+<div class="col">
+<div class="nt"><span class="nl">System notifications</span><div class="nb"><b>B101 · watching</b><span>1.4 km · That Street · GPS 2:20</span><span class="mut">[Open map] [Stop watching]</span></div></div>
+<span class="who">Parent B's phone</span><div class="ph">
+<div class="hd"><b>Bus runs</b><span>Reload from BusPlanner · Settings</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span class="new">No days set</span><div class="row"><span>[Open map]</span><span class="sw na"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><span class="new">Wed only</span><span>1.4 km · That Street · GPS 2:20</span><span class="mut">Watching until 3:09</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>Only B's phone watches</b>; A's stays quiet. No bell to touch, no forcing: the rules do it every week.</div>
+</div>
+</div>
+<div class="h2" style="margin-top:12px">Row 1.5.3 · A holiday: the global switch wins, the runs' rules are kept</div>
+<div style="display:flex;align-items:flex-start">
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<span class="who">Parent B's phone</span><div class="ph">
+<div class="hd"><b>Bus runs</b><span>Reload from BusPlanner · Settings</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw off"></span></div><span class="mut">Off until Tue Nov 24 · Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span class="new">No days set</span><div class="row"><span>[Open map]</span><span class="sw na"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><span class="new">Wed only</span><div class="row"><span>[Open map]</span><span class="sw off"></span></div></div>
+</div>
+<div class="cap"><b>Automatic start off</b> for the long weekend: every bell is off, whatever the run's days.</div>
+</div>
+<div class="ar"><i>Tuesday, by itself</i><span style="font-size:22px">→</span></div>
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<span class="who">Parent B's phone</span><div class="ph">
+<div class="hd"><b>Bus runs</b><span>Reload from BusPlanner · Settings</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span class="new">No days set</span><div class="row"><span>[Open map]</span><span class="sw na"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><span class="new">Wed only</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>Back as it was.</b> The runs' own days were never changed; Wednesday afternoons watch again.</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1060,"height":2240}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
