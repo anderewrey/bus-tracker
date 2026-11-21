@@ -26,10 +26,11 @@ The order of the work. **What** each feature does and **how** is in [DESIGN.md](
 | — | 2026-11-18 | Street name from 5 geocoder candidates by distance: the nearest street, and the others within 25 m of it ("This Street / That Street"), never a stop's whole address line (§7.2, Street name); the lookup never holds up a check or the alarm ("finding street…", "street unknown"); Test geocoder on the Debug screen |
 | — | 2026-11-19 | Street name from 10 geocoder candidates instead of 5: the bus's street named first at 92.5 % of 642 replayed positions instead of 84.7 % (§7.2, Why 10 candidates); the Log's "street at" line gives the lookup's time ("(182 ms)") or "expired" |
 | — | 2026-11-19 | Bus position only while watched: once monitoring stops, no bus on the map and "Not monitored" on the card and map; a tap on ↻ shows it until the map is closed (§4) |
-| — | 2026-11-20 | Turning Automatic start off (or off until a day) also stops a run being watched that started by itself (§5) |
+| — | 2026-11-20 | Turning Automatic start off (or off until a day) also stops a run being watched that started by itself (§5); from 2026-11-21 every change to Automatic start or the days applies at once, both ways |
 | — | 2026-11-20 | The whole Automatic start card opens the days page, not only its days line (§5) |
 | — | 2026-11-20 | UX flow sketches in docs/ux/ (navigation, a normal day, the Alarm switch, Automatic start), with the drawing rules in docs/ux/CONVENTIONS.md |
 | — | 2026-11-21 | Words and labels made consistent (§8): "watching" everywhere, Stop watching, Test alarm, Reload from BusPlanner, Watching days; "›" on tappable cards; watching status on the map; the "No vehicle" notification opens the app; Debug moved into Settings |
+| — | 2026-11-21 | The Log's poll line shows the place the screen showed: "(This Street)", "(finding street…)" (§7.2) |
 
 0.12 and 0.13 were committed together on 2026-11-06. 0.13 (with 0.11 and 0.12 in it) passed its first real run on the phone on 2026-11-09: automatic start, live checks, the main-zone alarm, and recovery from a short network loss.
 
