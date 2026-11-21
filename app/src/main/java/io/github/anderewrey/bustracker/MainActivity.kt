@@ -73,6 +73,7 @@ import io.github.anderewrey.bustracker.ui.OverviewScreen
 import io.github.anderewrey.bustracker.ui.SchoolScreen
 import io.github.anderewrey.bustracker.ui.SettingsScreen
 import io.github.anderewrey.bustracker.ui.WatchingDaysScreen
+import io.github.anderewrey.bustracker.ui.BusPlannerScreen
 import io.github.anderewrey.bustracker.ui.AutoStartRow
 import io.github.anderewrey.bustracker.monitor.Scheduler
 import androidx.compose.material3.FilledTonalButton
@@ -86,6 +87,7 @@ import io.github.anderewrey.bustracker.ui.GeocoderTest
 import io.github.anderewrey.bustracker.ui.AlarmRow
 import io.github.anderewrey.bustracker.ui.RunTitle
 import kotlinx.coroutines.launch
+import androidx.lifecycle.lifecycleScope
 
 class MainActivity : ComponentActivity() {
     private val openRun = mutableStateOf<String?>(null)
@@ -118,7 +120,11 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         // A period under way with its Alarm switch on but not watching (phone off at its start): start it.
-        if (Store(this).runs.isNotEmpty()) Session.catchUp(this)
+        if (Store(this).runs.isNotEmpty()) {
+            Session.catchUp(this)
+            // Today's BusPlanner notices on every run's card, watched or not.
+            lifecycleScope.launch { Session.refreshNotices(this@MainActivity) }
+        }
     }
 
     /** Opened from a ringing main-zone alarm: opening it answers it, as Silence does. */
@@ -149,6 +155,7 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
     var showDebug by remember { mutableStateOf(false) }
     var pageKey by remember { mutableStateOf<String?>(null) }
     var showSettings by remember { mutableStateOf(false) }
+    var showBusPlanner by remember { mutableStateOf(false) }
     var watchingDays by remember { mutableStateOf(false) }
     var showOverview by remember { mutableStateOf(false) }
     var schoolName by remember { mutableStateOf<String?>(null) }
@@ -193,14 +200,19 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
         }
         showSettings -> {
             BackHandler { showSettings = false }
-            SettingsScreen(onBack = { showSettings = false }, onLogout = {
+            SettingsScreen(onBack = { showSettings = false }, onOverview = { showOverview = true }, onDebug = { showDebug = true }, onImported = { loggedIn = Store(context).hasLogin })
+        }
+        showBusPlanner && !showChanges && mapRun == null -> {
+            BackHandler { showBusPlanner = false }
+            BusPlannerScreen(onBack = { showBusPlanner = false }, onShowChanges = { onShowChanges(true) }, onLogout = {
                 runs.forEach { MonitorService.stop(context, it.key) }
                 Session.logout(context)
+                showBusPlanner = false
                 showSettings = false
                 showOverview = false
                 schoolName = null
                 loggedIn = false
-            }, onOverview = { showOverview = true }, onDebug = { showDebug = true }, onImported = { loggedIn = Store(context).hasLogin })
+            })
         }
         mapRun != null -> {
             BackHandler { onOpenRun(null) }
@@ -217,6 +229,7 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
             onOpenMap = { onOpenRun(it.key) },
             onOpenPage = { pageKey = it.key },
             onWatchingDays = { watchingDays = true },
+            onBusPlanner = { showBusPlanner = true },
             onSettings = { showSettings = true },
         )
     }
@@ -294,39 +307,19 @@ private fun RunsScreen(
     onOpenMap: (Run) -> Unit,
     onOpenPage: (Run) -> Unit,
     onWatchingDays: () -> Unit,
+    onBusPlanner: () -> Unit,
     onSettings: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val status by Session.status.collectAsState()
     val active by Session.active.collectAsState()
-    var busy by remember { mutableStateOf(false) }
-    var message by remember { mutableStateOf<String?>(null) }
-    var failed by remember { mutableStateOf(false) }
 
     Column(Modifier.safeDrawingPadding().padding(16.dp)) {
         Row(Modifier.fillMaxWidth()) {
             Text("Bus runs", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
-            TextButton(enabled = !busy, onClick = {
-                busy = true
-                message = null
-                scope.launch {
-                    try {
-                        val found = Session.scan(context).changes
-                        failed = false
-                        message = if (found.isEmpty()) "Reload from BusPlanner: no change" else "Reload from BusPlanner: ${found.size} change(s) found"
-                        if (found.isNotEmpty()) onShowChanges()
-                    } catch (e: Exception) {
-                        failed = true
-                        message = "Reload from BusPlanner failed: ${e.message ?: e.javaClass.simpleName}"
-                    } finally {
-                        busy = false
-                    }
-                }
-            }) { Text(if (busy) "Reloading…" else "Reload from BusPlanner") }
-            TextButton(onClick = onSettings) { Text("Settings") }
+            // What comes from BusPlanner, and how the phone reacts (user, 2026-11-21).
+            TextButton(onClick = onBusPlanner) { Text("BusPlanner ›") }
+            TextButton(onClick = onSettings) { Text("Settings ›") }
         }
-        message?.let { Text(it, color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant) }
         if (changes > 0) Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),

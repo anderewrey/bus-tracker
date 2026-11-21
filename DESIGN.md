@@ -398,8 +398,17 @@ Opened from **Settings** in the run list's top bar, which replaces Log out there
 - **Bus alerts:** the "no vehicle" warning at monitoring start and BusPlanner's late or cancelled notices, each on or off (both on by default), then the notices' own Sound, Vibration, Test and Android settings.
 - **Quiet mode:** the Quiet mode override switch (§7.1).
 - These settings are kept apart from the login: logging out keeps them.
-- **Account:** the BusPlanner email and **Log out**.
+- **Debug:** "Open Debug" (moved here from the run list's header, 2026-11-21).
+- *Until 2026-11-21: Account (email, Log out), now on the BusPlanner page (§5.2.1).*
 - **Children, schools, runs and zones:** "Open the overview" opens the overview page (§5.3).
+
+### 5.2.1 BusPlanner page (user, 2026-11-21)
+
+Opened from **BusPlanner ›** in the run list's header, beside **Settings ›**. Everything that comes from BusPlanner; Settings keeps how the phone reacts.
+- **Account:** the portal and email, and **Log out**.
+- **Reload from BusPlanner:** **Reload**, with the last one: "Last: today 7:03 AM (daily) · no change" (or "by hand", "2 change(s)"). Changes found open the Changes screen. It also fetches today's notices.
+- **Schedule changes:** "N waiting · See changes ›", or "None waiting". The red card on the run list stays.
+- Today's notices are not here: they show on each run's card (§7.3).
 
 ### 5.3 Overview page: children, schools, runs, zones (built 2026-11-17)
 
@@ -532,6 +541,8 @@ There is no decoration: no coloured icon, no map snapshot, nothing beyond what t
 
 ### 7.3 Notice hints (decided 2026-11-06, built in 0.11 except the cancelled bus)
 
+**All day on the run's card** (user, 2026-11-21): today's BusPlanner notice for a run shows in red at the end of its title, watched or not, from the time it is seen until the end of the day. The notices are fetched while watching (each round), when the app comes to the front, and after a reload; a failure keeps what is shown. *Until 2026-11-21: only while the run was watched.*
+
 The user wants the app to act on what BusPlanner notices say, not only ring them. The newest notice for the run's bus (§2.4) is the one that counts.
 
 - **Delay extends the period.** `Action` "Delayed N minutes from original time" (any case, "Minutes" or "minutes") → the run's period end moves to the planned end + N minutes. A newer notice replaces the older one, so 15 then 30 gives +30, not +45. On 2026-11-05, B102's 7:03–8:03 period would have run to 8:33.
@@ -611,7 +622,7 @@ The user wants the app to act on what BusPlanner notices say, not only ring them
 **Words and labels on screen** (user, 2026-11-21):
 
 - **One word, "watching":** `Not watching`, `Watching until 8:08`, "Watching period", "End of watching", "watching didn't start", the notification channel "Watching". The code names that mirror these labels follow (`WatchingDaysScreen`, `DebugScreen`, `ACTION_STOP_WATCHING`, `WATCHING_CHANNEL`, whose channel id stays `tracking` since Android keeps channels by id); the Log, `MonitorService` and the rest of the internals keep "monitoring".
-- **Stop watching** on the tracking notification (was "Turn off"); **Test alarm** for the three test buttons (Debug, Settings, run page); **Reload from BusPlanner** for the run list's rescan (one-way: "sync" would say both ways); **Watching days** for the days views, so only the global switch is called "Automatic start".
+- **Stop watching** on the tracking notification (was "Turn off"); **Test alarm** for the three test buttons (Debug, Settings, run page); **Reload from BusPlanner** for the rescan (one-way: "sync" would say both ways), on the BusPlanner page (§5.2.1); **Watching days** for the days views, so only the global switch is called "Automatic start".
 - **"›" on every card that opens something:** the run cards and the Automatic start card.
 - **A run's own Watching days on its card** when they aren't the usual Mon–Fri ("Mon, Wed, Fri"); none shown for Mon–Fri, and "No days set" beside the bell when there are none. The three levels: Automatic start for every run (holidays), each run's Watching days for its own needs (afternoons only, a parent who takes some days), the bell for a one-off exception (Artboard 1.5).
 - **Back** leaves a view; the zone editor keeps **Cancel**, as it drops a drawing.

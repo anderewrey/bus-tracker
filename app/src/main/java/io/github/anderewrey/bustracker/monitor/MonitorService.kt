@@ -340,7 +340,7 @@ class MonitorService : Service() {
         endWatchFor.remove(key)
         delayMin.remove(key)
         Session.setWatchEnd(key, null)
-        Session.setNotice(key, null)
+        // The notice stays on the run's card for the rest of the day (user, 2026-11-21).
         Session.setActive(until.keys.toSet())
         // An alarm that just rang stays until answered, even once watching has ended (a dropoff run
         // can end at the next check after the bus entered the zone). An older one goes away in

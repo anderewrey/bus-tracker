@@ -92,6 +92,17 @@ class Store(context: Context) {
             prefs.edit().putString("lastScan", value?.toString()).apply()
         }
 
+    /** The last reload from BusPlanner, for the BusPlanner page: when, why ("daily", "requested"), changes found. */
+    var lastReload: Triple<LocalDateTime, String, Int>?
+        get() {
+            val at = prefs.getString("lastReloadAt", null)?.let { runCatching { LocalDateTime.parse(it) }.getOrNull() } ?: return null
+            return Triple(at, prefs.getString("lastReloadWhy", null) ?: "", prefs.getInt("lastReloadChanges", 0))
+        }
+        set(value) {
+            prefs.edit().putString("lastReloadAt", value?.first?.toString()).putString("lastReloadWhy", value?.second)
+                .putInt("lastReloadChanges", value?.third ?: 0).apply()
+        }
+
     /** When each run's main-zone alarm last rang; a run rings once per monitoring period (one a day). */
     var rang: Map<String, LocalDateTime>
         get() = times("rang") { s ->
