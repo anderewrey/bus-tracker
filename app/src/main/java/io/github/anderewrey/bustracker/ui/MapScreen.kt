@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import io.github.anderewrey.bustracker.NOT_MONITORED
+import io.github.anderewrey.bustracker.NOT_WATCHING
 import io.github.anderewrey.bustracker.Session
 import io.github.anderewrey.bustracker.shownStatus
 import io.github.anderewrey.bustracker.data.Run
@@ -212,7 +212,8 @@ fun MapScreen(run: Run, onBack: () -> Unit) {
                 RunTitle(run, latest?.reading?.runLabel ?: run.key, MaterialTheme.typography.titleMedium)
                 current?.let { if (it.line.isNotEmpty()) Text(it.line, color = if (it.old) MaterialTheme.colorScheme.error else Color.Unspecified) }
                 current?.checkedAt?.let { Text("checked ${clockSeconds(it)}", style = MaterialTheme.typography.bodySmall) }
-                if (current == null && latest != null) Text(NOT_MONITORED, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                WatchingStatus(run)
+                if (current == null && latest != null) Text(NOT_WATCHING, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             AlarmSwitchCompact(run)
             RefreshRing(monitored = run.key in active, nextCheck = nextCheck, refreshing = refreshing) {

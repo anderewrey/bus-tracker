@@ -17,6 +17,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -56,6 +57,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import io.github.anderewrey.bustracker.data.Run
+import io.github.anderewrey.bustracker.data.ownDaysText
 import io.github.anderewrey.bustracker.data.Store
 import io.github.anderewrey.bustracker.net.BadPortal
 import io.github.anderewrey.bustracker.net.portalAddress
@@ -70,7 +72,7 @@ import io.github.anderewrey.bustracker.ui.RunScreen
 import io.github.anderewrey.bustracker.ui.OverviewScreen
 import io.github.anderewrey.bustracker.ui.SchoolScreen
 import io.github.anderewrey.bustracker.ui.SettingsScreen
-import io.github.anderewrey.bustracker.ui.AllDaysScreen
+import io.github.anderewrey.bustracker.ui.WatchingDaysScreen
 import io.github.anderewrey.bustracker.ui.AutoStartRow
 import io.github.anderewrey.bustracker.monitor.Scheduler
 import androidx.compose.material3.FilledTonalButton
@@ -144,19 +146,19 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
     val runs by Session.runs.collectAsState()
     val changes by Session.changes.collectAsState()
 
-    var showLog by remember { mutableStateOf(false) }
+    var showDebug by remember { mutableStateOf(false) }
     var pageKey by remember { mutableStateOf<String?>(null) }
     var showSettings by remember { mutableStateOf(false) }
-    var allDays by remember { mutableStateOf(false) }
+    var watchingDays by remember { mutableStateOf(false) }
     var showOverview by remember { mutableStateOf(false) }
     var schoolName by remember { mutableStateOf<String?>(null) }
 
     val mapRun = runs.firstOrNull { it.key == openRun }
     val pageRun = runs.firstOrNull { it.key == pageKey }
     when {
-        showLog -> {
-            BackHandler { showLog = false }
-            LogScreen { showLog = false }
+        showDebug -> {
+            BackHandler { showDebug = false }
+            DebugScreen { showDebug = false }
         }
         pageRun != null && mapRun == null -> {
             BackHandler { pageKey = null }
@@ -167,11 +169,11 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
                 onShowChanges(true)
             })
         }
-        allDays && loggedIn -> {
-            BackHandler { allDays = false }
-            AllDaysScreen(runs) { allDays = false }
+        watchingDays && loggedIn -> {
+            BackHandler { watchingDays = false }
+            WatchingDaysScreen(runs) { watchingDays = false }
         }
-        !loggedIn -> LoginScreen(onLog = { showLog = true }, onImported = { loggedIn = Store(context).hasLogin }) { loggedIn = true }
+        !loggedIn -> LoginScreen(onDebug = { showDebug = true }, onImported = { loggedIn = Store(context).hasLogin }) { loggedIn = true }
         schoolName != null -> {
             BackHandler { schoolName = null }
             SchoolScreen(schoolName!!) { schoolName = null }
@@ -198,7 +200,7 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
                 showOverview = false
                 schoolName = null
                 loggedIn = false
-            }, onOverview = { showOverview = true }, onImported = { loggedIn = Store(context).hasLogin })
+            }, onOverview = { showOverview = true }, onDebug = { showDebug = true }, onImported = { loggedIn = Store(context).hasLogin })
         }
         mapRun != null -> {
             BackHandler { onOpenRun(null) }
@@ -214,15 +216,14 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
             onShowChanges = { onShowChanges(true) },
             onOpenMap = { onOpenRun(it.key) },
             onOpenPage = { pageKey = it.key },
-            onAllDays = { allDays = true },
-            onLog = { showLog = true },
+            onWatchingDays = { watchingDays = true },
             onSettings = { showSettings = true },
         )
     }
 }
 
 @Composable
-private fun LoginScreen(onLog: () -> Unit, onImported: () -> Unit, onDone: () -> Unit) {
+private fun LoginScreen(onDebug: () -> Unit, onImported: () -> Unit, onDone: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     // A login saved before the portal field keeps its email: only the portal and password are typed.
@@ -240,7 +241,7 @@ private fun LoginScreen(onLog: () -> Unit, onImported: () -> Unit, onDone: () ->
         // Debug at the top right, as on the runs screen, away from "Log in".
         Row(Modifier.fillMaxWidth()) {
             Text("BusPlanner login", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
-            TextButton(onClick = onLog) { Text("Debug") }
+            TextButton(onClick = onDebug) { Text("Debug") }
         }
         OutlinedTextField(
             portal, { portal = it.trim() }, label = { Text("Portal address") }, singleLine = true,
@@ -292,8 +293,7 @@ private fun RunsScreen(
     onShowChanges: () -> Unit,
     onOpenMap: (Run) -> Unit,
     onOpenPage: (Run) -> Unit,
-    onAllDays: () -> Unit,
-    onLog: () -> Unit,
+    onWatchingDays: () -> Unit,
     onSettings: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -314,17 +314,16 @@ private fun RunsScreen(
                     try {
                         val found = Session.scan(context).changes
                         failed = false
-                        message = if (found.isEmpty()) "Rescan: no change" else "Rescan: ${found.size} change(s) found"
+                        message = if (found.isEmpty()) "Reload from BusPlanner: no change" else "Reload from BusPlanner: ${found.size} change(s) found"
                         if (found.isNotEmpty()) onShowChanges()
                     } catch (e: Exception) {
                         failed = true
-                        message = "Rescan failed: ${e.message ?: e.javaClass.simpleName}"
+                        message = "Reload from BusPlanner failed: ${e.message ?: e.javaClass.simpleName}"
                     } finally {
                         busy = false
                     }
                 }
-            }) { Text(if (busy) "Scanning…" else "Rescan") }
-            TextButton(onClick = onLog) { Text("Debug") }
+            }) { Text(if (busy) "Reloading…" else "Reload from BusPlanner") }
             TextButton(onClick = onSettings) { Text("Settings") }
         }
         message?.let { Text(it, color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -341,14 +340,20 @@ private fun RunsScreen(
             }
         }
         if (runs.isEmpty()) Text("No bus run found on this account.", Modifier.padding(vertical = 8.dp))
-        else AutoStartRow(runs, onAllDays)
+        else AutoStartRow(runs, onWatchingDays)
         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
             items(runs, key = { it.key }) { run ->
                 // Tapping the card opens the run's page; its buttons keep their own actions.
                 Card(onClick = { onOpenPage(run) }, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        RunTitle(run, "${run.bus} · ${run.plannedLine}", MaterialTheme.typography.titleMedium)
+                        // "›": every card that opens something says so (user, 2026-11-21).
+                        Row(verticalAlignment = Alignment.Top) {
+                            Box(Modifier.weight(1f)) { RunTitle(run, "${run.bus} · ${run.plannedLine}", MaterialTheme.typography.titleMedium) }
+                            Text("›", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                        }
                         Text(run.address)
+                        // The run's own days, when they aren't the usual Mon–Fri (user, 2026-11-21).
+                        ownDaysText(run.days)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         Text(run.students.joinToString(" · ") { it.name }, style = MaterialTheme.typography.bodySmall)
                         // A run no longer watched shows no line about its bus (DESIGN.md §4).
                         val shown = shownStatus(status[run.key], run.key in active, null)
@@ -359,7 +364,7 @@ private fun RunsScreen(
                             )
                             shown.checkedAt?.let { t -> Text("checked ${clockSeconds(t)}", style = MaterialTheme.typography.bodySmall) }
                         } else if (status[run.key] != null) {
-                            Text(NOT_MONITORED, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(NOT_WATCHING, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             OutlinedButton(onClick = { onOpenMap(run) }) { Text("Open map") }
@@ -376,7 +381,7 @@ private fun RunsScreen(
 private val FILE_STAMP = DateTimeFormatter.ofPattern("yyMMdd-HHmm")
 
 @Composable
-private fun LogScreen(onBack: () -> Unit) {
+private fun DebugScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val lines by AppLog.lines.collectAsState()
     val listState = rememberLazyListState()
@@ -403,7 +408,7 @@ private fun LogScreen(onBack: () -> Unit) {
         }
         Text(AppLog.version, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 8.dp))
         OutlinedButton(onClick = { testRing(context) }, modifier = Modifier.padding(horizontal = 8.dp)) {
-            Text("Test the main-zone alert")
+            Text("Test alarm")
         }
         GeocoderTest(Modifier.padding(horizontal = 8.dp))
         if (lines.isEmpty()) Text("Nothing logged yet.", Modifier.padding(8.dp))

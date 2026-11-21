@@ -148,9 +148,9 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
             )
         }
 
-        Section("Monitoring period")
+        Section("Watching period")
         if (run.periodRange.isEmpty()) {
-            Text("No planned time: the run can't be monitored by itself.")
+            Text("No planned time: the run can't be watched by itself.")
         } else {
             Text(run.periodRange, style = MaterialTheme.typography.bodyLarge)
             val planned = run.planned?.let { clock(it) } ?: run.time
@@ -166,7 +166,7 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
             Text("A change applies at once, also while the run is watched.", style = MaterialTheme.typography.bodySmall)
         }
 
-        Section("Automatic start")
+        Section("Watching days")
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             for (day in DayOfWeek.entries) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -229,7 +229,7 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
         }
         NotBuilt("Heads-up zones")
 
-        Section("End of monitoring")
+        Section("End of watching")
         Text("Watching ends by itself when:", style = MaterialTheme.typography.bodyMedium)
         val endZone = allZones.firstOrNull { it.id == run.endZoneId }
         val school = schools.firstOrNull { it.name.equals(run.school, ignoreCase = true) }

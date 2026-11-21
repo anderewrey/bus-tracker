@@ -48,7 +48,7 @@ import io.github.anderewrey.bustracker.monitor.testRing
 
 /** Settings that apply to all runs: sound, bus alerts and the account. */
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, onOverview: () -> Unit, onImported: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, onOverview: () -> Unit, onDebug: () -> Unit, onImported: () -> Unit) {
     val context = LocalContext.current
     val settings = remember { AppSettings(context) }
     // Bumped after each change, and when coming back from Android's settings, to read everything again.
@@ -74,7 +74,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, onOverview: () -> U
         val noVehicle = remember(version) { settings.noVehicleWarning }
         val notices = remember(version) { settings.busNotices }
         val quiet = remember(version) { settings.quietOverride }
-        SwitchRow("\"No vehicle\" warning at monitoring start", noVehicle) {
+        SwitchRow("\"No vehicle\" warning at watching start", noVehicle) {
             settings.noVehicleWarning = it
             version++
         }
@@ -83,7 +83,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, onOverview: () -> U
             version++
         }
         Text(
-            "Checked with every bus position while a run is monitored. A new notice about the run's bus rings until you silence it.",
+            "Checked with every bus position while a run is watched. A new notice about the run's bus rings until you silence it.",
             style = MaterialTheme.typography.bodySmall,
         )
         RingingRows(Ringing.NOTICE, version, onChanged = { version++ }, onTest = { testNotice(context) })
@@ -107,6 +107,11 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, onOverview: () -> U
         Text(store.email ?: "")
         Text(store.portal?.removePrefix("https://") ?: "", style = MaterialTheme.typography.bodySmall)
         OutlinedButton(onClick = onLogout) { Text("Log out") }
+
+        // Moved here from the run list's header (user, 2026-11-21): a tool, not a main view.
+        Section("Debug")
+        Text("The log, test alarm and test geocoder.", style = MaterialTheme.typography.bodySmall)
+        OutlinedButton(onClick = onDebug) { Text("Open Debug") }
 
         if (isTestBuild(context)) {
             Section("Test build")
@@ -158,7 +163,7 @@ private fun RingingRows(type: Ringing, version: Int, onChanged: () -> Unit, onTe
         onChanged()
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(onClick = onTest) { Text("Test") }
+        OutlinedButton(onClick = onTest) { Text("Test alarm") }
         OutlinedButton(onClick = {
             context.startActivity(
                 Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)

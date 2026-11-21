@@ -23,6 +23,8 @@ changing a flow, an artboard or the navigation page.
 - **Colour**: greys; one accent for a switch that is on; red only for the alarm and errors.
 - **Labels are generic and short**, not applied examples: "Automatic start ›", not "Mon–Fri ›".
   Inside a scenario's screens, example content ("Mon–Fri", "Off until Tue Nov 24") is fine.
+- **The app's words**: "watching" (never "monitoring" or "tracking" on screen), Stop watching,
+  Test alarm, Reload from BusPlanner, Watching days (DESIGN.md §8, Words and labels on screen).
 - **Fake data only**: B101, 123 This Street, This Street, That Street, Home zone. Never a real
   child, school, stop, street or route from the logs.
 

@@ -36,32 +36,29 @@ body{margin:0}
 <span class="mut">Test builds: Import from Bus Tracker</span></div></div>
 <div class="ar"><b>Log in</b><span class="mut">logs in, then scans</span><span style="font-size:22px">→</span></div>
 <div class="col"><div class="lb"><b>Bus runs</b> · the main hub; the app opens here once logged in</div>
-<div class="ph"><div class="t"><span>Bus runs</span><span class="mut">Rescan Debug Settings</span></div>
+<div class="ph"><div class="t"><span>Bus runs</span><span class="mut">Reload from BusPlanner · Settings</span></div>
 <div class="bx" style="border-color:#c0392b">Bus schedule changed · See changes</div>
 <div class="bx"><b>Automatic start ›</b><span class="mut">days</span></div>
-<div class="bx"><b>B101 · Pickup</b><span class="mut">[Open map] bell</span></div>
-<div class="bx"><b>B101 · Dropoff</b><span class="mut">[Open map] bell</span></div></div></div>
+<div class="bx"><b>B101 · Pickup ›</b><span class="mut">[Open map] bell</span></div>
+<div class="bx"><b>B101 · Dropoff ›</b><span class="mut">[Open map] bell</span></div></div></div>
 <div class="ar"><b>opens one of</b><span style="font-size:22px">→</span></div>
 <div class="grp"><span class="gn">Opened from Bus runs</span>
 <div class="row">
 <div class="col"><div class="lb"><b>a run card</b> → Run page</div>
 <div class="ph"><div class="t"><span>B101 · Pickup</span><span class="mut">Back</span></div>
-<div class="bx">About</div><div class="bx">Automatic start: days</div><div class="bx">Monitoring period − / +</div><div class="bx">Main zone · Draw new · Edit</div><div class="bx">End of monitoring</div></div></div>
+<div class="bx">About</div><div class="bx">Watching days</div><div class="bx">Monitoring period − / +</div><div class="bx">Main zone · Draw new · Edit · Test alarm</div><div class="bx">End of monitoring</div></div></div>
 <div class="col"><div class="lb"><b>Open map</b> → Map <span class="mut">(also from the notification)</span></div>
 <div class="ph"><div class="t"><span>B101 · Pickup</span><span class="mut">bell ↻</span></div>
 <span class="mut">status line</span><div class="bx" style="flex-grow:1;align-items:center;justify-content:center">map: stop, zones, bus</div></div></div>
-<div class="col"><div class="lb"><b>See changes</b>, or a Rescan that finds some → Changes</div>
+<div class="col"><div class="lb"><b>See changes</b>, or a Reload from BusPlanner that finds some → Changes</div>
 <div class="ph"><div class="t"><span>Changes</span><span class="mut">Back</span></div>
 <div class="bx">What changed per run (stop, time)</div><div class="bx">Keep same configuration</div><div class="bx">New configuration</div></div></div>
-<div class="col"><div class="lb"><b>Automatic start ›</b> → Automatic start</div>
-<div class="ph"><div class="t"><span>Automatic start</span><span class="mut">Back</span></div>
+<div class="col"><div class="lb"><b>Automatic start ›</b> → Watching days</div>
+<div class="ph"><div class="t"><span>Watching days</span><span class="mut">Back</span></div>
 <span class="mut">All runs</span>
 <div class="bx">Mon Tue Wed Thu Fri Sat Sun</div><span class="mut">a day some runs have shows as mixed</span></div></div>
 <div class="col"><div class="lb"><b>Settings</b> → Settings</div>
 <div class="ref"><div class="chip">↓ <b>Settings</b><br><span class="mut">drawn below, with what it opens</span></div></div></div>
-<div class="col"><div class="lb"><b>Debug</b> → Debug <span class="mut">(also from Login)</span></div>
-<div class="ph"><div class="t"><span>Debug</span><span class="mut">Back</span></div>
-<span class="mut">Copy · Export · Clear</span><div class="bx">Test the main-zone alert</div><div class="bx">Test geocoder</div><div class="bx" style="flex-grow:1">Log lines…</div></div></div>
 </div>
 </div>
 </div>
@@ -70,7 +67,7 @@ body{margin:0}
 <div class="row">
 <div class="col"><div class="lb"><b>Settings</b> · opened from Bus runs</div>
 <div class="ph"><div class="t"><span>Settings</span><span class="mut">Back</span></div>
-<div class="bx">Main zone alarm: Sound <span class="mut">[Change] [Use default]</span> · Vibration · [Test] · [Android settings]</div><div class="bx">BusPlanner late or cancelled notices</div><div class="bx">Quiet mode override</div><div class="bx">Children, schools, runs and zones: [Open the overview]</div><div class="bx">Account: [Log out]</div><span class="mut">Test builds: Import</span></div></div>
+<div class="bx">Main zone alarm: Sound <span class="mut">[Change] [Use default]</span> · Vibration · [Test alarm] · [Android settings]</div><div class="bx">BusPlanner late or cancelled notices</div><div class="bx">Quiet mode override</div><div class="bx">Children, schools, runs and zones: [Open the overview]</div><div class="bx">Account: [Log out]</div><div class="bx">Debug: [Open Debug]</div><span class="mut">Test builds: Import</span></div></div>
 <div class="ar"><b>opens one of</b><span style="font-size:22px">→</span></div>
 <div class="grp"><span class="gn">Opened from Settings</span>
 <div class="row">
@@ -81,6 +78,9 @@ body{margin:0}
 <div class="ref"><div class="chip"><b>Android</b> system view<br><span class="mut">picks the alarm's sound; back to Settings</span></div></div></div>
 <div class="col"><div class="lb"><b>Android settings</b> → the alarm channel's settings</div>
 <div class="ref"><div class="chip"><b>Android</b> system view<br><span class="mut">channel sound, vibration, Do Not Disturb</span></div></div></div>
+<div class="col"><div class="lb"><b>Open Debug</b> → Debug <span class="mut">(also from Login)</span></div>
+<div class="ph"><div class="t"><span>Debug</span><span class="mut">Back</span></div>
+<span class="mut">Copy · Export · Clear</span><div class="bx">Test alarm</div><div class="bx">Test geocoder</div><div class="bx" style="flex-grow:1">Log lines…</div></div></div>
 </div>
 </div>
 <div class="ar"><b>Overview opens one of</b><span style="font-size:22px">→</span></div>
