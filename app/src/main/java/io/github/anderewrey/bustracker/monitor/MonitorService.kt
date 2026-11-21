@@ -595,11 +595,18 @@ class MonitorService : Service() {
         val message = r.bulletin ?: return
         if (r.busLat != null) return
         AppLog.log("${run.key}: no vehicle at monitoring start, warning posted")
+        // A tap opens the app on the run list, where the run's card says "No vehicle" (user, 2026-11-21).
+        val open = PendingIntent.getActivity(
+            this, run.key.hashCode() + 2,
+            Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
         val n = Notification.Builder(this, BUS_ALERT_CHANNEL)
             .setSmallIcon(R.drawable.ic_bus)
             .setContentTitle("${run.bus}: BusPlanner reports no vehicle")
             .setContentText(message)
             .setStyle(Notification.BigTextStyle().bigText(message))
+            .setContentIntent(open)
             .setAutoCancel(true)
             .build()
         getSystemService(NotificationManager::class.java).notify(run.key.hashCode() + 2, n)
@@ -633,7 +640,7 @@ class MonitorService : Service() {
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
             .addAction(Notification.Action.Builder(null, "Open map", open).build())
-            .addAction(Notification.Action.Builder(null, "Turn off", turnOff).build())
+            .addAction(Notification.Action.Builder(null, "Stop watching", turnOff).build())
             .build()
     }
 

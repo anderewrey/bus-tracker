@@ -88,9 +88,9 @@ data class Run(
     val periodRange: String
         get() = if (planned == null) "" else clockRange(start!!, end!!)
 
-    /** e.g. "monitoring 7:03–8:03 AM"; empty when the planned time is unknown. */
+    /** e.g. "watching 7:03–8:03 AM"; empty when the planned time is unknown. */
     val periodLine: String
-        get() = if (planned == null) "" else "monitoring $periodRange"
+        get() = if (planned == null) "" else "watching $periodRange"
 
     /** The whole stop on one line, e.g. "B101 · Pickup 7:33 AM · 12 THIS ST". */
     val stopLine: String

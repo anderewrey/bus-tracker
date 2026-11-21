@@ -34,7 +34,7 @@ fun AllDaysScreen(runs: List<Run>, onBack: () -> Unit) {
     val context = LocalContext.current
     DaysPage(
         title = "All runs",
-        text = "Each run starts by itself at the start of its monitoring period, on these days. " +
+        text = "Each run starts by itself at the start of its watching period, on these days. " +
             "A run's own page can still change its days.",
         state = { day ->
             val count = runs.count { day in it.days }
@@ -63,7 +63,7 @@ private fun DaysPage(
     Column(Modifier.safeDrawingPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(Modifier.fillMaxWidth()) {
             TextButton(onClick = onBack) { Text("Back") }
-            Text("Automatic start", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 6.dp))
+            Text("Watching days", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 6.dp))
         }
         Text(title, style = MaterialTheme.typography.titleMedium)
         Text(text)

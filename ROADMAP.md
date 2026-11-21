@@ -29,6 +29,7 @@ The order of the work. **What** each feature does and **how** is in [DESIGN.md](
 | — | 2026-11-20 | Turning Automatic start off (or off until a day) also stops a run being watched that started by itself (§5) |
 | — | 2026-11-20 | The whole Automatic start card opens the days page, not only its days line (§5) |
 | — | 2026-11-20 | UX flow sketches in docs/ux/ (navigation, a normal day, the Alarm switch, Automatic start), with the drawing rules in docs/ux/CONVENTIONS.md |
+| — | 2026-11-21 | Words and labels made consistent (§8): "watching" everywhere, Stop watching, Test alarm, Reload from BusPlanner, Watching days; "›" on tappable cards; watching status on the map; the "No vehicle" notification opens the app; Debug moved into Settings |
 
 0.12 and 0.13 were committed together on 2026-11-06. 0.13 (with 0.11 and 0.12 in it) passed its first real run on the phone on 2026-11-09: automatic start, live checks, the main-zone alarm, and recovery from a short network loss.
 

@@ -47,11 +47,11 @@ fun AutoStartRow(runs: List<Run>, onDays: () -> Unit) {
     Card(onClick = onDays, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
         Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Automatic start", style = MaterialTheme.typography.titleSmall)
+                Text("Automatic start ›", style = MaterialTheme.typography.titleSmall)
                 Text(
-                    (if (auto.on) days else "${autoText(auto).replaceFirstChar { it.uppercase() }} · $days") + " ›",
+                    if (auto.on) days else "${autoText(auto).replaceFirstChar { it.uppercase() }} · $days",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 4.dp),
                 )
             }

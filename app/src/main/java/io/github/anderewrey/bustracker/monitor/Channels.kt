@@ -38,8 +38,8 @@ data class RingSettings(val sound: Uri?, val vibrate: Boolean)
 
 fun ensureChannels(context: Context) {
     val nm = context.getSystemService(NotificationManager::class.java)
-    val tracking = NotificationChannel(TRACKING_CHANNEL, "Tracking", NotificationManager.IMPORTANCE_LOW)
-    tracking.description = "Live bus status while a run is monitored"
+    val tracking = NotificationChannel(TRACKING_CHANNEL, "Watching", NotificationManager.IMPORTANCE_LOW)
+    tracking.description = "Live bus status while a run is watched"
     tracking.setSound(null, null)
     nm.createNotificationChannel(tracking)
     val alerts = NotificationChannel(BUS_ALERT_CHANNEL, "Bus alerts", NotificationManager.IMPORTANCE_DEFAULT)

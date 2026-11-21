@@ -111,7 +111,7 @@ data class RunStatus(
 )
 
 /** What the screens show instead of the line of a run that isn't watched (DESIGN.md §4). */
-const val NOT_MONITORED = "Not monitored"
+const val NOT_WATCHING = "Not watching"
 
 /**
  * The status the screens show for a run, bus position and line included (DESIGN.md §4): while

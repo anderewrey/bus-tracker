@@ -116,7 +116,7 @@ class StartAlarmReceiver : BroadcastReceiver() {
         )
         val n = Notification.Builder(context, BUS_ALERT_CHANNEL)
             .setSmallIcon(R.drawable.ic_bus)
-            .setContentTitle("$key: monitoring didn't start")
+            .setContentTitle("$key: watching didn't start")
             .setContentText("Tap to open the app: it starts it.")
             .setContentIntent(open)
             .setAutoCancel(true)

@@ -207,7 +207,7 @@ After the first successful login, the app scans the BusPlanner account:
 ### 3.2 Rescans and schedule changes
 
 The scan runs again in two cases:
-- **Manually:** the user taps "Rescan account".
+- **Manually:** the user taps "Reload from BusPlanner" (the run list's header; "Rescan" until 2026-11-21).
 - **Automatically:** once a day, along with the first monitoring period, when it starts.
 
 Each rescan compares the new results with the stored ones. These changes are detected:
@@ -275,7 +275,7 @@ The AM and PM runs of the same bus are separate runs, each with its own alerts, 
 - **Interval:** 30 s by default, with a minimum of 20 s.
 - **On an expired session:** log in again silently, then carry on.
 - **Map refresh = countdown ring** (top right of the map). While the run is monitored, a ring empties over the 30 s until the next automatic check, with the seconds left in the middle; it spins during a check. A tap checks now, through the monitoring loop, and the 30 s start again from that tap (no second check a few seconds later). A tap during a check is ignored. Not monitored: a plain ↻; a tap checks once. Left of it, the run's Alarm switch with a bell in its thumb and no label (user, 2026-11-06: the "Alarm" label above it looked odd).
-- **Bus position only while watched** (user, 2026-11-19): once a run's monitoring stops, its map shows no bus and its card and map say `Not monitored` instead of the tracking line; the run's stop and zones stay. Opening the map of a run not monitored shows no bus either, even with a position in memory. A tap on ↻ there shows the bus and the line until the map is closed; on the next opening they are gone again. The rule is decided when the screen is drawn (`shownStatus`): monitored, or the answer to a ↻ made since this map was opened. Nothing is erased, so a check that ends just after the monitoring stopped (seen 2026-11-19: a street answer one second after the stop) can't bring the bus back. The Log keeps every reading.
+- **Bus position only while watched** (user, 2026-11-19): once a run's monitoring stops, its map shows no bus and its card and map say `Not watching` instead of the tracking line; the run's stop and zones stay. Opening the map of a run not monitored shows no bus either, even with a position in memory. A tap on ↻ there shows the bus and the line until the map is closed; on the next opening they are gone again. The rule is decided when the screen is drawn (`shownStatus`): monitored, or the answer to a ↻ made since this map was opened. Nothing is erased, so a check that ends just after the monitoring stopped (seen 2026-11-19: a street answer one second after the stop) can't bring the bus back. The Log keeps every reading.
 
 ---
 
@@ -334,7 +334,7 @@ Once watching has ended, the run waits for its next monitoring period. Nothing r
   - **Cancel**
 
   Per-run days are kept untouched while the switch is off. A run's Alarm switch can still be turned on for its next period.
-- The line under the switch shows the days of all runs ("Mon–Fri", or "Custom per run" when they differ). The whole Automatic start card opens the **All runs** days page, like a run card opens its page; the switch keeps its own action (user, 2026-11-20: only the days line opened it, while the card reads as one block). On that page a day some runs have shows as mixed, and tapping it gives that day to every run.
+- The line under the switch shows the days of all runs ("Mon–Fri", or "Custom per run" when they differ). The whole Automatic start card opens the **Watching days** page (its "All runs" view; called Automatic start until 2026-11-21), like a run card opens its page; the switch keeps its own action (user, 2026-11-20: only the days line opened it, while the card reads as one block). On that page a day some runs have shows as mixed, and tapping it gives that day to every run.
 - While the switch is off, each card reads "Automatic start: off · 14:09–15:09 ›".
 - Known gap: when the phone is off or rebooting at the period start, that period doesn't start by itself. Since the Alarm switch, opening the app during the period starts it.
 - Samsung: Battery must be "Unrestricted" for Bus Tracker, or One UI may put it to deep sleep and its alarms never fire.
@@ -348,7 +348,7 @@ Everything about one run, on one page. **Tapping the run card opens it.** The ca
 **Sections, in this order** (user, 2026-11-05: About comes first; the run cards no longer show the Automatic start line):
 
 0. **About this run** (read-only), described under 7 below.
-1. **Monitoring period:** minutes before and after the planned stop time (default 30 and 30), with the result shown, e.g. "7:03–8:03".
+1. **Watching period:** minutes before and after the planned stop time (default 30 and 30), with the result shown, e.g. "7:03–8:03".
 2. **Automatic start:** the weekdays (default Monday to Friday). This replaces the separate Automatic start page of 0.7.
 3. **Alerts:** an ordered list. Each line is:
    - a **zone**, picked from the existing zones or drawn new (§6.2)
@@ -356,7 +356,7 @@ Everything about one run, on one page. **Tapping the run card opens it.** The ca
    - an **action:** **Alarm** (rings until acknowledged) or **Notification** (sounds once)
 
    Order matters: a line only counts once the line before it has fired (the heads-up chain of §6.1). Each line fires at most once per monitoring period; turning the Alarm switch off and on lets the alarm lines fire again. A **Test** button plays the alarm as it will ring.
-4. **End of monitoring:** one choice.
+4. **End of watching:** one choice.
    - **Bus parked at the school** (default for a pickup run), as defined in §5, stop condition 4.
    - **Bus leaves a zone** (default for a dropoff run, with the run's main zone).
    - **Bus enters a zone.**
@@ -384,9 +384,9 @@ Main Street isn't on the AM run: the bus goes through it after the stop.
 **Defaults when a run is first found:** no alerts unless its stop lies inside an existing zone, which then becomes an "entering → Alarm" line; the end of monitoring follows the stop type. The hardcoded zone was not carried over: since 0.12 the user draws it on the phone (§6.2).
 
 **As built (2026-11-17):**
-- **Monitoring period:** − and + buttons by 5 minutes for "before" and "after" the planned time, each 0 to 120, at least 10 minutes in all; the result shows above them ("7:18–8:18 AM"), and a "Default" button comes back to 30 and 30. The period never crosses midnight. A change applies at once, also while the run is watched (its end moves, plus any BusPlanner delay), and the Alarm switch's choices about today's period follow it (a period switched off stays off).
+- **Watching period:** − and + buttons by 5 minutes for "before" and "after" the planned time, each 0 to 120, at least 10 minutes in all; the result shows above them ("7:18–8:18 AM"), and a "Default" button comes back to 30 and 30. The period never crosses midnight. A change applies at once, also while the run is watched (its end moves, plus any BusPlanner delay), and the Alarm switch's choices about today's period follow it (a period switched off stays off).
 - **Alerts:** the main zone only (§6.2); heads-up zones are the next step (ROADMAP).
-- **End of monitoring:** the four choices as radio buttons. "Leaves" and "enters" are about the main zone unless another zone is picked under them. "Enters" only counts once the bus was seen outside the zone in this period, like the school rule, so a bus already inside at the start doesn't end it. A zone rule with no zone, or the school rule with the school's position unknown, ends nothing: only the period's end and the switch do (the page says so in small print). Leaving the main zone no longer ends a dropoff run by itself: it is the default rule of a dropoff run. A change applies at once, also while the run is watched.
+- **End of watching:** the four choices as radio buttons. "Leaves" and "enters" are about the main zone unless another zone is picked under them. "Enters" only counts once the bus was seen outside the zone in this period, like the school rule, so a bus already inside at the start doesn't end it. A zone rule with no zone, or the school rule with the school's position unknown, ends nothing: only the period's end and the switch do (the page says so in small print). Leaving the main zone no longer ends a dropoff run by itself: it is the default rule of a dropoff run. A change applies at once, also while the run is watched.
 - Period minutes and the end of monitoring are part of the run's configuration: they carry over rescans and go back to the defaults on "New configuration" (§3.2).
 
 **Not on the page:** the 30 s check interval (fixed) and per-child settings (the children on one run share the bus). Sound and bus alerts are global, not per run (user, 2026-11-05): they live on the **Settings** page.
@@ -520,7 +520,7 @@ There is no decoration: no coloured icon, no map snapshot, nothing beyond what t
   - *Earlier on 2026-11-18, not kept:* the street whose words come first in the stop's name (judging too fine), then every name among the 5, the most frequent first (kept far-away streets). *Until 2026-11-18: one candidate, its street or else its whole address line.* Nominatim (OpenStreetMap) was compared and not kept as the main source: it gave Google's street for only 15 of 25 ordinary points, often a cross street.
   - **Test geocoder** (Debug screen): looks up a point (filled in with the last bus position) and lists the 10 candidates (`featureName`, `thoroughfare`, `subThoroughfare`, first address line, position and distance) and the street text the app would show. On the screen only, never in the Log.
 - **Buttons:** Open map and **Silence** (stops the sound only).
-- **Tracking notification:** shows the same text line plus the run label, with Open map and **Turn off** (turns the run's Alarm switch off, §5). *Up to 0.10: Re-arm alarm and Stop monitoring.*
+- **Tracking notification:** shows the same text line plus the run label, with Open map and **Stop watching** ("Turn off" until 2026-11-21; turns the run's Alarm switch off, §5). *Up to 0.10: Re-arm alarm and Stop monitoring.*
   - It updates silently on each fix.
   - Android 14+ lets the user clear it (swipe, Clear all). It comes back at once and watching goes on (user, 2026-11-14: clearing the other notifications turned the alarm off, and cancelled the daily rescan). Only Turn off and the Alarm switch stop watching. *Until 2026-11-14: clearing it turned the Alarm switch off, like Turn off.*
 - **One notification per run** (user, 2026-11-14: a tracking notification and an alarm side by side is one too many). When the bus enters the main zone, the run's tracking notification *becomes* the alarm (same notification, main zone channel, ringing): title `B101 entered <zone>`, Open map and Silence.
@@ -607,6 +607,18 @@ The user wants the app to act on what BusPlanner notices say, not only ring them
   - the zone polygons (heads-up and main styled differently)
   - the drawing-mode overlay
 - **Street names:** `android.location.Geocoder`, which is free and needs no key; 10 candidates per lookup, the nearest streets shown as in §7.2. A phone (or emulator image) without Google services has no geocoder: no street in the status line.
+
+**Words and labels on screen** (user, 2026-11-21):
+
+- **One word, "watching":** `Not watching`, `Watching until 8:08`, "Watching period", "End of watching", "watching didn't start", the notification channel "Watching". The Log and the code keep "monitoring".
+- **Stop watching** on the tracking notification (was "Turn off"); **Test alarm** for the three test buttons (Debug, Settings, run page); **Reload from BusPlanner** for the run list's rescan (one-way: "sync" would say both ways); **Watching days** for the days views, so only the global switch is called "Automatic start".
+- **"›" on every card that opens something:** the run cards and the Automatic start card.
+- **Back** leaves a view; the zone editor keeps **Cancel**, as it drops a drawing.
+- **The map's header shows the watching status** ("Watching until 8:08", "Rang 7:31 · watching"), like the card.
+- **"No vehicle" notification:** a tap opens the app (the run list).
+- **Red means "needs attention"** (alarm, notices, old data, schedule changes, errors), kept as one colour on purpose.
+- **Debug is in Settings** (a section at the end), no longer in the run list's header; the login screen keeps its Debug link.
+- Not changed: a zone edited from the run page asks "this run only" or "all runs", from the overview it changes all runs.
 
 ---
 
