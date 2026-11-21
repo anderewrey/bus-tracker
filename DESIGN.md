@@ -522,7 +522,7 @@ There is no decoration: no coloured icon, no map snapshot, nothing beyond what t
 - **Buttons:** Open map and **Silence** (stops the sound only).
 - **Tracking notification:** shows the same text line plus the run label, with Open map and **Stop watching** ("Turn off" until 2026-11-21; turns the run's Alarm switch off, §5). *Up to 0.10: Re-arm alarm and Stop monitoring.*
   - It updates silently on each fix.
-  - Android 14+ lets the user clear it (swipe, Clear all). It comes back at once and watching goes on (user, 2026-11-14: clearing the other notifications turned the alarm off, and cancelled the daily rescan). Only Turn off and the Alarm switch stop watching. *Until 2026-11-14: clearing it turned the Alarm switch off, like Turn off.*
+  - Android 14+ lets the user clear it (swipe, Clear all). It comes back at once and watching goes on (user, 2026-11-14: clearing the other notifications turned the alarm off, and cancelled the daily rescan). Only Stop watching and the Alarm switch stop watching. *Until 2026-11-14: clearing it turned the Alarm switch off, like Turn off.*
 - **One notification per run** (user, 2026-11-14: a tracking notification and an alarm side by side is one too many). When the bus enters the main zone, the run's tracking notification *becomes* the alarm (same notification, main zone channel, ringing): title `B101 entered <zone>`, Open map and Silence.
   - Silence, opening it or clearing it answers it: the sound stops and the notification goes back to the tracking line, which carries on. Turning the Alarm switch off removes it.
   - **It rings for 1 minute at most, then goes back to the tracking line by itself** (user, 2026-11-18: busy with the children, the quickest way to stop it is a volume key, which Android takes as "mute this sound"; the app can't see that, nor the shade pulled down). For that minute the checks don't update it (an update would stop the sound); then the live line comes back and any sound left stops. It also goes back to the tracking line as soon as a check sees the bus out of the main zone (user, 2026-11-18), so a bus only passing through the zone can ring it for about 30 s only. A volume key, Silence, opening it or clearing it stops it sooner.
@@ -610,7 +610,7 @@ The user wants the app to act on what BusPlanner notices say, not only ring them
 
 **Words and labels on screen** (user, 2026-11-21):
 
-- **One word, "watching":** `Not watching`, `Watching until 8:08`, "Watching period", "End of watching", "watching didn't start", the notification channel "Watching". The Log and the code keep "monitoring".
+- **One word, "watching":** `Not watching`, `Watching until 8:08`, "Watching period", "End of watching", "watching didn't start", the notification channel "Watching". The code names that mirror these labels follow (`WatchingDaysScreen`, `DebugScreen`, `ACTION_STOP_WATCHING`, `WATCHING_CHANNEL`, whose channel id stays `tracking` since Android keeps channels by id); the Log, `MonitorService` and the rest of the internals keep "monitoring".
 - **Stop watching** on the tracking notification (was "Turn off"); **Test alarm** for the three test buttons (Debug, Settings, run page); **Reload from BusPlanner** for the run list's rescan (one-way: "sync" would say both ways); **Watching days** for the days views, so only the global switch is called "Automatic start".
 - **"›" on every card that opens something:** the run cards and the Automatic start card.
 - **Back** leaves a view; the zone editor keeps **Cancel**, as it drops a drawing.

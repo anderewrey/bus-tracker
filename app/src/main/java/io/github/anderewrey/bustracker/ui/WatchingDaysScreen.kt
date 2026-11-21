@@ -30,7 +30,7 @@ import java.util.Locale
 
 /** The days of every run at once; a day some runs have and others don't shows as mixed. */
 @Composable
-fun AllDaysScreen(runs: List<Run>, onBack: () -> Unit) {
+fun WatchingDaysScreen(runs: List<Run>, onBack: () -> Unit) {
     val context = LocalContext.current
     DaysPage(
         title = "All runs",

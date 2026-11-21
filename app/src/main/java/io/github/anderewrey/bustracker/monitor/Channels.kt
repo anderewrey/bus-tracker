@@ -14,7 +14,8 @@ import android.provider.Settings
 import io.github.anderewrey.bustracker.AppLog
 import io.github.anderewrey.bustracker.data.AppSettings
 
-const val TRACKING_CHANNEL = "tracking"
+/** The watching notification's channel; its id stays "tracking", as Android keeps channels by id. */
+const val WATCHING_CHANNEL = "tracking"
 /** Schedule changes and the "no vehicle" warning: they sound once. */
 const val BUS_ALERT_CHANNEL = "bus_alerts"
 
@@ -38,10 +39,10 @@ data class RingSettings(val sound: Uri?, val vibrate: Boolean)
 
 fun ensureChannels(context: Context) {
     val nm = context.getSystemService(NotificationManager::class.java)
-    val tracking = NotificationChannel(TRACKING_CHANNEL, "Watching", NotificationManager.IMPORTANCE_LOW)
-    tracking.description = "Live bus status while a run is watched"
-    tracking.setSound(null, null)
-    nm.createNotificationChannel(tracking)
+    val watching = NotificationChannel(WATCHING_CHANNEL, "Watching", NotificationManager.IMPORTANCE_LOW)
+    watching.description = "Live bus status while a run is watched"
+    watching.setSound(null, null)
+    nm.createNotificationChannel(watching)
     val alerts = NotificationChannel(BUS_ALERT_CHANNEL, "Bus alerts", NotificationManager.IMPORTANCE_DEFAULT)
     alerts.description = "BusPlanner reports no vehicle, or the bus schedule changed"
     nm.createNotificationChannel(alerts)

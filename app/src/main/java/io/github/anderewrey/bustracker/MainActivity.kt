@@ -71,7 +71,7 @@ import io.github.anderewrey.bustracker.ui.RunScreen
 import io.github.anderewrey.bustracker.ui.OverviewScreen
 import io.github.anderewrey.bustracker.ui.SchoolScreen
 import io.github.anderewrey.bustracker.ui.SettingsScreen
-import io.github.anderewrey.bustracker.ui.AllDaysScreen
+import io.github.anderewrey.bustracker.ui.WatchingDaysScreen
 import io.github.anderewrey.bustracker.ui.AutoStartRow
 import io.github.anderewrey.bustracker.monitor.Scheduler
 import androidx.compose.material3.FilledTonalButton
@@ -145,19 +145,19 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
     val runs by Session.runs.collectAsState()
     val changes by Session.changes.collectAsState()
 
-    var showLog by remember { mutableStateOf(false) }
+    var showDebug by remember { mutableStateOf(false) }
     var pageKey by remember { mutableStateOf<String?>(null) }
     var showSettings by remember { mutableStateOf(false) }
-    var allDays by remember { mutableStateOf(false) }
+    var watchingDays by remember { mutableStateOf(false) }
     var showOverview by remember { mutableStateOf(false) }
     var schoolName by remember { mutableStateOf<String?>(null) }
 
     val mapRun = runs.firstOrNull { it.key == openRun }
     val pageRun = runs.firstOrNull { it.key == pageKey }
     when {
-        showLog -> {
-            BackHandler { showLog = false }
-            LogScreen { showLog = false }
+        showDebug -> {
+            BackHandler { showDebug = false }
+            DebugScreen { showDebug = false }
         }
         pageRun != null && mapRun == null -> {
             BackHandler { pageKey = null }
@@ -168,11 +168,11 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
                 onShowChanges(true)
             })
         }
-        allDays && loggedIn -> {
-            BackHandler { allDays = false }
-            AllDaysScreen(runs) { allDays = false }
+        watchingDays && loggedIn -> {
+            BackHandler { watchingDays = false }
+            WatchingDaysScreen(runs) { watchingDays = false }
         }
-        !loggedIn -> LoginScreen(onLog = { showLog = true }, onImported = { loggedIn = Store(context).hasLogin }) { loggedIn = true }
+        !loggedIn -> LoginScreen(onDebug = { showDebug = true }, onImported = { loggedIn = Store(context).hasLogin }) { loggedIn = true }
         schoolName != null -> {
             BackHandler { schoolName = null }
             SchoolScreen(schoolName!!) { schoolName = null }
@@ -199,7 +199,7 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
                 showOverview = false
                 schoolName = null
                 loggedIn = false
-            }, onOverview = { showOverview = true }, onDebug = { showLog = true }, onImported = { loggedIn = Store(context).hasLogin })
+            }, onOverview = { showOverview = true }, onDebug = { showDebug = true }, onImported = { loggedIn = Store(context).hasLogin })
         }
         mapRun != null -> {
             BackHandler { onOpenRun(null) }
@@ -215,14 +215,14 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
             onShowChanges = { onShowChanges(true) },
             onOpenMap = { onOpenRun(it.key) },
             onOpenPage = { pageKey = it.key },
-            onAllDays = { allDays = true },
+            onWatchingDays = { watchingDays = true },
             onSettings = { showSettings = true },
         )
     }
 }
 
 @Composable
-private fun LoginScreen(onLog: () -> Unit, onImported: () -> Unit, onDone: () -> Unit) {
+private fun LoginScreen(onDebug: () -> Unit, onImported: () -> Unit, onDone: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     // A login saved before the portal field keeps its email: only the portal and password are typed.
@@ -240,7 +240,7 @@ private fun LoginScreen(onLog: () -> Unit, onImported: () -> Unit, onDone: () ->
         // Debug at the top right, as on the runs screen, away from "Log in".
         Row(Modifier.fillMaxWidth()) {
             Text("BusPlanner login", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
-            TextButton(onClick = onLog) { Text("Debug") }
+            TextButton(onClick = onDebug) { Text("Debug") }
         }
         OutlinedTextField(
             portal, { portal = it.trim() }, label = { Text("Portal address") }, singleLine = true,
@@ -292,7 +292,7 @@ private fun RunsScreen(
     onShowChanges: () -> Unit,
     onOpenMap: (Run) -> Unit,
     onOpenPage: (Run) -> Unit,
-    onAllDays: () -> Unit,
+    onWatchingDays: () -> Unit,
     onSettings: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -339,7 +339,7 @@ private fun RunsScreen(
             }
         }
         if (runs.isEmpty()) Text("No bus run found on this account.", Modifier.padding(vertical = 8.dp))
-        else AutoStartRow(runs, onAllDays)
+        else AutoStartRow(runs, onWatchingDays)
         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
             items(runs, key = { it.key }) { run ->
                 // Tapping the card opens the run's page; its buttons keep their own actions.
@@ -378,7 +378,7 @@ private fun RunsScreen(
 private val FILE_STAMP = DateTimeFormatter.ofPattern("yyMMdd-HHmm")
 
 @Composable
-private fun LogScreen(onBack: () -> Unit) {
+private fun DebugScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val lines by AppLog.lines.collectAsState()
     val listState = rememberLazyListState()
