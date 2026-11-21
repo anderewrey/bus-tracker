@@ -72,7 +72,7 @@ fun ImportRow(confirm: Boolean, onDone: () -> Unit) {
     if (asking) AlertDialog(
         onDismissRequest = { asking = false },
         title = { Text("Replace this build's configuration?") },
-        text = { Text("Its sign-in, runs, zones, schools and settings are replaced by the official Bus Tracker's. Monitoring stops first.") },
+        text = { Text("Its sign-in, runs, zones, schools and settings are replaced by the official Bus Tracker's. Watching stops first.") },
         confirmButton = {
             TextButton(onClick = {
                 asking = false

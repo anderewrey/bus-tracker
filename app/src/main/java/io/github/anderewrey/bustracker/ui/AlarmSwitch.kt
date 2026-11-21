@@ -98,6 +98,17 @@ fun AlarmRow(run: Run, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * The watching status the card shows beside its switch ("Watching until 8:08", "Rang 7:31 · …"),
+ * for the map's header: only while the run is watched (user, 2026-11-21).
+ */
+@Composable
+fun WatchingStatus(run: Run) {
+    val s = rememberAlarmState(run)
+    val active by Session.active.collectAsState()
+    if (run.key in active) Text(s.status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
 /** The map header's switch: the same bell switch, no text. */
 @Composable
 fun AlarmSwitchCompact(run: Run) = AlarmSwitch(run, rememberAlarmState(run))

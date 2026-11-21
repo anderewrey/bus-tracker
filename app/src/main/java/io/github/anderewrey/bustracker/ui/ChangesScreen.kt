@@ -77,7 +77,7 @@ private fun note(c: RunChange): String = when {
     c.needsChoice -> "Until you choose, the run keeps the zones of the past stop. " +
         "A new configuration takes the zones of the new stop."
     ChangeKind.ADDED in c.kinds -> "The new run is on the run list."
-    ChangeKind.REMOVED in c.kinds -> "The run is no longer monitored."
+    ChangeKind.REMOVED in c.kinds -> "The run is no longer watched."
     ChangeKind.TIME in c.kinds -> "The new time is already applied."
     else -> "Already applied."
 }

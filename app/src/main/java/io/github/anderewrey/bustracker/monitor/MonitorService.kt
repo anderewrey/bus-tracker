@@ -241,7 +241,7 @@ class MonitorService : Service() {
                 stop(key, "Alarm switch turned off", byUser = true)
             }
             // Turn off on the tracking notification: same as the switch.
-            ACTION_TURN_OFF -> if (key != null) {
+            ACTION_STOP_WATCHING -> if (key != null) {
                 if (run != null) Session.setAlarm(this, run, false) else stop(key, "turned off from the notification", byUser = true)
             }
             ACTION_SILENCE -> if (key != null) {
@@ -595,11 +595,18 @@ class MonitorService : Service() {
         val message = r.bulletin ?: return
         if (r.busLat != null) return
         AppLog.log("${run.key}: no vehicle at monitoring start, warning posted")
+        // A tap opens the app on the run list, where the run's card says "No vehicle" (user, 2026-11-21).
+        val open = PendingIntent.getActivity(
+            this, run.key.hashCode() + 2,
+            Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
         val n = Notification.Builder(this, BUS_ALERT_CHANNEL)
             .setSmallIcon(R.drawable.ic_bus)
             .setContentTitle("${run.bus}: BusPlanner reports no vehicle")
             .setContentText(message)
             .setStyle(Notification.BigTextStyle().bigText(message))
+            .setContentIntent(open)
             .setAutoCancel(true)
             .build()
         getSystemService(NotificationManager::class.java).notify(run.key.hashCode() + 2, n)
@@ -620,10 +627,10 @@ class MonitorService : Service() {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val turnOff = serviceIntent(this, ACTION_TURN_OFF, run.key, runNotificationId(run.key))
+        val stopWatching = serviceIntent(this, ACTION_STOP_WATCHING, run.key, runNotificationId(run.key))
         // Cleared by the user (Android 14+ lets them): it comes back, watching goes on (user, 2026-11-14).
         val dismissed = serviceIntent(this, ACTION_DISMISSED, run.key, runNotificationId(run.key))
-        return Notification.Builder(this, TRACKING_CHANNEL)
+        return Notification.Builder(this, WATCHING_CHANNEL)
             .setSmallIcon(R.drawable.ic_bus)
             .setContentTitle(status.reading?.runLabel ?: run.key)
             .setContentText(status.line)
@@ -633,7 +640,7 @@ class MonitorService : Service() {
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
             .addAction(Notification.Action.Builder(null, "Open map", open).build())
-            .addAction(Notification.Action.Builder(null, "Turn off", turnOff).build())
+            .addAction(Notification.Action.Builder(null, "Stop watching", stopWatching).build())
             .build()
     }
 
@@ -653,7 +660,7 @@ class MonitorService : Service() {
         const val ACTION_START = "io.github.anderewrey.bustracker.START"
         const val ACTION_STOP = "io.github.anderewrey.bustracker.STOP"
         const val ACTION_SILENCE = "io.github.anderewrey.bustracker.SILENCE"
-        const val ACTION_TURN_OFF = "io.github.anderewrey.bustracker.TURN_OFF"
+        const val ACTION_STOP_WATCHING = "io.github.anderewrey.bustracker.STOP_WATCHING"
         const val ACTION_DISMISSED = "io.github.anderewrey.bustracker.DISMISSED"
 
         fun start(context: Context, key: String) {

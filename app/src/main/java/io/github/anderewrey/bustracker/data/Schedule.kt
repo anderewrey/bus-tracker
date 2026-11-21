@@ -119,6 +119,12 @@ fun autoText(auto: AutoStart): String = when {
     else -> "off"
 }
 
+/**
+ * A run's own Watching days for its card (DESIGN.md §5): shown only when they aren't the usual
+ * Monday to Friday; null for those, and for no days at all (the card says "No days set" then).
+ */
+fun ownDaysText(days: Set<DayOfWeek>): String? = if (days.isEmpty() || days == WORK_DAYS) null else daysText(days)
+
 /** e.g. "Mon–Fri", "Every day", "Mon, Wed, Fri", "Never". */
 fun daysText(days: Set<DayOfWeek>): String {
     if (days.isEmpty()) return "Never"

@@ -111,7 +111,7 @@ data class RunStatus(
 )
 
 /** What the screens show instead of the line of a run that isn't watched (DESIGN.md §4). */
-const val NOT_MONITORED = "Not monitored"
+const val NOT_WATCHING = "Not watching"
 
 /**
  * The status the screens show for a run, bus position and line included (DESIGN.md §4): while
@@ -572,25 +572,32 @@ object Session {
         AppLog.log("zone ${zone.name} deleted")
     }
 
-    /**
-     * Turns every automatic start on or off, or off until a day. Turned off, it also stops the runs
-     * being watched whose Alarm switch it turns off: those that started by themselves, not one the
-     * user turned on for this period (DESIGN.md §5, user 2026-11-20).
-     */
+    /** Turns every automatic start on or off, or off until a day; applied at once ([applyNow]). */
     fun setAutoStart(context: Context, auto: AutoStart) {
         Store(context).autoStart = auto
         _autoStart.value = auto
         AppLog.log("automatic start: " + autoText(auto))
-        val today = LocalDate.now()
+        applyNow(context, "automatic start " + autoText(auto))
+        Scheduler.reschedule(context)
+    }
+
+    /**
+     * A change to Automatic start or to the days applies at once to today's periods (DESIGN.md §5,
+     * user 2026-11-21: nothing keeps an old state). A run being watched whose bell is now off, or
+     * whose days no longer hold today, stops; one now due starts ([catchUp]). A period the user
+     * forced on or skipped keeps that choice.
+     */
+    private fun applyNow(context: Context, why: String) {
+        val now = LocalDateTime.now()
         for (run in _runs.value) {
             if (run.key !in _active.value) continue
-            val p = run.periodOn(today) ?: continue
-            if (!isAlarmOn(run, p)) {
-                AppLog.log("${run.key}: automatic start off, watching stops")
+            val p = run.periodOn(now.toLocalDate()) ?: continue
+            if (now.dayOfWeek !in run.days || !isAlarmOn(run, p)) {
+                AppLog.log("${run.key}: $why, watching stops")
                 MonitorService.stop(context, run.key)
             }
         }
-        Scheduler.reschedule(context)
+        catchUp(context)
     }
 
     /** The saved switch, turned back on once its resume day has come. */
@@ -612,6 +619,7 @@ object Session {
         store.runs = store.runs.map { it.copy(days = if (on) it.days + day else it.days - day) }
         _runs.value = store.runs
         AppLog.log("all runs: ${day.name.lowercase()} ${if (on) "added" else "removed"}")
+        applyNow(context, "days changed")
         Scheduler.reschedule(context)
     }
 
@@ -646,6 +654,7 @@ object Session {
         store.runs = store.runs.map { if (it.key == key) it.copy(days = days) else it }
         _runs.value = store.runs
         AppLog.log("$key starts by itself: ${daysText(days)}")
+        applyNow(context, "days changed")
         Scheduler.reschedule(context)
     }
 
@@ -765,9 +774,23 @@ object Session {
         }
     }
 
+    /**
+     * What the status line's place says for this reading, without starting a lookup: the school,
+     * the street known for this position, or "finding street…" (the lookup [line] starts next).
+     */
+    private fun placeNow(run: Run, r: Reading): String? {
+        val lat = r.busLat ?: return null
+        val lon = r.busLon ?: return null
+        val school = _schools.value.firstOrNull { it.known && distanceM(lat, lon, it.lat!!, it.lon!!) <= maxOf(it.radius, SCHOOL_RADIUS_M) }
+        val known = streets[run.key]?.takeIf { it.at == positionKey(lat, lon) }?.state
+        return placeText(school?.name, if (school == null) known ?: StreetState.Finding else null)
+    }
+
     private fun logPoll(run: Run, r: Reading, how: String) {
+        // The place as the screen shows it, so each line says what the user saw (user, 2026-11-21).
+        val place = placeNow(run, r)?.let { " ($it)" } ?: ""
         AppLog.log(
-            "poll ${run.key}$how: bus ${r.busLat?.let { String.format(Locale.US, "%.5f,%.5f", it, r.busLon) } ?: "none"}, " +
+            "poll ${run.key}$how: bus ${r.busLat?.let { String.format(Locale.US, "%.5f,%.5f", it, r.busLon) } ?: "none"}$place, " +
                 "GPS ${r.reported ?: "?"}, updated ${r.updated ?: "?"}" + (r.bulletin?.let { ", bulletin: $it" } ?: "")
         )
     }
