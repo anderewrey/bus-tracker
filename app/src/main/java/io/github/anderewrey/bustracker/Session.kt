@@ -51,6 +51,9 @@ import io.github.anderewrey.bustracker.data.periodOn
 import io.github.anderewrey.bustracker.data.switchPeriod
 import io.github.anderewrey.bustracker.monitor.MonitorService
 import io.github.anderewrey.bustracker.net.BusAlert
+import io.github.anderewrey.bustracker.net.fetchBusAlerts
+import io.github.anderewrey.bustracker.net.latestFor
+import io.github.anderewrey.bustracker.net.sameHalfDay
 import io.github.anderewrey.bustracker.net.LoginFailed
 import io.github.anderewrey.bustracker.net.Reading
 import io.github.anderewrey.bustracker.net.SessionExpired
@@ -203,9 +206,33 @@ object Session {
         _watchEnd.value = if (end == null) _watchEnd.value - key else _watchEnd.value + (key to end)
     }
 
+    /** The day the notices are about: they stay on the run's card all that day (user, 2026-11-21). */
+    private var noticesDay: LocalDate? = null
+
     fun setNotice(key: String, alert: BusAlert?) {
+        val today = LocalDate.now()
+        if (noticesDay != today) {
+            noticesDay = today
+            _notices.value = emptyMap()
+        }
         if (_notices.value[key] == alert) return
         _notices.value = if (alert == null) _notices.value - key else _notices.value + (key to alert)
+    }
+
+    /**
+     * Today's BusPlanner notices for every run, watched or not, so each run's card shows its own
+     * all day (DESIGN.md §7.3): fetched when the app comes to the front and after a reload. A
+     * failure keeps what is shown and is only logged.
+     */
+    suspend fun refreshNotices(context: Context) {
+        val portal = Store(context).portal ?: return
+        val all = try {
+            withContext(Dispatchers.IO) { fetchBusAlerts(portal) }
+        } catch (e: Exception) {
+            AppLog.log("bus alerts: error ${e.message ?: e.javaClass.simpleName}")
+            return
+        }
+        for (run in _runs.value) setNotice(run.key, latestFor(all, run.bus)?.takeIf { sameHalfDay(it, run.planned) })
     }
 
     /**
@@ -392,6 +419,7 @@ object Session {
         store.schools = schools
         store.schoolOptions = options
         store.lastScan = LocalDate.now()
+        store.lastReload = Triple(LocalDateTime.now().withNano(0), why, fresh.size)
         if (fresh.isNotEmpty()) store.changes = mergeChanges(store.changes, fresh)
         _runs.value = runs
         _changes.value = store.changes

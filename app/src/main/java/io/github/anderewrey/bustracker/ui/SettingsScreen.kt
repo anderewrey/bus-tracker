@@ -48,7 +48,7 @@ import io.github.anderewrey.bustracker.monitor.testRing
 
 /** Settings that apply to all runs: sound, bus alerts and the account. */
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, onOverview: () -> Unit, onDebug: () -> Unit, onImported: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onOverview: () -> Unit, onDebug: () -> Unit, onImported: () -> Unit) {
     val context = LocalContext.current
     val settings = remember { AppSettings(context) }
     // Bumped after each change, and when coming back from Android's settings, to read everything again.
@@ -101,12 +101,6 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit, onOverview: () -> U
         Section("Children, schools, runs and zones")
         Text("Everything the app knows, and each school's position and \"at school\" circle.", style = MaterialTheme.typography.bodySmall)
         OutlinedButton(onClick = onOverview) { Text("Open the overview") }
-
-        Section("Account")
-        val store = Store(context)
-        Text(store.email ?: "")
-        Text(store.portal?.removePrefix("https://") ?: "", style = MaterialTheme.typography.bodySmall)
-        OutlinedButton(onClick = onLogout) { Text("Log out") }
 
         // Moved here from the run list's header (user, 2026-11-21): a tool, not a main view.
         Section("Debug")
