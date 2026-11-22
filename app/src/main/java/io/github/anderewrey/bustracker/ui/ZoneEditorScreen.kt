@@ -64,6 +64,7 @@ import org.maplibre.android.style.layers.PropertyFactory.circleStrokeWidth
 import org.maplibre.android.style.layers.PropertyFactory.fillColor
 import org.maplibre.android.style.layers.PropertyFactory.fillOpacity
 import org.maplibre.android.style.layers.PropertyFactory.lineColor
+import org.maplibre.android.style.layers.PropertyFactory.lineOpacity
 import org.maplibre.android.style.layers.PropertyFactory.lineWidth
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
@@ -90,6 +91,8 @@ fun ZoneEditorScreen(
     zone: Zone?,
     taken: (String) -> Boolean,
     onCancel: () -> Unit,
+    /** Another zone shown faintly for reference, e.g. the main zone while drawing a heads-up zone. */
+    faint: Zone? = null,
     onSave: (String, List<Pair<Double, Double>>) -> Unit,
 ) {
     val context = LocalContext.current
@@ -122,6 +125,12 @@ fun ZoneEditorScreen(
                 mapRef.value = map
                 map.setStyle(Style.Builder().fromUri(STYLE_URL)) { s ->
                     hideTransit(s)
+                    faint?.takeIf { it.corners.size >= 3 }?.let { f ->
+                        val ring = (f.corners + f.corners.first()).map { (lat, lon) -> Point.fromLngLat(lon, lat) }
+                        s.addSource(GeoJsonSource("faint", FeatureCollection.fromFeature(Feature.fromGeometry(Polygon.fromLngLats(listOf(ring))))))
+                        s.addLayer(FillLayer("faint-fill", "faint").withProperties(fillColor("#F2A900"), fillOpacity(0.08f)))
+                        s.addLayer(LineLayer("faint-line", "faint").withProperties(lineColor("#C78A00"), lineWidth(1f), lineOpacity(0.5f)))
+                    }
                     s.addSource(GeoJsonSource("zone"))
                     s.addLayer(FillLayer("zone-fill", "zone").withProperties(fillColor("#F2A900"), fillOpacity(0.2f)))
                     s.addLayer(LineLayer("zone-line", "zone").withProperties(lineColor("#C78A00"), lineWidth(2f)))

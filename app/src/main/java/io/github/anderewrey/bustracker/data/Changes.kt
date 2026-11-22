@@ -142,7 +142,10 @@ fun carryConfiguration(new: List<Run>, changes: List<RunChange>, past: List<Run>
     return new.map { run ->
         val c = changedBy[run.key]
         val from = c?.past ?: pastByKey[run.key] ?: return@map run.copy(mainZone = defaultZone(run, zones))
-        run.copy(days = from.days, mainZone = from.mainZone, before = from.before, after = from.after, endRule = from.endRule, endZone = from.endZone)
+        run.copy(
+            days = from.days, mainZone = from.mainZone, before = from.before, after = from.after, endRule = from.endRule, endZone = from.endZone,
+            headsUpZone = from.headsUpZone, alarmAfterHeadsUp = from.alarmAfterHeadsUp,
+        )
     }
 }
 

@@ -25,9 +25,10 @@ import io.github.anderewrey.bustracker.data.EndRule
 import io.github.anderewrey.bustracker.data.EndWatch
 import io.github.anderewrey.bustracker.data.Store
 import java.time.LocalDate
-import io.github.anderewrey.bustracker.data.ZoneRole
 import io.github.anderewrey.bustracker.data.periodOn
-import io.github.anderewrey.bustracker.data.zonesFor
+import io.github.anderewrey.bustracker.data.alarmArmed
+import io.github.anderewrey.bustracker.data.headsUpZoneOf
+import io.github.anderewrey.bustracker.data.mainZoneOf
 import io.github.anderewrey.bustracker.net.BusAlert
 import io.github.anderewrey.bustracker.net.LoginFailed
 import io.github.anderewrey.bustracker.net.alertsFor
@@ -69,6 +70,9 @@ private fun alertId(key: String) = key.hashCode() + 1
 
 /** The run's BusPlanner notice: one per run, so a newer notice replaces the older one. */
 private fun noticeId(key: String) = key.hashCode() + 3
+
+/** The run's heads-up notification: apart from the run's own, so the alarm can't replace it. */
+private fun headsUpId(key: String) = key.hashCode() + 5
 
 /** The run's own notification: the tracking line while watching, the main-zone alarm while it rings. */
 private fun runNotificationId(key: String) = key.hashCode()
@@ -124,6 +128,36 @@ fun noticeAlert(context: Context, key: String, alert: BusAlert): Notification {
     val title = "${alert.bus}: ${alert.action}"
     val details = listOf(alert.routeRun, alert.created.substringAfter(' ').let { "posted $it" }).joinToString(" · ")
     return ringingAlert(context, Ringing.NOTICE, key, noticeId(key), title, alert.comment.ifEmpty { details }, "${alert.comment}\n\n$details".trim())
+}
+
+/**
+ * The heads-up zone's notification (DESIGN.md §6.1): sounds once (not insistent), on its own
+ * channel; opening it opens the run's map. It stays until swiped away.
+ */
+fun headsUpAlert(context: Context, key: String, title: String, text: String): Notification {
+    val id = headsUpId(key)
+    val open = PendingIntent.getActivity(
+        context, id,
+        Intent(context, MainActivity::class.java).putExtra(EXTRA_RUN, key)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+    val b = Notification.Builder(context, channelId(context, Ringing.HEADS_UP))
+        .setSmallIcon(R.drawable.ic_bus)
+        .setContentTitle(title)
+        .setContentText(text)
+        .setContentIntent(open)
+        .setAutoCancel(true)
+    if (AppSettings(context).quietOverride) b.setCategory(Notification.CATEGORY_ALARM)
+    return b.build()
+}
+
+/** Posts a test heads-up, so its sound can be checked too. */
+fun testHeadsUp(context: Context) {
+    ensureChannels(context)
+    context.getSystemService(NotificationManager::class.java)
+        .notify(headsUpId("test"), headsUpAlert(context, "test", "Test: the bus entered the heads-up zone", "This is how the heads-up sounds"))
+    AppLog.log("test heads-up posted")
 }
 
 /** Posts a test alert, so the sound can be checked before a real trip. */
@@ -198,6 +232,9 @@ class MonitorService : Service() {
     private var loop: Job? = null
     private var foregroundKey: String? = null
     private val inMainZone = HashMap<String, Boolean>()
+    private val inHeadsUpZone = HashMap<String, Boolean>()
+    /** Runs whose "bus in the main zone before the heads-up" was logged this period. */
+    private val blockedLogged = HashSet<String>()
     /**
      * Runs whose notification is the main-zone alarm, with when it rang (elapsedRealtime). The
      * checks don't update it (that would stop the sound) for [RING_MS]; then it goes back to the
@@ -311,11 +348,19 @@ class MonitorService : Service() {
         periodStart[run.key] = period.start
         Session.setWatchEnd(run.key, period.end)
         inMainZone.remove(run.key)
+        inHeadsUpZone.remove(run.key)
+        blockedLogged.remove(run.key)
         ringing.remove(run.key)
         delayMin.remove(run.key)
         setEndWatch(run)
         firstCheck += run.key
-        AppLog.log("zones of ${run.key}: ${zonesFor(run, Session.zones.value).joinToString { "${it.name} (${it.role.name.lowercase()})" }.ifEmpty { "none" }}")
+        val zs = Session.zones.value
+        AppLog.log(
+            "zones of ${run.key}: " + listOfNotNull(
+                headsUpZoneOf(run, zs)?.let { "${it.name} (heads-up${if (run.alarmAfterHeadsUp) ", alarm only after it" else ""})" },
+                mainZoneOf(run, zs)?.let { "${it.name} (main)" },
+            ).joinToString().ifEmpty { "none" }
+        )
         val status = Session.status.value[run.key] ?: RunStatus(null, "Starting…", null)
         promote(run.key, notification(run, status))
         Session.setActive(until.keys.toSet())
@@ -410,6 +455,7 @@ class MonitorService : Service() {
                     continue
                 }
                 val status = read(run, manual)
+                if (key in until) checkHeadsUp(run, status)
                 if (key in until) checkZones(run, status)
                 if (key in until) checkEnd(run, status)
                 if (key in until) {
@@ -476,9 +522,16 @@ class MonitorService : Service() {
         val r = status.reading ?: return
         val lat = r.busLat ?: return
         val lon = r.busLon ?: return
-        val main = zonesFor(run, Session.zones.value).firstOrNull { it.role == ZoneRole.MAIN } ?: return
+        val main = mainZoneOf(run, Session.zones.value) ?: return
         val inside = main.contains(lat, lon)
         val wasInside = inMainZone[run.key] == true
+        // Alarm only after the heads-up (user, 2026-11-22): before it, the bus inside the main zone
+        // only crosses it. It isn't counted as inside, so the first check inside after the
+        // heads-up sounded rings.
+        if (inside && !wasInside && !alarmArmed(run, Session.zones.value, Session.hasHeadsUp(run.key))) {
+            if (blockedLogged.add(run.key)) AppLog.log("${run.key}: bus in main zone ${main.name} before the heads-up zone, no alarm")
+            return
+        }
         if (inside && !wasInside) {
             inMainZone[run.key] = true
             if (Session.hasRung(run.key)) {
@@ -501,6 +554,31 @@ class MonitorService : Service() {
                 backToTracking(run.key, run)
             }
         }
+    }
+
+    /**
+     * The heads-up zone (DESIGN.md §6.1): when the bus enters it, a notification that sounds once,
+     * beside the run's own; at most once per period (the Alarm switch off and on lets it sound
+     * again). It never stops or replaces the alarm.
+     */
+    private fun checkHeadsUp(run: Run, status: RunStatus) {
+        val r = status.reading ?: return
+        val lat = r.busLat ?: return
+        val lon = r.busLon ?: return
+        val zone = headsUpZoneOf(run, Session.zones.value) ?: return
+        val inside = zone.contains(lat, lon)
+        val wasInside = inHeadsUpZone[run.key] == true
+        inHeadsUpZone[run.key] = inside
+        if (!inside || wasInside) return
+        if (Session.hasHeadsUp(run.key)) {
+            AppLog.log("${run.key}: bus in heads-up zone ${zone.name}, already sounded this period")
+            return
+        }
+        Session.markHeadsUp(this, run.key)
+        AppLog.log("${run.key}: bus entered heads-up zone ${zone.name}, sounding once")
+        val bus = r.runLabel?.substringBefore(' ') ?: run.bus
+        getSystemService(NotificationManager::class.java)
+            .notify(headsUpId(run.key), headsUpAlert(this, run.key, "$bus entered ${zone.name}", status.line))
     }
 
     /**

@@ -339,7 +339,7 @@ Once watching has ended, the run waits for its next monitoring period. Nothing r
 - Known gap: when the phone is off or rebooting at the period start, that period doesn't start by itself. Since the Alarm switch, opening the app during the period starts it.
 - Samsung: Battery must be "Unrestricted" for Bus Tracker, or One UI may put it to deep sleep and its alarms never fire.
 
-### 5.1 Run configuration page (built 2026-11-17, except heads-up alerts)
+### 5.1 Run configuration page (built 2026-11-17; heads-up zone 2026-11-22)
 
 Everything about one run, on one page. **Tapping the run card opens it.** The card keeps what is needed quickly: Open map and the Alarm switch (§5). The global Automatic start switch stays on the run list.
 
@@ -385,7 +385,7 @@ Main Street isn't on the AM run: the bus goes through it after the stop.
 
 **As built (2026-11-17):**
 - **Watching period:** − and + buttons by 5 minutes for "before" and "after" the planned time, each 0 to 120, at least 10 minutes in all; the result shows above them ("7:18–8:18 AM"), and a "Default" button comes back to 30 and 30. The period never crosses midnight. A change applies at once, also while the run is watched (its end moves, plus any BusPlanner delay), and the Alarm switch's choices about today's period follow it (a period switched off stays off).
-- **Alerts:** the main zone only (§6.2); heads-up zones are the next step (ROADMAP).
+- **Alerts:** the heads-up zone and the main zone, each in its own section, heads-up first (§6.1, As built 2026-11-22). The ordered alert list with events and actions is not built.
 - **End of watching:** the four choices as radio buttons. "Leaves" and "enters" are about the main zone unless another zone is picked under them. "Enters" only counts once the bus was seen outside the zone in this period, like the school rule, so a bus already inside at the start doesn't end it. A zone rule with no zone, or the school rule with the school's position unknown, ends nothing: only the period's end and the switch do (the page says so in small print). Leaving the main zone no longer ends a dropoff run by itself: it is the default rule of a dropoff run. A change applies at once, also while the run is watched.
 - Period minutes and the end of monitoring are part of the run's configuration: they carry over rescans and go back to the defaults on "New configuration" (§3.2).
 
@@ -468,6 +468,13 @@ WAITING_H1 → … → WAITING_Hn → WAITING_M → IN_M → DONE
 - "Inside" uses ray-casting point-in-polygon on lat/lon, as in the prototype.
 - Each fix is tested independently. Because fixes are 200–450 m apart, a zone should be at least about 500 m long along the route, or be chained behind heads-up zones.
 
+**As built (2026-11-22; Artboard 1.6 · Heads-up zone)** (user: one heads-up zone per run; it sounds once; the chain is an option):
+- **One heads-up zone per run** (`Run.headsUpZone`), drawn, edited, chosen or removed on the run's page like the main zone, in its own section above it. Drawing it shows the main zone faintly. It can serve several runs through Choose; a new heads-up zone is never given to other runs by itself (only a new main zone is).
+- **It sounds once:** when a check sees the bus inside it after a check outside (or at the first check), a notification "B101 entered That Street zone" on its own channel (Heads-up zone: its sound and vibration in Settings, Test sound on the run's page and in Settings), without the insistent flag. It sits beside the run's own notification, so the alarm never replaces it; opening it opens the app on the run. Once per period, like the alarm; the Alarm switch off and on lets both sound again. The card says "Heads-up 7:24 · watching" until the alarm rings. Logged as "bus entered heads-up zone …, sounding once".
+- **"Alarm only after the heads-up"** (a checkbox under the heads-up zone, off at first; user, 2026-11-22: the bus crosses the street at the corner on another part of its route, then comes back by that street into the neighbourhood). Off: the main zone rings whether or not the heads-up sounded, as the chain above is too fragile with fixes 200–450 m apart. On: a check inside the main zone before the heads-up sounded doesn't count (logged once: "bus in main zone … before the heads-up zone, no alarm"), so the first check inside after it rings. The price, said on the page: if no position falls in the heads-up zone, the alarm doesn't ring. With no heads-up zone, the option does nothing.
+- **Map:** the heads-up zone is drawn lighter with a dashed outline; the main zone as before.
+- Both carry over rescans with the main zone, and go back to none (option off) on "New configuration".
+
 ### 6.2 Drawing
 
 1. The map moves as usual the whole time (drag, pinch, double-tap; mouse drag and wheel on the emulator).
@@ -495,7 +502,7 @@ These are Android NotificationChannels, created on the first app launch. Android
 
 | Type | Purpose | Default behaviour |
 |---|---|---|
-| Heads-up zone | The bus entered a heads-up zone. | Rings until acknowledged |
+| Heads-up zone | The bus entered the run's heads-up zone. | Sounds once (built 2026-11-22, §6.1) |
 | Main zone | The bus entered the main zone. | Rings until acknowledged |
 | BusPlanner notice | A late or cancelled bus, from the alerts API (§2.4). Title `B102: Delayed 15 minutes from original time`, the comment in full, then `RouteRun · posted 7:36 AM`. | Rings until acknowledged |
 | Bus alert | A rescan found changes (§3.2), or BusPlanner has no vehicle at monitoring start. | Sounds once |

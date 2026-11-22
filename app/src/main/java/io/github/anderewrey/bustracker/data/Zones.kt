@@ -42,8 +42,20 @@ data class Zone(val id: String, val name: String, val role: ZoneRole, val corner
     }
 }
 
-/** The run's zones: its main zone, when it has one. Heads-up zones come later. */
-fun zonesFor(run: Run, zones: List<Zone>): List<Zone> = listOfNotNull(zones.firstOrNull { it.id == run.mainZone })
+/** The run's zones, in the order the bus meets them: its heads-up zone, then its main zone, each when it has one. */
+fun zonesFor(run: Run, zones: List<Zone>): List<Zone> =
+    listOfNotNull(headsUpZoneOf(run, zones), mainZoneOf(run, zones))
+
+fun mainZoneOf(run: Run, zones: List<Zone>): Zone? = zones.firstOrNull { it.id == run.mainZone }
+
+fun headsUpZoneOf(run: Run, zones: List<Zone>): Zone? = run.headsUpZone?.let { id -> zones.firstOrNull { it.id == id } }
+
+/**
+ * Whether the main zone's alarm may ring now (DESIGN.md §6.1): always, unless the run asks for the
+ * heads-up first, has a heads-up zone, and it hasn't sounded in this period.
+ */
+fun alarmArmed(run: Run, zones: List<Zone>, headsUpSounded: Boolean): Boolean =
+    !run.alarmAfterHeadsUp || headsUpZoneOf(run, zones) == null || headsUpSounded
 
 /** True when a zone other than [exceptId] already has this name (case and surrounding spaces ignored). */
 fun nameTaken(zones: List<Zone>, name: String, exceptId: String? = null): Boolean =

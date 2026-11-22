@@ -56,6 +56,7 @@ fun rememberAlarmState(run: Run): AlarmState {
     val choices by Session.choices.collectAsState()
     val auto by Session.autoStart.collectAsState()
     val rang by Session.rang.collectAsState()
+    val headsUp by Session.headsUp.collectAsState()
     val ends by Session.watchEnd.collectAsState()
     var now by remember { mutableStateOf(LocalDateTime.now()) }
     LaunchedEffect(Unit) {
@@ -69,9 +70,11 @@ fun rememberAlarmState(run: Run): AlarmState {
     val on = watching || (period != null && alarmOn(run, period, auto, choices))
     val until = ends[run.key]?.let { " until ${clock(it)}" } ?: ""
     val rangAt = rang[run.key]?.takeIf { it.toLocalDate() == now.toLocalDate() }
+    val headsUpAt = headsUp[run.key]?.takeIf { it.toLocalDate() == now.toLocalDate() }
     val status = when {
         period == null -> "No days set"
         watching && rangAt != null -> "Rang ${clock(rangAt)} · watching$until"
+        watching && headsUpAt != null -> "Heads-up ${clock(headsUpAt)} · watching$until"
         watching -> "Watching$until"
         else -> {
             val day = if (period.start.toLocalDate() == now.toLocalDate()) "" else "${period.start.format(DAY)} "

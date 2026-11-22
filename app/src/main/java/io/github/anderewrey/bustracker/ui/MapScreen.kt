@@ -17,6 +17,8 @@ import io.github.anderewrey.bustracker.AppLog
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.time.LocalTime
+import io.github.anderewrey.bustracker.data.Zone
+import io.github.anderewrey.bustracker.data.headsUpZoneOf
 import io.github.anderewrey.bustracker.data.zonesFor
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
@@ -24,6 +26,7 @@ import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory.fillColor
 import org.maplibre.android.style.layers.PropertyFactory.fillOpacity
 import org.maplibre.android.style.layers.PropertyFactory.lineColor
+import org.maplibre.android.style.layers.PropertyFactory.lineDasharray
 import org.maplibre.android.style.layers.PropertyFactory.lineWidth
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.Polygon
@@ -157,9 +160,14 @@ fun MapScreen(run: Run, onBack: () -> Unit) {
                 map.setStyle(Style.Builder().fromUri(STYLE_URL)) { s ->
                     val hidden = hideTransit(s)
                     AppLog.log("map style loaded, hidden layers: ${hidden.joinToString().ifEmpty { "none" }}")
-                    val zones = runZones.map { z ->
+                    fun shape(z: Zone) =
                         Feature.fromGeometry(Polygon.fromLngLats(listOf((z.corners + z.corners.first()).map { (lat, lon) -> Point.fromLngLat(lon, lat) })))
-                    }
+                    // The heads-up zone: lighter, with a dashed outline (DESIGN.md §6.1).
+                    val headsUp = headsUpZoneOf(run, Session.zones.value)
+                    val zones = runZones.filter { it.id != headsUp?.id }.map(::shape)
+                    s.addSource(GeoJsonSource("headsup", FeatureCollection.fromFeatures(listOfNotNull(headsUp?.let(::shape)))))
+                    s.addLayer(FillLayer("headsup-fill", "headsup").withProperties(fillColor("#F2A900"), fillOpacity(0.07f)))
+                    s.addLayer(LineLayer("headsup-line", "headsup").withProperties(lineColor("#C78A00"), lineWidth(2f), lineDasharray(arrayOf(2f, 2f))))
                     s.addSource(GeoJsonSource("zones", FeatureCollection.fromFeatures(zones)))
                     s.addLayer(FillLayer("zones-fill", "zones").withProperties(fillColor("#F2A900"), fillOpacity(0.15f)))
                     s.addLayer(LineLayer("zones-line", "zones").withProperties(lineColor("#C78A00"), lineWidth(2f)))

@@ -138,6 +138,11 @@ class Store(context: Context) {
         }
         set(value) = putTimes("rang", value)
 
+    /** When each run's heads-up zone last sounded; like [rang], it counts for today's period. */
+    var headsUp: Map<String, LocalDateTime>
+        get() = times("headsUp") { LocalDateTime.parse(it) }
+        set(value) = putTimes("headsUp", value)
+
     /** The Alarm switch's choices for single periods; entries older than two days are dropped. */
     var choices: PeriodChoices
         get() = PeriodChoices(times("skipped"), times("forced"), times("ended"))

@@ -182,6 +182,10 @@ object Session {
     private val _rang = MutableStateFlow<Map<String, LocalDateTime>>(emptyMap())
     val rang: StateFlow<Map<String, LocalDateTime>> = _rang
 
+    /** When each run's heads-up zone sounded (DESIGN.md §6.1), for the card's status. */
+    private val _headsUp = MutableStateFlow<Map<String, LocalDateTime>>(emptyMap())
+    val headsUp: StateFlow<Map<String, LocalDateTime>> = _headsUp
+
     /** The zones drawn on the phone (DESIGN.md §6); kept across logouts. */
     private val _zones = MutableStateFlow<List<Zone>>(emptyList())
     val zones: StateFlow<List<Zone>> = _zones
@@ -373,6 +377,7 @@ object Session {
         _runs.value = store.runs
         _changes.value = store.changes
         _rang.value = store.rang
+        _headsUp.value = store.headsUp
         _choices.value = store.choices
         _zones.value = ZoneStore(context).zones
         refreshSchools(context)
@@ -522,16 +527,46 @@ object Session {
         _rang.value = store.rang
     }
 
-    /** Lets the run's alarm ring again: at the next check if the bus is in the zone, or when it next enters. */
+    /** Whether the run's heads-up zone already sounded in today's period. */
+    fun hasHeadsUp(key: String): Boolean = _headsUp.value[key]?.toLocalDate() == LocalDate.now()
+
+    fun markHeadsUp(context: Context, key: String) {
+        val store = Store(context)
+        store.headsUp = store.headsUp + (key to LocalDateTime.now().withNano(0))
+        _headsUp.value = store.headsUp
+    }
+
+    /**
+     * Lets the run's alarm ring again: at the next check if the bus is in the zone, or when it next
+     * enters. The heads-up zone can sound again too.
+     */
     fun rearm(context: Context, key: String) {
         val store = Store(context)
         store.rang = store.rang - key
+        store.headsUp = store.headsUp - key
         _rang.value = store.rang
+        _headsUp.value = store.headsUp
         AppLog.log("$key: alarm re-armed")
     }
 
-    /** The runs whose main zone is [zoneId]. */
-    fun runsUsing(zoneId: String): List<Run> = _runs.value.filter { it.mainZone == zoneId }
+    /** The runs that use [zoneId] as their main or heads-up zone. */
+    fun runsUsing(zoneId: String): List<Run> = _runs.value.filter { it.mainZone == zoneId || it.headsUpZone == zoneId }
+
+    /** Makes [zoneId] the run's heads-up zone; null: none. The zone itself stays. */
+    fun setHeadsUpZone(context: Context, key: String, zoneId: String?) {
+        val store = Store(context)
+        store.runs = store.runs.map { if (it.key == key) it.copy(headsUpZone = zoneId) else it }
+        _runs.value = store.runs
+        AppLog.log("$key heads-up zone: ${_zones.value.firstOrNull { it.id == zoneId }?.name ?: "none"}")
+    }
+
+    /** The main zone's alarm only after the heads-up zone sounded (user, 2026-11-22). */
+    fun setAlarmAfterHeadsUp(context: Context, key: String, on: Boolean) {
+        val store = Store(context)
+        store.runs = store.runs.map { if (it.key == key) it.copy(alarmAfterHeadsUp = on) else it }
+        _runs.value = store.runs
+        AppLog.log("$key: alarm only after the heads-up ${if (on) "on" else "off"}")
+    }
 
     /** Makes [zoneId] the run's main zone; null: no main zone, no alarm. The zone itself stays. */
     fun setMainZone(context: Context, key: String, zoneId: String?) {
@@ -548,9 +583,14 @@ object Session {
      * - A changed zone, [copy] false: every run using it gets the new shape and name.
      * - [copy] true: a new zone for this run only; the others keep the old one.
      */
-    fun saveZone(context: Context, key: String, zone: Zone, copy: Boolean = false): List<String> {
+    fun saveZone(context: Context, key: String, zone: Zone, copy: Boolean = false, headsUp: Boolean = false): List<String> {
         val existing = _zones.value.any { it.id == zone.id }
         val saved = storeZone(context, zone, copy, "for $key")
+        // A heads-up zone is only this run's; only a main zone is offered to the other runs.
+        if (headsUp) {
+            setHeadsUpZone(context, key, saved.id)
+            return emptyList()
+        }
         setMainZone(context, key, saved.id)
         return if (existing && !copy) emptyList() else adoptZone(context, saved)
     }
@@ -590,7 +630,7 @@ object Session {
     }
 
     /** The runs that use [zoneId]: as their main zone, or for their end of monitoring. */
-    fun runsUsingAny(zoneId: String): List<Run> = _runs.value.filter { it.mainZone == zoneId || it.endZone == zoneId }
+    fun runsUsingAny(zoneId: String): List<Run> = _runs.value.filter { it.mainZone == zoneId || it.endZone == zoneId || it.headsUpZone == zoneId }
 
     /** Deletes a zone no run uses (DESIGN.md §5.3); one still in use is kept. */
     fun deleteZone(context: Context, zoneId: String) {
@@ -701,6 +741,7 @@ object Session {
                     it.copy(
                         mainZone = defaultZone(it, _zones.value), days = WORK_DAYS,
                         before = MONITOR_MINUTES, after = MONITOR_MINUTES, endRule = null, endZone = null,
+                        headsUpZone = null, alarmAfterHeadsUp = false,
                     )
                 } else it
             }
@@ -887,6 +928,7 @@ object Session {
         _changes.value = emptyList()
         _autoStart.value = AutoStart()
         _rang.value = emptyMap()
+        _headsUp.value = emptyMap()
         _choices.value = PeriodChoices()
         _watchEnd.value = emptyMap()
         _notices.value = emptyMap()
