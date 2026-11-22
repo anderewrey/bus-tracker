@@ -3,7 +3,7 @@
 #
 # On every push and pull request: license headers, unit tests and a debug build, whose APKs are
 # kept on the run's page. On a push to main: also the release build of the official app,
-# published as a GitHub pre-release (tag build-<versionCode>) for Obtainium. "Run workflow"
+# published as a GitHub pre-release (tag build-<versionCode>). "Run workflow"
 # (Actions tab) builds nothing: it promotes one of those pre-releases to an official version,
 # as it is. DESIGN.md §8.
 name: CI
