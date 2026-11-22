@@ -28,7 +28,7 @@ body{margin:0}
 .map svg{position:absolute;inset:0;width:100%;height:100%}
 </style>
 </helmet>
-<div style="width:1000px;height:1500px;box-sizing:border-box;padding:28px 32px;font-family:Inter,system-ui,sans-serif;background:#f6f6f4;display:flex;flex-direction:column;gap:18px">
+<div style="width:1000px;height:2200px;box-sizing:border-box;padding:28px 32px;font-family:Inter,system-ui,sans-serif;background:#f6f6f4;display:flex;flex-direction:column;gap:18px">
 <div style="font-size:20px;font-weight:600">Heads-up zone: a sound once when the bus gets near, before the main zone rings</div>
 
 <div class="h2">Row 1.6.1 · Adding a heads-up zone to a run</div>
@@ -73,11 +73,11 @@ body{margin:0}
 <div class="ph">
 <div class="row"><span class="dim">Back</span><b>B101 · Pickup 7:33 AM</b></div>
 <div class="bx dim">About · Watching days · Watching period</div>
-<div class="bx"><b>Heads-up zone</b><span class="mut">That Street zone: a sound once when the bus enters it.</span><span>[Draw new] [Edit] [Choose] [Remove] [Test sound]</span></div>
+<div class="bx"><b>Heads-up zone</b><span class="mut">That Street zone: a sound once when the bus enters it.</span><span>[Draw new] [Edit] [Choose] [Remove] [Test sound]</span><span>☐ Alarm only after the heads-up</span></div>
 <div class="bx"><b>Main zone</b><span class="mut">Home zone: the alarm rings when the bus enters it.</span><span>[Draw new] [Edit] [Choose] [Remove] [Test alarm]</span></div>
 <div class="bx dim">End of watching</div>
 </div>
-<div class="cap"><b>One heads-up zone per run.</b> Like a main zone, it can serve several runs. Its sound and vibration are in Settings, apart from the alarm's.</div>
+<div class="cap"><b>One heads-up zone per run.</b> Like a main zone, it can serve several runs. Its sound and vibration are in Settings, apart from the alarm's. <b>Alarm only after the heads-up</b> is off at first (Row 1.6.3).</div>
 </div>
 
 </div>
@@ -119,13 +119,53 @@ body{margin:0}
 <div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>400 m · This Street · GPS 7:30</span><div class="row"><span>[Open map]</span><span class="mut">Rang 7:30 · watching</span><span class="sw"></span></div></div>
 <div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
 </div>
-<div class="cap"><b>The alarm, as before.</b> It rings even if no position fell in That Street zone: positions come 200–450 m apart, and a missed heads-up must never cost the alarm.</div>
+<div class="cap"><b>The alarm, as before.</b> With "Alarm only after the heads-up" off, it rings even if no position fell in That Street zone.</div>
+</div>
+
+<div class="h2" style="margin-top:12px">Row 1.6.3 · Alarm only after the heads-up: the bus passes home on its way out</div>
+<div style="display:flex;align-items:flex-start">
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications</span><div class="nb"><b>B101 · watching</b><span>300 m · This Street · GPS 7:10</span><span class="mut">[Open map] [Stop watching]</span></div></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>BusPlanner › · Settings ›</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>300 m · This Street · GPS 7:10</span><div class="row"><span>[Open map]</span><span class="mut">Watching until 8:08</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>7:10, the bus goes through Home zone</b> on its way to the end of the street, before the children's pickup. The heads-up hasn't come: no alarm.</div>
+</div>
+
+<div class="ar"><i>bus turns around, enters That Street zone</i><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications</span><div class="nb"><b>B101 entered That Street zone</b><span>1.2 km · That Street</span></div><div class="nb"><b>B101 · watching</b><span>1.2 km · That Street · GPS 7:24</span><span class="mut">[Open map] [Stop watching]</span></div></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>BusPlanner › · Settings ›</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>1.2 km · That Street · GPS 7:24</span><div class="row"><span>[Open map]</span><span class="mut">Heads-up 7:24 · watching</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>The heads-up sounds</b>: the bus is now coming the right way. The alarm is armed.</div>
+</div>
+
+<div class="ar"><i>bus enters Home zone</i><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications</span><div class="nb"><b>B101 entered That Street zone</b><span>1.2 km · That Street</span></div><div class="nb" style="border-color:#c0392b;background:#fbeceb"><b>B101 entered Home zone · ringing</b><span>400 m · This Street</span><span class="mut">[Open map] [Silence]</span></div></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>BusPlanner › · Settings ›</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>400 m · This Street · GPS 7:30</span><div class="row"><span>[Open map]</span><span class="mut">Rang 7:30 · watching</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>Now it rings.</b> The price: if no position ever falls in That Street zone, the alarm never rings. Draw it long enough along the route (500 m or more).</div>
 </div>
 
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":1500}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":2200}}'>
 class Component extends DCLogic {
 renderVals() { return {}; }
 }
