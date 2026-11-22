@@ -40,9 +40,10 @@ android {
         // whatever its branch or commit.
         versionCode = (System.currentTimeMillis() / 60_000).toInt()
         // Last version tag, commits since it, commit hash, "-dirty" for uncommitted changes:
-        // 0.13-1-g5a71da1, and 0.13-0-gc987f74 on the tag itself. Only tags starting with a
+        // 0.13-1-g5a71da1; on the tag itself, the version alone: 0.17. Only tags starting with a
         // digit count, not the build-N tags of the GitHub releases.
-        versionName = git("describe", "--tags", "--long", "--always", "--dirty", "--match", "[0-9]*") ?: "unknown"
+        versionName = git("describe", "--tags", "--long", "--always", "--dirty", "--match", "[0-9]*")
+            ?.let { Regex("""^(.+)-0-g[0-9a-f]+$""").find(it)?.groupValues?.get(1) ?: it } ?: "unknown"
     }
 
     signingConfigs {

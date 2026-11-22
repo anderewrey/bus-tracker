@@ -4,8 +4,8 @@
 # On every push and pull request: license headers, unit tests and a debug build, whose APKs are
 # kept on the run's page. On a push to main: also the release build of the official app,
 # published as a GitHub pre-release (tag build-<versionCode>). "Run workflow"
-# (Actions tab) builds nothing: it promotes one of those pre-releases to an official version,
-# as it is. DESIGN.md §8.
+# (Actions tab) promotes one of those pre-releases to an official version: same commit, built
+# again under the version's name. DESIGN.md §8.
 name: CI
 
 on:
@@ -110,25 +110,31 @@ jobs:
             -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$name" --notes-file notes.txt \
             --prerelease
 
-  # "Run workflow": the version tag goes on the pre-release's commit, and the release takes the
-  # version's name and becomes the latest one. Same APK, same versionCode: nothing to reinstall.
+  # "Run workflow": the version tag goes on the pre-release's commit, that commit is built again
+  # so the app is named after the version (e.g. "0.17"), its APKs replace the pre-release's,
+  # and the release takes the version's name and becomes the latest one. The code is the one
+  # tested; only the name and the versionCode change, so the phone takes it as an update.
   promote:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SIGNING_KEYSTORE: ${{ secrets.SIGNING_KEYSTORE }}
+      ORG_GRADLE_PROJECT_busTrackerKeystorePassword: ${{ secrets.SIGNING_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Promote
+      - name: Which build, which version
         env:
-          GH_TOKEN: ${{ github.token }}
           BUILD: ${{ inputs.build }}
           VERSION: ${{ inputs.version }}
         run: |
           set -eu
+          [ -n "$SIGNING_KEYSTORE" ] || { echo "::error::SIGNING_KEYSTORE and SIGNING_PASSWORD are not set"; exit 1; }
           if [ -z "$BUILD" ]; then
             BUILD=$(gh release list -R "$GITHUB_REPOSITORY" --limit 50 --json tagName,isPrerelease \
               --jq '[.[] | select(.isPrerelease)][0].tagName // empty')
@@ -147,12 +153,43 @@ jobs:
             echo "::error::Tag $VERSION already exists"; exit 1
           fi
           name=$(gh release view "$BUILD" -R "$GITHUB_REPOSITORY" --json name --jq .name)
+          # The tag is made here and pushed only once the build has worked.
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q "$sha"
           git tag -a "$VERSION" "$sha" -m "Bus Tracker $VERSION"
+          { echo "BUILD=$BUILD"; echo "VERSION=$VERSION"; echo "NAME=$name"; } >> "$GITHUB_ENV"
+
+      - name: App key
+        run: |
+          echo "$SIGNING_KEYSTORE" | base64 -d > "$RUNNER_TEMP/app.jks"
+          echo "ORG_GRADLE_PROJECT_busTrackerKeystore=$RUNNER_TEMP/app.jks" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # GITHUB_REF is refs/heads/main: the official app, as on a push to main.
+      - name: Release build under the version's name
+        run: |
+          ./gradlew --console=plain assembleRelease
+          dir=app/build/outputs/apk/release
+          mkdir out
+          cp "$dir/app-arm64-v8a-release.apk" out/bus-tracker.apk
+          cp "$dir/app-x86_64-release.apk" out/bus-tracker-emulator.apk
+          jq -r '.elements[0] | "\(.versionCode) \(.versionName)"' "$dir/output-metadata.json" | tee out/version.txt
+
+      - name: Promote
+        run: |
+          set -eu
+          read code shown < out/version.txt
           git push origin "refs/tags/$VERSION"
-          { echo "Version $VERSION = build $name ($BUILD). The app shows $name."; echo
+          gh release upload "$BUILD" out/bus-tracker.apk out/bus-tracker-emulator.apk -R "$GITHUB_REPOSITORY" --clobber
+          { echo "Version $VERSION: build $NAME ($BUILD), built again under the version's name (versionCode $code)."; echo
             gh release view "$BUILD" -R "$GITHUB_REPOSITORY" --json body --jq .body; } > notes.txt
           gh release edit "$BUILD" -R "$GITHUB_REPOSITORY" --title "$VERSION" --notes-file notes.txt \
             --prerelease=false --latest
-          echo "$BUILD ($name) is now version $VERSION"
+          echo "$BUILD ($NAME) is now version $VERSION; the app shows $shown"

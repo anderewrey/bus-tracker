@@ -35,6 +35,7 @@ The order of the work. **What** each feature does and **how** is in [DESIGN.md](
 | — | 2026-11-21 | BusPlanner page (account, Reload with its last result, schedule changes) beside Settings in the run list's header (§5.2.1); today's notices stay on their run's card all day (§7.3) |
 | — | 2026-11-22 | No children's names in the app: not read from BusPlanner, not shown, not in the Log; saved runs lose them at the next start (§3.3) |
 | — | 2026-11-22 | Each merge into `main` is a pre-release; Run workflow promotes a tested one to an official version as it is, tag included, without rebuilding (§8) |
+| — | 2026-11-22 | Run workflow also builds the promoted commit again, so the official app is named after its version ("0.18") (§8) |
 
 0.12 and 0.13 were committed together on 2026-11-06. 0.13 (with 0.11 and 0.12 in it) passed its first real run on the phone on 2026-11-09: automatic start, live checks, the main-zone alarm, and recovery from a short network loss.
 
