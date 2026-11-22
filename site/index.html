@@ -1,0 +1,277 @@
+<!doctype html>
+<!-- SPDX-FileCopyrightText: 2026 anderewrey -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bus Tracker</title>
+<meta name="description" content="An Android app that rings when your child's school bus gets near home, for parents with a BusPlanner account.">
+<style>
+:root {
+  --bg: #f7f7f5; --ink: #1d1d1f; --mut: #6b6b70; --line: #d9d9d6;
+  --card: #ffffff; --phone: #2a2a2d; --accent: #2a6fdb; --red: #c0392b; --redbg: #fbeceb;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141416; --ink: #ececee; --mut: #9a9aa2; --line: #3a3a40;
+    --card: #1f1f23; --phone: #55555c; --accent: #6a9ef0; --red: #ef6b5b; --redbg: #3a2020;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 17px/1.55 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+a { color: var(--accent); }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+
+/* Top */
+header.top { min-height: 92vh; display: flex; flex-direction: column; justify-content: center; gap: 18px; }
+header.top h1 { font-size: clamp(40px, 8vw, 72px); line-height: 1; margin: 0; letter-spacing: -0.03em; }
+header.top .lead { font-size: clamp(20px, 3vw, 26px); margin: 0; max-width: 30ch; }
+header.top .req { color: var(--mut); margin: 0; max-width: 46ch; }
+.btns { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.btn { display: inline-block; padding: 12px 22px; border-radius: 999px; text-decoration: none; font-weight: 600; }
+.btn.main { background: var(--accent); color: #fff; }
+.btn.ghost { border: 1.5px solid var(--line); color: var(--ink); }
+.hint { color: var(--mut); font-size: 14px; margin-top: 40px; }
+
+/* Story */
+.story { display: grid; grid-template-columns: 1fr 300px; gap: 64px; }
+.stage { position: sticky; top: calc(50vh - 290px); height: 580px; }
+.scene { min-height: 85vh; display: flex; flex-direction: column; justify-content: center; gap: 10px; opacity: .3; transition: opacity .3s; }
+.scene.on { opacity: 1; }
+.scene .when { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+.scene h2 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0; letter-spacing: -0.01em; }
+.scene p { margin: 0; max-width: 44ch; color: var(--ink); }
+.scene .inline { display: none; }
+
+/* Phone */
+.phone {
+  width: 280px; height: 580px; border: 3px solid var(--phone); border-radius: 36px; padding: 14px 12px;
+  background: var(--card); display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; overflow: hidden;
+}
+.phone .bar { display: flex; justify-content: space-between; color: var(--mut); font-size: 11px; padding: 0 6px 4px; }
+.phone .hd { display: flex; justify-content: space-between; align-items: baseline; padding: 2px 4px 4px; }
+.phone .hd b { font-size: 15px; }
+.phone .hd span { color: var(--accent); font-size: 11.5px; }
+.bx { border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; display: flex; flex-direction: column; gap: 3px; }
+.bx b { font-size: 13px; }
+.bx.alert { border-color: var(--red); color: var(--red); }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.mut { color: var(--mut); }
+.red { color: var(--red); }
+.link { color: var(--accent); white-space: nowrap; }
+.sw { width: 32px; height: 18px; border-radius: 9px; background: var(--accent); position: relative; flex-shrink: 0; }
+.sw::after { content: ""; position: absolute; right: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+.sw.off { background: var(--line); }
+.sw.off::after { right: auto; left: 2px; }
+.nt { border-radius: 14px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
+.nt.ring { background: var(--redbg); border-color: var(--red); }
+.nt .act { color: var(--accent); font-weight: 600; font-size: 11.5px; margin-top: 2px; }
+.map { flex: 1; border-radius: 12px; background: var(--bg); position: relative; overflow: hidden; }
+.map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* After the story */
+section.facts { padding: 80px 0 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 40px; }
+section.facts h3 { margin: 0 0 8px; font-size: 20px; }
+section.facts p, section.facts ul { margin: 0; color: var(--ink); }
+section.facts ul { padding-left: 20px; }
+footer { border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--mut); font-size: 14px; display: flex; gap: 20px; flex-wrap: wrap; }
+footer a { color: var(--mut); }
+
+@media (max-width: 760px) {
+  .story { display: block; }
+  .stage { display: none; }
+  .scene { min-height: 0; opacity: 1; padding: 48px 0; }
+  .scene .inline { display: flex; justify-content: center; margin-top: 18px; }
+  header.top { min-height: 80vh; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .scene { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>Bus Tracker</h1>
+  <p class="lead">Rings when your child's school bus gets near home.</p>
+  <p class="req">For Android, with a parent account on your school board's BusPlanner portal.</p>
+  <div class="btns">
+    <a class="btn main" href="https://github.com/anderewrey/bus-tracker/releases/latest/download/bus-tracker.apk">Download</a>
+    <a class="btn ghost" href="https://github.com/anderewrey/bus-tracker">Source on GitHub</a>
+  </div>
+  <p class="hint">A school day, from the morning on ↓</p>
+</header>
+
+<div class="story">
+<div class="steps">
+
+<section class="scene">
+  <span class="when">7:03 AM</span>
+  <h2>Watching starts by itself.</h2>
+  <p>A while before the pickup time, on the days you chose. Nothing to open, nothing to remember.</p>
+  <template>
+    <div class="bar"><span>7:03</span><span>▾ ▴ ▮</span></div>
+    <div class="nt"><b>B101 · watching</b><span>2.4 km · That Street · GPS 7:03</span><span class="act">Open map · Stop watching</span></div>
+    <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
+    <div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+    <div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>2.4 km · That Street · GPS 7:03</span><div class="row"><span class="link">Open map</span><span class="mut">Watching until 8:08</span><span class="sw"></span></div></div>
+    <div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span class="link">Open map</span><span class="sw"></span></div></div>
+  </template>
+</section>
+
+<section class="scene">
+  <span class="when">7:12 AM</span>
+  <h2>See where the bus is.</h2>
+  <p>How far, on which street, and when its GPS last reported. The map shows the bus, the stop and your zone.</p>
+  <template>
+    <div class="bar"><span>7:12</span><span>▾ ▴ ▮</span></div>
+    <div class="hd"><b>B101 · Pickup</b><span>Back</span></div>
+    <span>1.1 km · This Street · GPS 7:12</span><span class="mut">Watching until 8:08</span>
+    <div class="map"><svg viewBox="0 0 250 400" aria-hidden="true">
+      <path d="M20 320 L120 300 L200 330 L210 380" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="10" stroke-linecap="round"/>
+      <path d="M120 300 L110 80" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="10" stroke-linecap="round"/>
+      <polygon points="80,230 160,220 170,330 70,345" fill="#2a6fdb" fill-opacity=".14" stroke="#2a6fdb" stroke-width="2"/>
+      <circle cx="122" cy="300" r="7" fill="#fff" stroke="#1d1d1f" stroke-width="3"/>
+      <circle cx="112" cy="110" r="9" fill="#2a6fdb" stroke="#fff" stroke-width="3"/>
+    </svg></div>
+  </template>
+</section>
+
+<section class="scene">
+  <span class="when">7:30 AM</span>
+  <h2>The bus enters your zone. The phone rings.</h2>
+  <p>You draw the zone on the map: two streets before home, the corner before the stop, wherever gives you time. It rings once, one minute at most; Silence stops it.</p>
+  <template>
+    <div class="bar"><span>7:30</span><span>▾ ▴ ▮</span></div>
+    <div class="nt ring"><b>B101 entered Home zone · ringing</b><span>400 m · This Street</span><span class="act">Open map · Silence</span></div>
+    <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
+    <div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+    <div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>400 m · This Street · GPS 7:30</span><div class="row"><span class="link">Open map</span><span class="mut">Rang 7:30 · watching</span><span class="sw"></span></div></div>
+    <div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span class="link">Open map</span><span class="sw"></span></div></div>
+  </template>
+</section>
+
+<section class="scene">
+  <span class="when">Another morning</span>
+  <h2>The bus is late.</h2>
+  <p>When BusPlanner posts a delay or a cancellation, it shows in red on the run, all day.</p>
+  <template>
+    <div class="bar"><span>6:52</span><span>▾ ▴ ▮</span></div>
+    <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
+    <div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+    <div class="bx"><b>B101 · Pickup 7:33 AM <span class="red">· delayed 15 minutes</span> ›</b><span class="mut">123 This Street</span><div class="row"><span class="link">Open map</span><span class="sw"></span></div></div>
+    <div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span class="link">Open map</span><span class="sw"></span></div></div>
+  </template>
+</section>
+
+<section class="scene">
+  <span class="when">Another morning</span>
+  <h2>Your child stays home.</h2>
+  <p>Turn off this morning's bell. The afternoon and tomorrow stay as usual; the bell comes back on by itself.</p>
+  <template>
+    <div class="bar"><span>6:50</span><span>▾ ▴ ▮</span></div>
+    <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
+    <div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+    <div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><div class="row"><span class="link">Open map</span><span class="sw off"></span></div></div>
+    <div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span class="link">Open map</span><span class="sw"></span></div></div>
+  </template>
+</section>
+
+<section class="scene">
+  <span class="when">A snow day, a long weekend</span>
+  <h2>No school until Tuesday.</h2>
+  <p>Turn Automatic start off until a date. That morning, it turns back on by itself.</p>
+  <template>
+    <div class="bar"><span>6:45</span><span>▾ ▴ ▮</span></div>
+    <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
+    <div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw off"></span></div><span class="mut">Off until Tue Nov 24 · Mon–Fri</span></div>
+    <div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><div class="row"><span class="link">Open map</span><span class="sw off"></span></div></div>
+    <div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span class="link">Open map</span><span class="sw off"></span></div></div>
+  </template>
+</section>
+
+<section class="scene">
+  <span class="when">Any day</span>
+  <h2>The schedule changed.</h2>
+  <p>A new stop or a new time on BusPlanner: the app shows what changed, and you choose whether your zones and settings carry over.</p>
+  <template>
+    <div class="bar"><span>8:15</span><span>▾ ▴ ▮</span></div>
+    <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
+    <div class="bx alert"><b>Bus schedule changed · See changes ›</b></div>
+    <div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+    <div class="bx"><b>B101 · Pickup 7:41 AM ›</b><span class="mut">123 This Street</span><div class="row"><span class="link">Open map</span><span class="sw"></span></div></div>
+    <div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span class="link">Open map</span><span class="sw"></span></div></div>
+  </template>
+</section>
+
+<section class="scene">
+  <span class="when">2:09 PM</span>
+  <h2>Same in the afternoon.</h2>
+  <p>The dropoff run watches the bus home the same way. One run per child and per direction; each with its own zone.</p>
+  <template>
+    <div class="bar"><span>2:24</span><span>▾ ▴ ▮</span></div>
+    <div class="nt"><b>B101 · watching</b><span>1.6 km · That Street · GPS 2:24</span><span class="act">Open map · Stop watching</span></div>
+    <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
+    <div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+    <div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><div class="row"><span class="link">Open map</span><span class="sw"></span></div></div>
+    <div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><span>1.6 km · That Street · GPS 2:24</span><div class="row"><span class="link">Open map</span><span class="mut">Watching until 3:14</span><span class="sw"></span></div></div>
+  </template>
+</section>
+
+</div>
+<div class="stage"><div class="phone" id="phone"></div></div>
+</div>
+
+<section class="facts">
+  <div>
+    <h3>What it needs</h3>
+    <ul>
+      <li>Android 10 or newer.</li>
+      <li>A parent account on your school board's BusPlanner portal.</li>
+      <li>A bus whose position BusPlanner publishes.</li>
+    </ul>
+  </div>
+  <!-- "What it can't do": content to be decided with the owner. -->
+  <div>
+    <h3>Your data</h3>
+    <p>Everything stays on your phone. The app talks only to your BusPlanner portal, and to Android's geocoder for street names.</p>
+  </div>
+</section>
+
+<footer>
+  <a href="https://github.com/anderewrey/bus-tracker/releases/latest/download/bus-tracker.apk">Download</a>
+  <a href="https://github.com/anderewrey/bus-tracker">Source on GitHub</a>
+  <span>GPL-3.0</span>
+  <span>Not affiliated with BusPlanner.</span>
+</footer>
+
+</div>
+<script>
+// Each scene's screen: inline under its text on a phone, in the sticky phone on a wide screen.
+const scenes = [...document.querySelectorAll('.scene')];
+const phone = document.getElementById('phone');
+scenes.forEach(s => {
+  const div = document.createElement('div');
+  div.className = 'inline';
+  const p = document.createElement('div');
+  p.className = 'phone';
+  p.append(s.querySelector('template').content.cloneNode(true));
+  div.append(p);
+  s.append(div);
+});
+function show(s) {
+  scenes.forEach(x => x.classList.toggle('on', x === s));
+  phone.replaceChildren(s.querySelector('template').content.cloneNode(true));
+}
+show(scenes[0]);
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) show(e.target); });
+}, { rootMargin: '-45% 0px -45% 0px' });
+scenes.forEach(s => io.observe(s));
+</script>
+</body>
+</html>
