@@ -33,6 +33,7 @@ The order of the work. **What** each feature does and **how** is in [DESIGN.md](
 | — | 2026-11-21 | The Log's poll line shows the place the screen showed: "(This Street)", "(finding street…)" (§7.2) |
 | — | 2026-11-21 | A run's own Watching days show on its card when they aren't Mon–Fri (§8); Artboard 1.5 · Per-run rules |
 | — | 2026-11-21 | BusPlanner page (account, Reload with its last result, schedule changes) beside Settings in the run list's header (§5.2.1); today's notices stay on their run's card all day (§7.3) |
+| — | 2026-11-22 | No children's names in the app: not read from BusPlanner, not shown, not in the Log; saved runs lose them at the next start (§3.3) |
 | — | 2026-11-22 | Each merge into `main` is a pre-release; Run workflow promotes a tested one to an official version as it is, tag included, without rebuilding (§8) |
 
 0.12 and 0.13 were committed together on 2026-11-06. 0.13 (with 0.11 and 0.12 in it) passed its first real run on the phone on 2026-11-09: automatic start, live checks, the main-zone alarm, and recovery from a short network loss.

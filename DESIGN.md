@@ -253,7 +253,7 @@ This is a dedicated screen, not a pop-up, so the user sees exactly what the resc
 ### 3.3 Data model
 
 - **Account:** the email, and the password in encrypted storage (Android Keystore).
-- **Student:** GUID and display name, both from the dropdown.
+- **Student:** the GUID from the dropdown, nothing else. The app keeps no names: what matters is the bus, and a parent knows which child takes which bus (user, 2026-11-22). Until then the name was kept, shown on the run card, the run page, the overview and the Changes screen, and written in the Log ("scan <name>"); the Log now says "scan list 1: 4 stops", and runs saved with names are saved again without them when the app starts. A run whose students change is no longer a change.
 - **Bus:** the bus number (e.g. `B101`), taken from the start of the run label.
 - **Run:** one trip of a bus, identified by its run label (e.g. `B101 SMP_PU` or `B101 SMP DO`). A run holds:
   - its students
@@ -363,7 +363,7 @@ Everything about one run, on one page. **Tapping the run card opens it.** The ca
    - **Only at the end of the period.**
 
    The Alarm switch and the period end always apply, whatever is chosen.
-7. **About this run** (read-only): bus, stop type, planned time, address, students on the run, school.
+7. **About this run** (read-only): bus, stop type, planned time, address, school.
    - **School:** a route serves exactly one school (user, 2026-11-05). The run's school is the name of the same child's school stop of the same half-day on the same route (AM Dropoff for an AM run, PM Pickup for a PM run), saved with the run at each scan. "Bus parked at the school" uses only that school's position. A school that differs between two scans is a change ("school changed", already applied) on the Changes screen.
    - **Stop change waiting:** only while a stop change or replaced bus waits for an answer on the Changes screen, a red line "Stop changed: choose a configuration ›" opens it. Once answered, keep or new, nothing shows.
 
@@ -400,7 +400,7 @@ Opened from **Settings** in the run list's top bar, which replaces Log out there
 - These settings are kept apart from the login: logging out keeps them.
 - **Debug:** "Open Debug" (moved here from the run list's header, 2026-11-21).
 - *Until 2026-11-21: Account (email, Log out), now on the BusPlanner page (§5.2.1).*
-- **Children, schools, runs and zones:** "Open the overview" opens the overview page (§5.3).
+- **Schools, runs and zones:** "Open the overview" opens the overview page (§5.3).
 
 ### 5.2.1 BusPlanner page (user, 2026-11-21)
 
@@ -410,13 +410,12 @@ Opened from **BusPlanner ›** in the run list's header, beside **Settings ›**
 - **Schedule changes:** "N waiting · See changes ›", or "None waiting". The red card on the run list stays.
 - Today's notices are not here: they show on each run's card (§7.3).
 
-### 5.3 Overview page: children, schools, runs, zones (built 2026-11-17)
+### 5.3 Overview page: schools, runs, zones (built 2026-11-17)
 
 Some things belong to the account, not to one run: a school's position is used by every run going there, and a zone can be used by several runs. One page lists everything the app knows, and each line opens its own page to see or change it (user, 2026-11-05).
 
 | List | Each line shows | Opens |
 |---|---|---|
-| **Children** | name, school, runs | read-only: everything comes from BusPlanner |
 | **Schools** | name, position source ("BusPlanner" or "corrected"), runs going there | the School page (below) |
 | **Runs** | bus, stop, time | the run page (§5.1) |
 | **Zones** | name, runs using it | the zone screen (draw, edit, delete; §6.2) |

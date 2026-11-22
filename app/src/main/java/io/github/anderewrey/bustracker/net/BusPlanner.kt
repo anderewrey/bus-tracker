@@ -39,7 +39,8 @@ internal const val UA ="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/53
 class SessionExpired(message: String) : Exception(message)
 class LoginFailed(message: String) : Exception(message)
 
-data class Student(val guid: String, val name: String)
+/** One entry of the portal's student list, by its id only: the app never reads names (user, 2026-11-22). */
+data class Student(val guid: String)
 
 /** One row of ChildTransportInfo, e.g. AM Pickup 7:33 AM at 12 THIS ST on B101. */
 data class StopRow(
@@ -416,7 +417,7 @@ fun transportRows(doc: Document, positionJson: String?): List<StopRow> {
 /** Students of the dropdown, and the selected one (the first when none is marked). */
 fun studentOptions(doc: Document): Pair<List<Student>, String?> {
     val options = doc.select("select[name=$STUDENTS_DDL] option")
-    val students = options.map { Student(it.attr("value"), it.text().trim()) }
+    val students = options.map { Student(it.attr("value")) }
     val selected = options.firstOrNull { it.hasAttr("selected") }?.attr("value") ?: students.firstOrNull()?.guid
     return students to selected
 }

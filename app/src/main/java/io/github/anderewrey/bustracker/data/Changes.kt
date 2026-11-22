@@ -16,7 +16,6 @@ enum class ChangeKind(val label: String) {
     TIME("time changed"),
     STOP("stop moved"),
     BUS("bus replaced"),
-    STUDENTS("children changed"),
     SCHOOL("school changed"),
     ADDED("new run"),
     REMOVED("run removed"),
@@ -82,7 +81,6 @@ fun changeKinds(past: Run?, new: Run?): Set<ChangeKind> = when {
         if (past.key != new.key) add(ChangeKind.BUS)
         if (past.planned != new.planned || (past.planned == null && past.time != new.time)) add(ChangeKind.TIME)
         if (stopMoved(past, new)) add(ChangeKind.STOP)
-        if (guids(past) != guids(new)) add(ChangeKind.STUDENTS)
         // A run saved before 0.9 has no school yet: getting one is not a change.
         if (past.school.isNotEmpty() && new.school.isNotEmpty() && !past.school.equals(new.school, ignoreCase = true)) add(ChangeKind.SCHOOL)
     }

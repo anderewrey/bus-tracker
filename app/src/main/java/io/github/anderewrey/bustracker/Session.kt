@@ -369,6 +369,7 @@ object Session {
     /** Loads what the screens show from the saved state; called once when the app process starts. */
     fun init(context: Context) {
         val store = Store(context)
+        store.dropNames()
         _runs.value = store.runs
         _changes.value = store.changes
         _rang.value = store.rang
@@ -427,8 +428,9 @@ object Session {
         fresh.forEach { AppLog.log(it.logLine()) }
         AppLog.log(if (past.isEmpty()) "scan: first scan, nothing to compare" else "scan: ${fresh.size} change(s) since the last scan")
         runs.forEach { r -> AppLog.log("${r.key} main zone: ${_zones.value.firstOrNull { it.id == r.mainZone }?.name ?: "none"}") }
-        for ((student, rows) in result) {
-            AppLog.log("scan ${student.name}: ${rows.size} stops")
+        // Each list of the portal by its place only: no names in the log (user, 2026-11-22).
+        for ((i, rows) in result.values.withIndex()) {
+            AppLog.log("scan list ${i + 1}: ${rows.size} stops")
             for (r in rows) {
                 AppLog.log("  ${r.stopType} · ${r.time} · ${r.location} · route ${r.route ?: "?"} · position ${if (r.lat != null) "yes" else "no"}")
             }
@@ -437,7 +439,7 @@ object Session {
             val s = schools.firstOrNull { it.name == name }
             AppLog.log("school $name: " + if (s != null) String.format(Locale.US, "%.6f,%.6f", s.lat, s.lon) else "position not found")
         }
-        if (result.isEmpty()) AppLog.log("scan: no student found on the account")
+        if (result.isEmpty()) AppLog.log("scan: no stop list found on the account")
         Scheduler.reschedule(context)
         return ScanResult(runs, fresh)
     }

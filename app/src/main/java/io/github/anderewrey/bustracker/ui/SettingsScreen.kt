@@ -98,7 +98,7 @@ fun SettingsScreen(onBack: () -> Unit, onOverview: () -> Unit, onDebug: () -> Un
             style = MaterialTheme.typography.bodySmall,
         )
 
-        Section("Children, schools, runs and zones")
+        Section("Schools, runs and zones")
         Text("Everything the app knows, and each school's position and \"at school\" circle.", style = MaterialTheme.typography.bodySmall)
         OutlinedButton(onClick = onOverview) { Text("Open the overview") }
 

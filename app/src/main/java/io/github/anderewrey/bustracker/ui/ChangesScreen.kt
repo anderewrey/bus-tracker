@@ -67,10 +67,9 @@ fun ChangesScreen(changes: List<RunChange>, onBack: () -> Unit) {
     }
 }
 
-/** The whole stop; the children too when they are part of the change. */
+/** The whole stop; the school too when it is part of the change. */
 private fun line(run: Run, c: RunChange): String =
     run.stopLine +
-        (if (ChangeKind.STUDENTS in c.kinds) " · ${run.students.joinToString(", ") { it.name }}" else "") +
         (if (ChangeKind.SCHOOL in c.kinds) " · ${run.school}" else "")
 
 private fun note(c: RunChange): String = when {

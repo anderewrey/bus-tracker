@@ -6,7 +6,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bus Tracker</title>
-<meta name="description" content="An Android app that rings when your child's school bus gets near home, for parents with a BusPlanner account.">
+<meta name="description" content="An Android app that watches the school bus on BusPlanner for you, and rings when it gets close.">
 <style>
 :root {
   --bg: #f7f7f5; --ink: #1d1d1f; --mut: #6b6b70; --line: #d9d9d6;
@@ -75,10 +75,10 @@ header.top .req { color: var(--mut); margin: 0; max-width: 46ch; }
 .map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 /* After the story */
-section.facts { padding: 80px 0 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 40px; }
-section.facts h3 { margin: 0 0 8px; font-size: 20px; }
-section.facts p, section.facts ul { margin: 0; color: var(--ink); }
-section.facts ul { padding-left: 20px; }
+section.faq { padding: 80px 0 40px; max-width: 640px; }
+section.faq h2 { font-size: clamp(26px, 4vw, 36px); margin: 0 0 8px; letter-spacing: -0.01em; }
+section.faq h3 { margin: 32px 0 6px; font-size: 19px; }
+section.faq p { margin: 0; }
 footer { border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--mut); font-size: 14px; display: flex; gap: 20px; flex-wrap: wrap; }
 footer a { color: var(--mut); }
 
@@ -97,13 +97,13 @@ footer a { color: var(--mut); }
 
 <header class="top">
   <h1>Bus Tracker</h1>
-  <p class="lead">Rings when your child's school bus gets near home.</p>
-  <p class="req">For Android, with a parent account on your school board's BusPlanner portal.</p>
+  <p class="lead">Your phone watches the school bus, so you don't have to.</p>
+  <p class="req">For Android, if your school board uses BusPlanner and you have a parent account on it.</p>
   <div class="btns">
     <a class="btn main" href="https://github.com/anderewrey/bus-tracker/releases/latest/download/bus-tracker.apk">Download</a>
     <a class="btn ghost" href="https://github.com/anderewrey/bus-tracker">Source on GitHub</a>
   </div>
-  <p class="hint">A school day, from the morning on ↓</p>
+  <p class="hint">Here's what a school day looks like ↓</p>
 </header>
 
 <div class="story">
@@ -111,8 +111,8 @@ footer a { color: var(--mut); }
 
 <section class="scene">
   <span class="when">7:03 AM</span>
-  <h2>Watching starts by itself.</h2>
-  <p>A while before the pickup time, on the days you chose. Nothing to open, nothing to remember.</p>
+  <h2>It starts on its own.</h2>
+  <p>A little before the bus is due, on school days, the app starts watching. You don't have to open it or remember anything.</p>
   <template>
     <div class="bar"><span>7:03</span><span>▾ ▴ ▮</span></div>
     <div class="nt"><b>B101 · watching</b><span>2.4 km · That Street · GPS 7:03</span><span class="act">Open map · Stop watching</span></div>
@@ -125,8 +125,8 @@ footer a { color: var(--mut); }
 
 <section class="scene">
   <span class="when">7:12 AM</span>
-  <h2>See where the bus is.</h2>
-  <p>How far, on which street, and when its GPS last reported. The map shows the bus, the stop and your zone.</p>
+  <h2>Glance at where the bus is.</h2>
+  <p>The notification tells you how far it is, which street it's on, and when its GPS last reported. Open the map if you want to see it move.</p>
   <template>
     <div class="bar"><span>7:12</span><span>▾ ▴ ▮</span></div>
     <div class="hd"><b>B101 · Pickup</b><span>Back</span></div>
@@ -143,8 +143,8 @@ footer a { color: var(--mut); }
 
 <section class="scene">
   <span class="when">7:30 AM</span>
-  <h2>The bus enters your zone. The phone rings.</h2>
-  <p>You draw the zone on the map: two streets before home, the corner before the stop, wherever gives you time. It rings once, one minute at most; Silence stops it.</p>
+  <h2>The bus gets close. Your phone rings.</h2>
+  <p>You draw the zone yourself, somewhere around the neighbourhood: far enough to give you time to get boots on. It rings once, for a minute at most.</p>
   <template>
     <div class="bar"><span>7:30</span><span>▾ ▴ ▮</span></div>
     <div class="nt ring"><b>B101 entered Home zone · ringing</b><span>400 m · This Street</span><span class="act">Open map · Silence</span></div>
@@ -157,8 +157,8 @@ footer a { color: var(--mut); }
 
 <section class="scene">
   <span class="when">Another morning</span>
-  <h2>The bus is late.</h2>
-  <p>When BusPlanner posts a delay or a cancellation, it shows in red on the run, all day.</p>
+  <h2>The bus is running late.</h2>
+  <p>When BusPlanner posts a delay or a cancellation, the app lets you know, and it stays in red on that bus for the rest of the day.</p>
   <template>
     <div class="bar"><span>6:52</span><span>▾ ▴ ▮</span></div>
     <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
@@ -170,8 +170,8 @@ footer a { color: var(--mut); }
 
 <section class="scene">
   <span class="when">Another morning</span>
-  <h2>Your child stays home.</h2>
-  <p>Turn off this morning's bell. The afternoon and tomorrow stay as usual; the bell comes back on by itself.</p>
+  <h2>Nobody's taking the bus this morning.</h2>
+  <p>Sick day? Turn off this morning's bell. The afternoon stays as usual, and tomorrow it's back on by itself.</p>
   <template>
     <div class="bar"><span>6:50</span><span>▾ ▴ ▮</span></div>
     <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
@@ -184,7 +184,7 @@ footer a { color: var(--mut); }
 <section class="scene">
   <span class="when">A snow day, a long weekend</span>
   <h2>No school until Tuesday.</h2>
-  <p>Turn Automatic start off until a date. That morning, it turns back on by itself.</p>
+  <p>Turn Automatic start off until the day school is back. That morning, it picks up again without you.</p>
   <template>
     <div class="bar"><span>6:45</span><span>▾ ▴ ▮</span></div>
     <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
@@ -197,7 +197,7 @@ footer a { color: var(--mut); }
 <section class="scene">
   <span class="when">Any day</span>
   <h2>The schedule changed.</h2>
-  <p>A new stop or a new time on BusPlanner: the app shows what changed, and you choose whether your zones and settings carry over.</p>
+  <p>New stop, new time, new bus: the app checks BusPlanner every day, tells you what changed, and asks before touching your zones.</p>
   <template>
     <div class="bar"><span>8:15</span><span>▾ ▴ ▮</span></div>
     <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
@@ -210,8 +210,8 @@ footer a { color: var(--mut); }
 
 <section class="scene">
   <span class="when">2:09 PM</span>
-  <h2>Same in the afternoon.</h2>
-  <p>The dropoff run watches the bus home the same way. One run per child and per direction; each with its own zone.</p>
+  <h2>Same thing on the way home.</h2>
+  <p>The afternoon bus gets watched the same way, with its own zone if you want one.</p>
   <template>
     <div class="bar"><span>2:24</span><span>▾ ▴ ▮</span></div>
     <div class="nt"><b>B101 · watching</b><span>1.6 km · That Street · GPS 2:24</span><span class="act">Open map · Stop watching</span></div>
@@ -226,20 +226,38 @@ footer a { color: var(--mut); }
 <div class="stage"><div class="phone" id="phone"></div></div>
 </div>
 
-<section class="facts">
-  <div>
-    <h3>What it needs</h3>
-    <ul>
-      <li>Android 10 or newer.</li>
-      <li>A parent account on your school board's BusPlanner portal.</li>
-      <li>A bus whose position BusPlanner publishes.</li>
-    </ul>
-  </div>
-  <!-- "What it can't do": content to be decided with the owner. -->
-  <div>
-    <h3>Your data</h3>
-    <p>Everything stays on your phone. The app talks only to your BusPlanner portal, and to Android's geocoder for street names.</p>
-  </div>
+<section class="faq">
+  <h2>Questions you might have</h2>
+
+  <h3>What does it know?</h3>
+  <p>Only what it reads from BusPlanner: the bus, where your stop is, the times the bus is expected, the school, and where the bus is while it's watching. No names.</p>
+
+  <h3>Does it know where I am?</h3>
+  <p>No. It never asks for your phone's location. Your zone is just a shape you draw on the map, somewhere around the neighbourhood.</p>
+
+  <h3>What about my BusPlanner password?</h3>
+  <p>It stays encrypted on your phone, and only goes to your own BusPlanner portal, the same way your browser would send it.</p>
+
+  <h3>Will it kill my battery?</h3>
+  <p>I haven't noticed any difference on mine. It only works while it's watching, and the rest of the day it uses next to nothing.</p>
+
+  <h3>My phone is on silent. Will it still ring?</h3>
+  <p>If you want it to. Turn on Quiet mode override and it rings like your morning alarm, even with Do Not Disturb on.</p>
+
+  <h3>What if the bus stops sending its position?</h3>
+  <p>It happens. The app tells you ("No vehicle") instead of keeping quiet, and every position shows the time its GPS was read, so you can tell when it's old.</p>
+
+  <h3>What if my phone restarts?</h3>
+  <p>It picks up where it was, and the next mornings start as usual. If the phone happens to be off right when watching should start, just open the app and it starts.</p>
+
+  <h3>Can I count on it?</h3>
+  <p>I count on it every school day, but it's only as good as what the bus sends. It saves you from refreshing a web page for twenty minutes; it doesn't replace keeping an eye on the time.</p>
+
+  <h3>Who made this?</h3>
+  <p>A parent who got tired of keeping the BusPlanner page open and checking it every few minutes. I wanted my phone to do the watching on its own and just tell me when it matters. It's free, no ads, no sign-up besides your BusPlanner account, and the code is open for anyone to read.</p>
+
+  <h3>What do I need?</h3>
+  <p>An Android phone (Android 10 or newer), and a parent account on your school board's BusPlanner portal.</p>
 </section>
 
 <footer>

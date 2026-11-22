@@ -36,7 +36,7 @@ import io.github.anderewrey.bustracker.data.ZoneRole
 import io.github.anderewrey.bustracker.data.nameTaken
 
 /**
- * Everything the app knows, by kind (DESIGN.md §5.3): children, schools, runs and zones. Each
+ * Everything the app knows, by kind (DESIGN.md §5.3): schools, runs and zones. Each
  * school opens its School page and each run its page. A zone opens the zone screen, to change it
  * for every run using it; Draw new zone adds one; a zone no run uses can be deleted. Anything
  * waiting for an answer shows in red at the top.
@@ -78,7 +78,7 @@ fun OverviewScreen(onBack: () -> Unit, onChanges: () -> Unit, onSchool: (String)
         Row(Modifier.fillMaxWidth()) {
             TextButton(onClick = onBack) { Text("Back") }
         }
-        Text("Children, schools, runs and zones", style = MaterialTheme.typography.headlineSmall)
+        Text("Schools, runs and zones", style = MaterialTheme.typography.headlineSmall)
 
         // Waiting for an answer.
         val stopChanges = changes.count { it.needsChoice }
@@ -91,19 +91,6 @@ fun OverviewScreen(onBack: () -> Unit, onChanges: () -> Unit, onSchool: (String)
         options.keys.forEach { name ->
             TextButton(onClick = { onSchool(name) }) { Text("$name: choose the right school ›", color = MaterialTheme.colorScheme.error) }
         }
-
-        Section("Children")
-        val children = runs.flatMap { it.students }.distinctBy { it.guid }
-        if (children.isEmpty()) Text("None")
-        children.forEach { child ->
-            val theirs = runs.filter { r -> r.students.any { it.guid == child.guid } }
-            Line(
-                child.name,
-                listOf(theirs.map { it.school }.filter { it.isNotBlank() }.distinct().joinToString(), theirs.joinToString { it.key })
-                    .filter { it.isNotBlank() }.joinToString(" · "),
-            )
-        }
-        Text("From BusPlanner, read-only.", style = MaterialTheme.typography.bodySmall)
 
         Section("Schools")
         if (schools.isEmpty()) Text("None known yet: they come with the next rescan.")
