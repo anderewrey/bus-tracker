@@ -2,29 +2,38 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # On every push and pull request: license headers, unit tests and a debug build, whose APKs are
-# kept on the run's page. On a push to main, or "Run workflow" on main (Actions tab): also the
-# release build of the official app, published as a GitHub release (tag build-<versionCode>)
-# for Obtainium. DESIGN.md §8.
+# kept on the run's page. On a push to main: also the release build of the official app,
+# published as a GitHub pre-release (tag build-<versionCode>) for Obtainium. "Run workflow"
+# (Actions tab) builds nothing: it promotes one of those pre-releases to an official version,
+# as it is. DESIGN.md §8.
 name: CI
 
 on:
   push:
   pull_request:
-  # The "Run workflow" button: builds main again, e.g. after putting a version tag on it.
+  # The "Run workflow" button: promotes a tested pre-release to an official version.
   workflow_dispatch:
+    inputs:
+      build:
+        description: "Pre-release to promote, e.g. build-29910456 (empty: the latest one)"
+        required: false
+      version:
+        description: "Its version, e.g. 0.17 (empty: the next one after the last version tag)"
+        required: false
 
 permissions:
   contents: read
 
 jobs:
   build:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       # The app's key (secrets set by the owner). Without them, builds are signed with a
       # throwaway debug key and main publishes nothing.
       SIGNING_KEYSTORE: ${{ secrets.SIGNING_KEYSTORE }}
       ORG_GRADLE_PROJECT_busTrackerKeystorePassword: ${{ secrets.SIGNING_PASSWORD }}
-      MAIN_PUSH: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' }}
+      MAIN_PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       # Full history and tags for the version (git describe). A pull request builds its
       # own last commit, so the version names a commit that is on its branch.
@@ -72,7 +81,7 @@ jobs:
           cp "$dir/app-x86_64-$type.apk" out/bus-tracker-emulator.apk
           jq -r '.elements[0] | "\(.versionCode) \(.versionName)"' "$dir/output-metadata.json" > out/version.txt
           cat out/version.txt
-          # The release notes: the commit's message (a "Run workflow" has no pushed commit).
+          # The release notes: the commit's message.
           git log -1 --format=%B > out/notes.txt
 
       - uses: actions/upload-artifact@v4
@@ -83,7 +92,7 @@ jobs:
 
   release:
     needs: build
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -98,4 +107,52 @@ jobs:
         run: |
           read code name < version.txt
           gh release create "build-$code" bus-tracker.apk bus-tracker-emulator.apk \
-            -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$name" --notes-file notes.txt
+            -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$name" --notes-file notes.txt \
+            --prerelease
+
+  # "Run workflow": the version tag goes on the pre-release's commit, and the release takes the
+  # version's name and becomes the latest one. Same APK, same versionCode: nothing to reinstall.
+  promote:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Promote
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD: ${{ inputs.build }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -eu
+          if [ -z "$BUILD" ]; then
+            BUILD=$(gh release list -R "$GITHUB_REPOSITORY" --limit 50 --json tagName,isPrerelease \
+              --jq '[.[] | select(.isPrerelease)][0].tagName // empty')
+            [ -n "$BUILD" ] || { echo "::error::No pre-release to promote"; exit 1; }
+          fi
+          [ "$(gh release view "$BUILD" -R "$GITHUB_REPOSITORY" --json isPrerelease --jq .isPrerelease)" = true ] \
+            || { echo "::error::$BUILD is not a pre-release"; exit 1; }
+          sha=$(git rev-list -n 1 "refs/tags/$BUILD")
+          if [ -z "$VERSION" ]; then
+            last=$(git describe --tags --abbrev=0 --match "[0-9]*" "$sha" 2>/dev/null || echo 0.0)
+            VERSION=$(echo "$last" | awk -F. '{ print $1 "." $2 + 1 }')
+          fi
+          echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+(\.[0-9]+)?$' \
+            || { echo "::error::Version $VERSION: digits and dots, e.g. 0.17"; exit 1; }
+          if git rev-parse -q --verify "refs/tags/$VERSION" > /dev/null; then
+            echo "::error::Tag $VERSION already exists"; exit 1
+          fi
+          name=$(gh release view "$BUILD" -R "$GITHUB_REPOSITORY" --json name --jq .name)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" "$sha" -m "Bus Tracker $VERSION"
+          git push origin "refs/tags/$VERSION"
+          { echo "Version $VERSION = build $name ($BUILD). The app shows $name."; echo
+            gh release view "$BUILD" -R "$GITHUB_REPOSITORY" --json body --jq .body; } > notes.txt
+          gh release edit "$BUILD" -R "$GITHUB_REPOSITORY" --title "$VERSION" --notes-file notes.txt \
+            --prerelease=false --latest
+          echo "$BUILD ($name) is now version $VERSION"
