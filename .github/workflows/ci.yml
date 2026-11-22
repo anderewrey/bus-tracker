@@ -15,10 +15,10 @@ on:
   workflow_dispatch:
     inputs:
       build:
-        description: "Pre-release to promote, e.g. build-29910456 (empty: the latest one)"
+        description: "Build (empty = latest pre-release)"
         required: false
       version:
-        description: "Its version, e.g. 0.17 (empty: the next one after the last version tag)"
+        description: "Version (empty = next)"
         required: false
 
 permissions:
@@ -81,8 +81,16 @@ jobs:
           cp "$dir/app-x86_64-$type.apk" out/bus-tracker-emulator.apk
           jq -r '.elements[0] | "\(.versionCode) \(.versionName)"' "$dir/output-metadata.json" > out/version.txt
           cat out/version.txt
-          # The release notes: the commit's message.
-          git log -1 --format=%B > out/notes.txt
+          # The release notes: on main, first what Run workflow would make of it (the input
+          # descriptions can't say it: they are fixed text); then the commit's message.
+          : > out/notes.txt
+          if [ "$MAIN_PUSH" = true ]; then
+            read code name < out/version.txt
+            last=$(git describe --tags --abbrev=0 --match "[0-9]*" 2>/dev/null || echo 0.0)
+            next=$(echo "$last" | awk -F. '{ print $1 "." $2 + 1 }')
+            printf '%s\n\n' "To make this build version $next: Run workflow with empty fields while it is the latest pre-release, or with build build-$code." >> out/notes.txt
+          fi
+          git log -1 --format=%B >> out/notes.txt
 
       - uses: actions/upload-artifact@v4
         with:
@@ -189,7 +197,16 @@ jobs:
           git push origin "refs/tags/$VERSION"
           gh release upload "$BUILD" out/bus-tracker.apk out/bus-tracker-emulator.apk -R "$GITHUB_REPOSITORY" --clobber
           { echo "Version $VERSION: build $NAME ($BUILD), built again under the version's name (versionCode $code)."; echo
-            gh release view "$BUILD" -R "$GITHUB_REPOSITORY" --json body --jq .body; } > notes.txt
+            gh release view "$BUILD" -R "$GITHUB_REPOSITORY" --json body --jq .body | sed '/^To make this build version /,+1d'; } > notes.txt
           gh release edit "$BUILD" -R "$GITHUB_REPOSITORY" --title "$VERSION" --notes-file notes.txt \
             --prerelease=false --latest
           echo "$BUILD ($NAME) is now version $VERSION; the app shows $shown"
+          { echo "## Version $VERSION"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Promoted pre-release | $BUILD ($NAME) |"
+            echo "| Name in the app | $shown |"
+            echo "| versionCode | $code |"
+            echo "| Release | $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$BUILD |"
+          } >> "$GITHUB_STEP_SUMMARY"
