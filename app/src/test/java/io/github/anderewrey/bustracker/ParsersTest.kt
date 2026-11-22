@@ -50,7 +50,7 @@ class ParsersTest {
                <option value="g1">Student A</option><option selected="selected" value="g2">Student B</option></select>"""
         )
         val (students, selected) = studentOptions(doc)
-        assertEquals(listOf(Student("g1", "Student A"), Student("g2", "Student B")), students)
+        assertEquals(listOf(Student("g1"), Student("g2")), students)
         assertEquals("g2", selected)
     }
 
@@ -110,8 +110,8 @@ class ParsersTest {
         assertEquals(44.737825, rows[0].lat!!, 1e-9)
         assertNull(rows[1].lat)
 
-        val a = Student("a", "Student A")
-        val b = Student("b", "Student B")
+        val a = Student("a")
+        val b = Student("b")
         val runs = buildRuns(mapOf(a to rows, b to rows))
         assertEquals(listOf("B101 AM", "B101 PM"), runs.map { it.key })
         assertEquals(listOf(a, b), runs[0].students)

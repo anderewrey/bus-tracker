@@ -137,7 +137,6 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
         Info("Bus", run.bus)
         Info("Stop", "${run.stopType} · ${run.time}")
         Info("Address", run.address)
-        Info("Children", run.students.joinToString(" · ") { it.name })
         Info("School", run.school.ifEmpty { "known after the next rescan" })
         // Only while a stop change waits for an answer; once answered (keep or new) nothing shows.
         if (pending != null) TextButton(onClick = onChanges) {

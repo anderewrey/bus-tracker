@@ -105,7 +105,7 @@ data class Run(
     fun toJson(): JSONObject = JSONObject()
         .put("key", key).put("bus", bus).put("stopType", stopType).put("time", time)
         .put("address", address).put("lat", lat ?: JSONObject.NULL).put("lon", lon ?: JSONObject.NULL)
-        .put("students", JSONArray(students.map { JSONObject().put("guid", it.guid).put("name", it.name) }))
+        .put("students", JSONArray(students.map { JSONObject().put("guid", it.guid) }))
         .put("mainZone", mainZone ?: JSONObject.NULL)
         .put("days", JSONArray(days.map { it.value }.sorted()))
         .put("school", school)
@@ -124,7 +124,8 @@ data class Run(
                 address = o.getString("address"),
                 lat = if (o.isNull("lat")) null else o.getDouble("lat"),
                 lon = if (o.isNull("lon")) null else o.getDouble("lon"),
-                students = (0 until s.length()).map { Student(s.getJSONObject(it).getString("guid"), s.getJSONObject(it).getString("name")) },
+                // Runs saved before 2026-11-22 also have a name: ignored, and dropped at the next save.
+                students = (0 until s.length()).map { Student(s.getJSONObject(it).getString("guid")) },
                 // Absent from runs saved by 0.11 and earlier; isNull is also true for a missing key.
                 mainZone = if (o.isNull("mainZone")) null else o.getString("mainZone"),
                 // Absent from runs saved by 0.6 and earlier: work days.

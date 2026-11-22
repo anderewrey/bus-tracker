@@ -65,7 +65,7 @@ fun BusPlannerScreen(onBack: () -> Unit, onShowChanges: () -> Unit, onLogout: ()
 
         Section("Reload from BusPlanner")
         Text(
-            "Reads the children's runs, stops and times again, and shows what changed. It also runs by itself once a day.",
+            "Reads the runs, stops and times again, and shows what changed. It also runs by itself once a day.",
             style = MaterialTheme.typography.bodySmall,
         )
         val last = remember(version) { store.lastReload }

@@ -85,6 +85,15 @@ class Store(context: Context) {
             prefs.edit().putString("changes", JSONArray(value.map { it.toJson() }).toString()).apply()
         }
 
+    /**
+     * Runs and changes saved before 2026-11-22 carry the names from BusPlanner's student list:
+     * saved again without them (the app keeps no names, user 2026-11-22).
+     */
+    fun dropNames() {
+        if ("\"name\"" in (prefs.getString("runs", null) ?: "")) runs = runs
+        if ("\"name\"" in (prefs.getString("changes", null) ?: "")) changes = changes
+    }
+
     /** The day of the last successful scan, for the daily rescan. */
     var lastScan: LocalDate?
         get() = prefs.getString("lastScan", null)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }

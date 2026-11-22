@@ -25,8 +25,8 @@ class ChangesTest {
         assertEquals(setOf(ChangeKind.SCHOOL), changeKinds(a, a.copy(school = "Another School")))
     }
 
-    private val a = Student("a", "Student A")
-    private val b = Student("b", "Student B")
+    private val a = Student("a")
+    private val b = Student("b")
     private val t1 = LocalDateTime.of(2026, 11, 5, 7, 5)
     private val t2 = t1.plusDays(1)
 
@@ -38,6 +38,15 @@ class ChangesTest {
         Run("$bus AM", bus, "AM Pickup", time, address, at.first, at.second, students)
 
     private fun pm() = Run("B101 PM", "B101", "PM Dropoff", "2:39 PM", "12 THIS ST", home.first, home.second, listOf(a, b))
+
+    @Test
+    fun runsAreSavedWithoutNames() {
+        val json = am().toJson()
+        assertFalse(json.toString().contains("\"name\""))
+        // A run saved before 2026-11-22, with a name in its student list, still loads.
+        json.getJSONArray("students").getJSONObject(0).put("name", "Student A")
+        assertEquals(listOf(a, b), Run.fromJson(json).students)
+    }
 
     @Test
     fun sameScanHasNoChange() {

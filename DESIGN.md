@@ -253,7 +253,7 @@ This is a dedicated screen, not a pop-up, so the user sees exactly what the resc
 ### 3.3 Data model
 
 - **Account:** the email, and the password in encrypted storage (Android Keystore).
-- **Student:** GUID and display name, both from the dropdown.
+- **Student:** the GUID from the dropdown, nothing else. The app keeps no names: what matters is the bus, and a parent knows which child takes which bus (user, 2026-11-22). Until then the name was kept, shown on the run card, the run page, the overview and the Changes screen, and written in the Log ("scan <name>"); the Log now says "scan list 1: 4 stops", and runs saved with names are saved again without them when the app starts. A run whose students change is no longer a change.
 - **Bus:** the bus number (e.g. `B101`), taken from the start of the run label.
 - **Run:** one trip of a bus, identified by its run label (e.g. `B101 SMP_PU` or `B101 SMP DO`). A run holds:
   - its students
@@ -363,7 +363,7 @@ Everything about one run, on one page. **Tapping the run card opens it.** The ca
    - **Only at the end of the period.**
 
    The Alarm switch and the period end always apply, whatever is chosen.
-7. **About this run** (read-only): bus, stop type, planned time, address, students on the run, school.
+7. **About this run** (read-only): bus, stop type, planned time, address, school.
    - **School:** a route serves exactly one school (user, 2026-11-05). The run's school is the name of the same child's school stop of the same half-day on the same route (AM Dropoff for an AM run, PM Pickup for a PM run), saved with the run at each scan. "Bus parked at the school" uses only that school's position. A school that differs between two scans is a change ("school changed", already applied) on the Changes screen.
    - **Stop change waiting:** only while a stop change or replaced bus waits for an answer on the Changes screen, a red line "Stop changed: choose a configuration ›" opens it. Once answered, keep or new, nothing shows.
 
@@ -400,7 +400,7 @@ Opened from **Settings** in the run list's top bar, which replaces Log out there
 - These settings are kept apart from the login: logging out keeps them.
 - **Debug:** "Open Debug" (moved here from the run list's header, 2026-11-21).
 - *Until 2026-11-21: Account (email, Log out), now on the BusPlanner page (§5.2.1).*
-- **Children, schools, runs and zones:** "Open the overview" opens the overview page (§5.3).
+- **Schools, runs and zones:** "Open the overview" opens the overview page (§5.3).
 
 ### 5.2.1 BusPlanner page (user, 2026-11-21)
 
@@ -410,13 +410,12 @@ Opened from **BusPlanner ›** in the run list's header, beside **Settings ›**
 - **Schedule changes:** "N waiting · See changes ›", or "None waiting". The red card on the run list stays.
 - Today's notices are not here: they show on each run's card (§7.3).
 
-### 5.3 Overview page: children, schools, runs, zones (built 2026-11-17)
+### 5.3 Overview page: schools, runs, zones (built 2026-11-17)
 
 Some things belong to the account, not to one run: a school's position is used by every run going there, and a zone can be used by several runs. One page lists everything the app knows, and each line opens its own page to see or change it (user, 2026-11-05).
 
 | List | Each line shows | Opens |
 |---|---|---|
-| **Children** | name, school, runs | read-only: everything comes from BusPlanner |
 | **Schools** | name, position source ("BusPlanner" or "corrected"), runs going there | the School page (below) |
 | **Runs** | bus, stop, time | the run page (§5.1) |
 | **Zones** | name, runs using it | the zone screen (draw, edit, delete; §6.2) |
@@ -595,7 +594,6 @@ The user wants the app to act on what BusPlanner notices say, not only ring them
   - Every push and pull request: license headers, unit tests, a debug build. The APKs (`bus-tracker.apk` for phones, `bus-tracker-emulator.apk`) are kept 30 days on the run's page, under Artifacts.
   - Push to `main`: also the release build, published as a GitHub **pre-release**: tag `build-<versionCode>`, title the versionName, notes the commit's message, the two APKs attached. Without the key's secrets, the run fails instead of publishing an APK with a throwaway key.
   - **Run workflow** (Actions tab › CI › Run workflow, also in GitHub's phone app; since 2026-11-22) builds nothing: it promotes a pre-release to an official version. Two fields, both optional: the build (`build-N`; empty: the latest pre-release) and the version (`0.17`; empty: the minor version after the last version tag). It puts the annotated version tag on that build's commit, renames the release to the version, adds "Version 0.17 = build …" at the top of its notes, and makes it a full release, the latest one. It refuses a build that isn't a pre-release, or a version tag that already exists. The tag is pushed by the workflow itself, so no tag push is needed from a computer (the session proxy refuses those).
-  - **Obtainium:** with "Include prereleases" on, it installs every build of `main`; off, only the official versions.
   - **In the logs:** the Debug screen (its button was "Log" until 2026-11-09) shows the build under its title (name, versionName, build time in UTC). Each app start writes an "app start" line with the build, the app ID, the versionCode, the build type (release or debug) and the Android version, so a log file says which build wrote it; Copy starts with the same line, and Export adds it as `bustracker-build.txt` in the zip.
 - **UI language:** English first. Strings live in resources, so other languages can be added later.
 - **Times on screen: 12-hour style** (user, 2026-11-06 and 2026-11-14), like BusPlanner's ("2:51:12 PM"), hardcoded for now (`data/Clock.kt`): "Pickup 7:33 AM", "monitoring 7:03–8:03 AM" (AM or PM once when the range doesn't cross noon, "11:30 AM–12:30 PM" when it does), "checked 2:51:12 PM", "Watching until 8:33 AM", "Next automatic start: Mon Nov 16, 7:03 AM". The Log keeps 24-hour times.
