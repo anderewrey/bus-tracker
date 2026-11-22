@@ -7,6 +7,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import io.github.anderewrey.bustracker.net.LatestRelease
 import io.github.anderewrey.bustracker.net.School
 import org.json.JSONArray
 import org.json.JSONObject
@@ -99,6 +100,23 @@ class Store(context: Context) {
         get() = prefs.getString("lastScan", null)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         set(value) {
             prefs.edit().putString("lastScan", value?.toString()).apply()
+        }
+
+    /** The day GitHub was last asked for a newer official version (Updates). */
+    var updateCheckedOn: LocalDate?
+        get() = prefs.getString("updateCheckedOn", null)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        set(value) {
+            prefs.edit().putString("updateCheckedOn", value?.toString()).apply()
+        }
+
+    /** The latest official version GitHub gave at that check, if any. */
+    var latestRelease: LatestRelease?
+        get() {
+            val name = prefs.getString("latestReleaseName", null) ?: return null
+            return LatestRelease(name, prefs.getLong("latestReleaseCode", 0))
+        }
+        set(value) {
+            prefs.edit().putString("latestReleaseName", value?.name).putLong("latestReleaseCode", value?.code ?: 0).apply()
         }
 
     /** The last reload from BusPlanner, for the BusPlanner page: when, why ("daily", "requested"), changes found. */

@@ -11,5 +11,6 @@ class BusTrackerApp : Application() {
         super.onCreate()
         AppLog.init(this)
         Session.init(this)
+        Updates.init(this)
     }
 }

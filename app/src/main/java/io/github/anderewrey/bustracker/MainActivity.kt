@@ -53,12 +53,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import io.github.anderewrey.bustracker.data.Run
 import io.github.anderewrey.bustracker.data.ownDaysText
 import io.github.anderewrey.bustracker.data.Store
+import io.github.anderewrey.bustracker.net.LATEST_APK
 import io.github.anderewrey.bustracker.net.BadPortal
 import io.github.anderewrey.bustracker.net.portalAddress
 import io.github.anderewrey.bustracker.monitor.EXTRA_RUN
@@ -125,6 +127,8 @@ class MainActivity : ComponentActivity() {
             // Today's BusPlanner notices on every run's card, watched or not.
             lifecycleScope.launch { Session.refreshNotices(this@MainActivity) }
         }
+        // A newer official version on GitHub, asked at most once a day (DESIGN.md §8, Updates).
+        lifecycleScope.launch { Updates.checkDaily(this@MainActivity) }
     }
 
     /** Opened from a ringing main-zone alarm: opening it answers it, as Silence does. */
@@ -319,6 +323,20 @@ private fun RunsScreen(
             // What comes from BusPlanner, and how the phone reacts (user, 2026-11-21).
             TextButton(onClick = onBusPlanner) { Text("BusPlanner ›") }
             TextButton(onClick = onSettings) { Text("Settings ›") }
+        }
+        // No Play Store: this card is how a parent learns a new version is out (user, 2026-11-22).
+        val update by Updates.available.collectAsState()
+        val uri = LocalUriHandler.current
+        update?.let { latest ->
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            ) {
+                Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Bus Tracker ${latest.name} is out", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { uri.openUri(LATEST_APK) }) { Text("Download ›") }
+                }
+            }
         }
         if (changes > 0) Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
