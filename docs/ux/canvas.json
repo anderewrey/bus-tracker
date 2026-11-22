@@ -57,6 +57,14 @@
       "w": 1060,
       "x": 0,
       "y": 6650
+    },
+    "HeadsUp.dc.html": {
+      "h": 1500,
+      "page": "flows",
+      "title": "Artboard 1.6 · Heads-up zone",
+      "w": 1000,
+      "x": 0,
+      "y": 9010
     }
   },
   "createdOnFiles": {
@@ -75,7 +83,8 @@
     "AlarmSwitch.dc.html",
     "AutoStart.dc.html",
     "MapView.dc.html",
-    "PerRun.dc.html"
+    "PerRun.dc.html",
+    "HeadsUp.dc.html"
   ],
   "pages": [
     {
