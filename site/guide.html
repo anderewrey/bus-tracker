@@ -1,0 +1,251 @@
+<!doctype html>
+<!-- SPDX-FileCopyrightText: 2026 anderewrey -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bus Tracker Guide</title>
+<meta name="description" content="How to install Bus Tracker, log in, draw your zone and set when it watches the bus.">
+<style>
+:root {
+  --bg: #f7f7f5; --ink: #1d1d1f; --mut: #6b6b70; --line: #d9d9d6;
+  --card: #ffffff; --phone: #2a2a2d; --accent: #2a6fdb; --red: #c0392b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141416; --ink: #ececee; --mut: #9a9aa2; --line: #3a3a40;
+    --card: #1f1f23; --phone: #55555c; --accent: #6a9ef0; --red: #ef6b5b;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+a { color: var(--accent); }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+.top { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; }
+.top a.home { font-weight: 700; text-decoration: none; color: var(--ink); }
+h1 { font-size: clamp(36px, 6vw, 56px); line-height: 1.05; margin: 40px 0 12px; letter-spacing: -0.03em; }
+.lead { font-size: 20px; margin: 0 0 40px; max-width: 40ch; color: var(--mut); }
+.grid { display: grid; grid-template-columns: 200px 1fr; gap: 56px; align-items: start; }
+nav.toc { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
+nav.toc a { color: var(--mut); text-decoration: none; }
+nav.toc a.on { color: var(--ink); font-weight: 600; }
+section { padding: 8px 0 48px; scroll-margin-top: 16px; }
+section h2 { font-size: 28px; margin: 0 0 12px; letter-spacing: -0.01em; }
+section p, section li { max-width: 62ch; }
+section ol, section ul { padding-left: 22px; }
+section li { margin: 4px 0; }
+.k { font-weight: 600; }
+.note { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; color: var(--ink); }
+.pair { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; }
+.pair > div:first-child { flex: 1 1 340px; }
+
+/* Drawn phone screens */
+.phone { width: 240px; border: 3px solid var(--phone); border-radius: 30px; padding: 12px 10px 16px; background: var(--card);
+  display: flex; flex-direction: column; gap: 7px; font-size: 12px; flex-shrink: 0; }
+.phone .hd { display: flex; justify-content: space-between; align-items: baseline; padding: 2px 4px; }
+.phone .hd b { font-size: 14px; }
+.phone .hd span { color: var(--accent); font-size: 11px; }
+.bx { border: 1px solid var(--line); border-radius: 10px; padding: 7px 9px; display: flex; flex-direction: column; gap: 2px; }
+.fld { border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; color: var(--mut); }
+.btn { border-radius: 999px; padding: 7px 10px; text-align: center; font-weight: 600; }
+.btn.fill { background: var(--accent); color: #fff; }
+.btn.line { border: 1px solid var(--line); color: var(--accent); }
+.mut { color: var(--mut); }
+.link { color: var(--accent); }
+.dlg { border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; text-align: center; }
+.map { height: 220px; border-radius: 10px; background: var(--bg); position: relative; overflow: hidden; }
+.map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+
+footer { border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--mut); font-size: 14px; display: flex; gap: 20px; flex-wrap: wrap; }
+footer a { color: var(--mut); }
+
+@media (max-width: 760px) {
+  .grid { display: block; }
+  nav.toc { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 32px; }
+  .phone { margin: 0 auto; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="top"><a class="home" href="./">Bus Tracker</a><a href="https://github.com/anderewrey/bus-tracker/releases/latest/download/bus-tracker.apk">Download</a></div>
+
+<h1>Guide</h1>
+<p class="lead">From the download to your first alarm, in about ten minutes.</p>
+
+<div class="grid">
+<nav class="toc" id="toc">
+  <a href="#install">1. Install</a>
+  <a href="#login">2. Log in</a>
+  <a href="#notify">3. Let it notify you</a>
+  <a href="#zone">4. Draw your zone</a>
+  <a href="#when">5. When it watches</a>
+  <a href="#skip">6. Skip one time</a>
+  <a href="#stop">7. When it stops</a>
+  <a href="#alarm">8. The alarm</a>
+  <a href="#busplanner">9. BusPlanner page</a>
+  <a href="#help">10. Something's off?</a>
+</nav>
+
+<main>
+
+<section id="install">
+  <h2>1. Install</h2>
+  <div class="pair">
+  <div>
+  <p>Bus Tracker isn't on the Play Store, so you install it from its download, and Android asks a few more questions than usual. That's expected.</p>
+  <ol>
+    <li>On your phone, tap <a href="https://github.com/anderewrey/bus-tracker/releases/latest/download/bus-tracker.apk">Download</a>, then open <span class="k">bus-tracker.apk</span>.</li>
+    <li>The first time, Android says your browser isn't allowed to install apps. Tap <span class="k">Settings</span>, turn on <span class="k">Allow from this source</span>, and go back.</li>
+    <li><span class="k">Google Play Protect</span> doesn't know the app, so it suggests scanning it. I'd tap <span class="k">Scan app</span>: Google checks it, then the install goes on. <span class="k">Install without scanning</span> works too.</li>
+  </ol>
+  <p><span class="k">Updates:</span> when a new version is out, a card at the top of the list says so, with a <span class="k">Download</span> button. Install it over the old one, the same way; your login, zones and settings stay. To know, the app asks GitHub once a day, and sends nothing about you.</p>
+  </div>
+  <div class="phone">
+    <div class="dlg"><b class="mut">Google Play Protect</b><b>Scan app recommended</b><span class="mut">This app is unknown to Play Protect…</span><span class="link">Install without scanning</span><div class="btn fill">Scan app</div><div class="btn fill">Don't install app</div></div>
+  </div>
+  </div>
+</section>
+
+<section id="login">
+  <h2>2. Log in</h2>
+  <div class="pair">
+  <div>
+  <p>Use the same account you use on your school board's BusPlanner website.</p>
+  <ol>
+    <li><span class="k">Portal address</span>: the address of that website, e.g. <span class="mut">example.mybusplanner.ca</span>.</li>
+    <li>Your <span class="k">Email</span> and <span class="k">Password</span>, then <span class="k">Log in</span>.</li>
+  </ol>
+  <p>The app reads your buses, stops and times, and shows one card per bus and direction: the pickup in the morning, the dropoff in the afternoon. If two of your kids ride the same bus, it's one card.</p>
+  </div>
+  <div class="phone">
+    <div class="hd"><b>BusPlanner login</b></div>
+    <div class="fld">example.mybusplanner.ca</div>
+    <div class="fld">Email</div>
+    <div class="fld">Password</div>
+    <div class="btn fill">Log in</div>
+  </div>
+  </div>
+</section>
+
+<section id="notify">
+  <h2>3. Let it notify you</h2>
+  <p>When the app asks to send notifications, say yes: without them, nothing can ring.</p>
+  <p>If your phone is often on silent or in Do Not Disturb, go to <span class="k">Settings › Quiet mode override</span>. The alarm then rings like your morning alarm, at the alarm volume, even in Do Not Disturb.</p>
+</section>
+
+<section id="zone">
+  <h2>4. Draw your zone</h2>
+  <div class="pair">
+  <div>
+  <p>The zone is where the bus has to be for your phone to ring. Draw it somewhere around the neighbourhood, far enough to give you time to get boots on.</p>
+  <ol>
+    <li>Tap a bus card to open its page, then under <span class="k">Main zone</span>, tap <span class="k">Draw new</span>.</li>
+    <li>Tap the map to place each corner. <span class="k">Undo</span> removes the last one; drag a dot to move it.</li>
+    <li>Tap <span class="k">Done</span> to close the shape, give it a name, and <span class="k">Save</span>.</li>
+  </ol>
+  <p>One zone can serve several cards: if the afternoon stop is inside it, the afternoon gets it too. To use a zone from another card, tap <span class="k">Choose</span>. <span class="k">Test alarm</span> lets you hear what it will sound like.</p>
+  </div>
+  <div class="phone">
+    <div class="hd"><b>New main zone</b><span>Cancel</span></div>
+    <div class="map"><svg viewBox="0 0 220 220" aria-hidden="true">
+      <path d="M10 170 L110 150 L210 175" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="9" stroke-linecap="round"/>
+      <path d="M110 150 L100 10" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="9" stroke-linecap="round"/>
+      <polygon points="60,60 150,52 165,190 50,200" fill="#2a6fdb" fill-opacity=".14" stroke="#2a6fdb" stroke-width="2"/>
+      <g fill="#2a6fdb"><circle cx="60" cy="60" r="5"/><circle cx="150" cy="52" r="5"/><circle cx="165" cy="190" r="5"/><circle cx="50" cy="200" r="5"/></g>
+      <circle cx="112" cy="150" r="6" fill="#fff" stroke="#1d1d1f" stroke-width="3"/>
+    </svg></div>
+    <div class="row"><span class="link">Undo</span><span class="link">Done</span></div>
+  </div>
+  </div>
+</section>
+
+<section id="when">
+  <h2>5. When it watches</h2>
+  <ul>
+    <li><span class="k">Watching period</span>: on a card's page, <span class="k">−</span> and <span class="k">+</span> set how long before and after the bus's time the app watches. It starts with 30 minutes on each side.</li>
+    <li><span class="k">Automatic start</span>: the switch at the top of the list. On, every card starts watching by itself at the start of its period.</li>
+    <li><span class="k">Days</span>: tap <span class="k">Automatic start ›</span> to choose the days, for every card at once. A card can also have its own days, on its page.</li>
+    <li><span class="k">Holidays, snow days</span>: turn Automatic start off and pick <span class="k">Off until…</span> a date. That morning, it comes back on by itself.</li>
+  </ul>
+  <p class="note">Changes apply right away: remove today from the days while it's watching, and it stops.</p>
+</section>
+
+<section id="skip">
+  <h2>6. Skip one time</h2>
+  <p>Each card has a bell. It's only about one period: the one going on, or else the next one.</p>
+  <ul>
+    <li>Nobody's taking the bus this morning? Turn off the morning bell. The afternoon stays as usual, and tomorrow the bell is back on by itself.</li>
+    <li>Turned it off by mistake? Turn it back on before the period ends and it watches again.</li>
+    <li><span class="k">Stop watching</span> in the notification does the same as turning the bell off.</li>
+  </ul>
+</section>
+
+<section id="stop">
+  <h2>7. When it stops</h2>
+  <p>On a card's page, <span class="k">End of watching</span> says when it's done for that trip:</p>
+  <ul>
+    <li><span class="k">Bus parked at the school</span>, the usual for the morning.</li>
+    <li><span class="k">Bus leaves a zone</span>, the usual for the afternoon: once the bus has left your zone, the kids are off.</li>
+    <li><span class="k">Bus enters a zone</span>, or <span class="k">Only at the end of the period</span>.</li>
+  </ul>
+  <p>Whatever you pick, it always stops at the end of the period, which a delay posted by BusPlanner pushes back.</p>
+</section>
+
+<section id="alarm">
+  <h2>8. The alarm</h2>
+  <ul>
+    <li>When the bus enters your zone, the phone rings once, for a minute at most.</li>
+    <li><span class="k">Silence</span>, a volume key or a swipe stops the sound. The app keeps watching.</li>
+    <li>In <span class="k">Settings</span>: the <span class="k">Sound</span>, <span class="k">Vibration</span>, <span class="k">Test alarm</span>, and the same for BusPlanner's late or cancelled notices.</li>
+  </ul>
+</section>
+
+<section id="busplanner">
+  <h2>9. BusPlanner page</h2>
+  <p><span class="k">BusPlanner ›</span>, at the top of the list:</p>
+  <ul>
+    <li><span class="k">Reload</span> reads your buses, stops and times again. It also does it by itself once a day.</li>
+    <li>When something changed (a new stop, a new time, a new bus), a red card says <span class="k">Bus schedule changed</span>. For a moved stop or a new bus, you choose whether your zones carry over.</li>
+    <li>A delay or a cancellation posted by BusPlanner shows in red on that bus's card, all day.</li>
+    <li><span class="k">Log out</span> is there too. Your zones and settings stay on the phone.</li>
+  </ul>
+</section>
+
+<section id="help">
+  <h2>10. Something's off?</h2>
+  <ul>
+    <li>Look at the card's status line: the distance, the street, and <span class="k">GPS</span> with the time the bus last reported. "updated 5 min ago" in red means the position is old.</li>
+    <li><span class="k">No vehicle</span> means BusPlanner has no bus assigned right now; there's nothing to follow.</li>
+    <li>To tell me about a problem: <span class="k">Settings › Open Debug › Export</span> saves the app's log as a file. Then <a href="https://github.com/anderewrey/bus-tracker/issues">open an issue on GitHub</a> and describe what happened. The log has your bus numbers and streets, so look it over before you attach it.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+
+<footer>
+  <a href="./">Home</a>
+  <a href="https://github.com/anderewrey/bus-tracker/releases/latest/download/bus-tracker.apk">Download</a>
+  <a href="https://github.com/anderewrey/bus-tracker">Source on GitHub</a>
+  <span>GPL-3.0</span>
+  <span>Not affiliated with BusPlanner.</span>
+</footer>
+</div>
+<script>
+// Highlights the section being read in the table of contents.
+const links = [...document.querySelectorAll('#toc a')];
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
+  });
+}, { rootMargin: '-30% 0px -60% 0px' });
+document.querySelectorAll('main section').forEach(s => io.observe(s));
+</script>
+</body>
+</html>

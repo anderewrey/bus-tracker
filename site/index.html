@@ -101,7 +101,7 @@ footer a { color: var(--mut); }
   <p class="req">For Android, if your school board uses BusPlanner and you have a parent account on it.</p>
   <div class="btns">
     <a class="btn main" href="https://github.com/anderewrey/bus-tracker/releases/latest/download/bus-tracker.apk">Download</a>
-    <a class="btn ghost" href="https://github.com/anderewrey/bus-tracker">Source on GitHub</a>
+    <a class="btn ghost" href="guide.html">Guide</a>
   </div>
   <p class="hint">Here's what a school day looks like ↓</p>
 </header>
@@ -245,7 +245,7 @@ footer a { color: var(--mut); }
   <p>If you want it to. Turn on Quiet mode override and it rings like your morning alarm, even with Do Not Disturb on.</p>
 
   <h3>What if the bus stops sending its position?</h3>
-  <p>It happens. The app tells you ("No vehicle") instead of keeping quiet, and every position shows the time its GPS was read, so you can tell when it's old.</p>
+  <p>It happens. When the last position gets more than two minutes old, the app says so ("updated 5 min ago", in red on the screen) instead of passing it off as live. If it looks stuck, it logs in to BusPlanner again in case the problem is on its side.</p>
 
   <h3>What if my phone restarts?</h3>
   <p>It picks up where it was, and the next mornings start as usual. If the phone happens to be off right when watching should start, just open the app and it starts.</p>
@@ -254,7 +254,10 @@ footer a { color: var(--mut); }
   <p>I count on it every school day, but it's only as good as what the bus sends. It saves you from refreshing a web page for twenty minutes; it doesn't replace keeping an eye on the time.</p>
 
   <h3>Who made this?</h3>
-  <p>A parent who got tired of keeping the BusPlanner page open and checking it every few minutes. I wanted my phone to do the watching on its own and just tell me when it matters. It's free, no ads, no sign-up besides your BusPlanner account, and the code is open for anyone to read.</p>
+  <p>A parent who got tired of keeping the BusPlanner page open and checking it every few minutes. I wanted my phone to do the watching on its own and just tell me when it matters. It's free today, no ads, no sign-up besides your BusPlanner account, and the code is open for anyone to read.</p>
+
+  <h3>Will it stay free?</h3>
+  <p>That's the plan. But Google is changing the rules for apps installed outside the Play Store, and keeping Bus Tracker easy to install may end up costing something. If it does, I may ask for a small fee to cover it, and I'll say so here first.</p>
 
   <h3>What do I need?</h3>
   <p>An Android phone (Android 10 or newer), and a parent account on your school board's BusPlanner portal.</p>
@@ -262,6 +265,7 @@ footer a { color: var(--mut); }
 
 <footer>
   <a href="https://github.com/anderewrey/bus-tracker/releases/latest/download/bus-tracker.apk">Download</a>
+  <a href="guide.html">Guide</a>
   <a href="https://github.com/anderewrey/bus-tracker">Source on GitHub</a>
   <span>GPL-3.0</span>
   <span>Not affiliated with BusPlanner.</span>
