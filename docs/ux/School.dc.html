@@ -32,7 +32,7 @@ body{margin:0}
 .off .wd{opacity:.45}
 </style>
 </helmet>
-<div style="width:1000px;height:1510px;box-sizing:border-box;padding:28px 32px;font-family:Inter,system-ui,sans-serif;background:#f6f6f4;display:flex;flex-direction:column;gap:18px">
+<div style="width:1000px;height:2290px;box-sizing:border-box;padding:28px 32px;font-family:Inter,system-ui,sans-serif;background:#f6f6f4;display:flex;flex-direction:column;gap:18px">
 <div style="font-size:20px;font-weight:600">School page: each dot on the map has the button that uses it, with the same mark</div>
 
 <div class="h2">Row 1.7.1 · BusPlanner's point is off: correct it, then the app learns where the bus parks</div>
@@ -199,9 +199,97 @@ body{margin:0}
 </div>
 
 </div>
+
+<div class="h2" style="margin-top:12px">Row 1.7.3 · Two spots: where the bus arrives in the morning, where it waits in the afternoon</div>
+<div style="display:flex;align-items:flex-start">
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>Sample School</b></div>
+<div class="map"><svg viewBox="0 0 190 150" aria-hidden="true">
+<rect x="18" y="4" width="170" height="122" rx="4" fill="#eef5ea" stroke="#b9d3b0" stroke-dasharray="4 3"/>
+<rect x="28" y="14" width="44" height="34" fill="#e2e2e2"/><text x="31" y="34" font-size="8" fill="#888">school</text>
+<rect x="88" y="62" width="62" height="38" rx="3" fill="none" stroke="#bbb" stroke-dasharray="3 2"/><text x="91" y="58" font-size="8" fill="#888">bus parking</text>
+<path d="M150 82 L172 82 L172 135" fill="none" stroke="#ddd" stroke-width="5"/>
+<path d="M0 135 L190 135" fill="none" stroke="#ddd" stroke-width="8"/><text x="4" y="131" font-size="8" fill="#999">street</text>
+<path d="M10 0 L10 150" fill="none" stroke="#ddd" stroke-width="8"/>
+<circle cx="110" cy="82" r="40" fill="#3a8a3a" fill-opacity=".12" stroke="#3a8a3a" stroke-width="1.5"/>
+<circle cx="110" cy="82" r="8" fill="#3a8a3a" stroke="#fff" stroke-width="2"/>
+<circle cx="10" cy="33" r="4" fill="#fff" stroke="#444" stroke-width="2"/>
+<circle cx="128" cy="80" r="5" fill="#2a6fdb" stroke="#fff" stroke-width="1.5"/><text x="134" y="92" font-size="8" fill="#2a6fdb">AM</text>
+<circle cx="105" cy="62" r="5" fill="#2a6fdb" stroke="#fff" stroke-width="1.5"/><text x="90" y="56" font-size="8" fill="#2a6fdb">PM</text>
+</svg></div>
+<span class="mut">Position: placed by hand</span>
+<span>"At school" circle: 40 m</span>
+<div class="btn"><span class="bd"></span><span class="bd" style="margin-left:-3px"></span>Fit both spots · 35 m</div>
+<div class="btn"><span class="wd"></span>Back to BusPlanner's point · 117 m</div>
+<div class="btn fill">Save</div>
+</div>
+<div class="cap"><b>After a school day.</b> The morning run learned where the bus parks on arrival (AM), the afternoon run where it waits before leaving (PM): two blue dots, 30 m apart. With both known, the blue button proposes a circle that holds the two.</div>
+</div>
+
+<div class="ar"><b>Fit both spots</b><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>Sample School</b></div>
+<div class="map"><svg viewBox="0 0 190 150" aria-hidden="true">
+<rect x="18" y="4" width="170" height="122" rx="4" fill="#eef5ea" stroke="#b9d3b0" stroke-dasharray="4 3"/>
+<rect x="28" y="14" width="44" height="34" fill="#e2e2e2"/><text x="31" y="34" font-size="8" fill="#888">school</text>
+<rect x="88" y="62" width="62" height="38" rx="3" fill="none" stroke="#bbb" stroke-dasharray="3 2"/><text x="91" y="58" font-size="8" fill="#888">bus parking</text>
+<path d="M150 82 L172 82 L172 135" fill="none" stroke="#ddd" stroke-width="5"/>
+<path d="M0 135 L190 135" fill="none" stroke="#ddd" stroke-width="8"/><text x="4" y="131" font-size="8" fill="#999">street</text>
+<path d="M10 0 L10 150" fill="none" stroke="#ddd" stroke-width="8"/>
+<circle cx="116.5" cy="71" r="33" fill="#3a8a3a" fill-opacity=".12" stroke="#3a8a3a" stroke-width="1.5"/>
+<circle cx="116.5" cy="71" r="8" fill="#3a8a3a" stroke="#fff" stroke-width="2"/>
+<circle cx="10" cy="33" r="4" fill="#fff" stroke="#444" stroke-width="2"/>
+<circle cx="128" cy="80" r="5" fill="#2a6fdb" stroke="#fff" stroke-width="1.5"/><text x="134" y="92" font-size="8" fill="#2a6fdb">AM</text>
+<circle cx="105" cy="62" r="5" fill="#2a6fdb" stroke="#fff" stroke-width="1.5"/><text x="90" y="56" font-size="8" fill="#2a6fdb">PM</text>
+</svg></div>
+<span class="mut">Position: between the bus spots <b>· not saved</b></span>
+<span>"At school" circle: 35 m</span>
+<div class="btn off"><span class="bd"></span><span class="bd" style="margin-left:-3px"></span>Both spots · here</div>
+<div class="btn"><span class="wd"></span>Back to BusPlanner's point · 119 m</div>
+<div class="btn fill">Save</div>
+</div>
+<div class="cap"><b>Centred between the two, 35 m:</b> half their distance plus 20 m. Like the other buttons, it only moves the pin and the circle.</div>
+</div>
+
+<div class="ar"><b>Save</b><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>Sample School</b></div>
+<div class="map"><svg viewBox="0 0 190 150" aria-hidden="true">
+<rect x="18" y="4" width="170" height="122" rx="4" fill="#eef5ea" stroke="#b9d3b0" stroke-dasharray="4 3"/>
+<rect x="28" y="14" width="44" height="34" fill="#e2e2e2"/><text x="31" y="34" font-size="8" fill="#888">school</text>
+<rect x="88" y="62" width="62" height="38" rx="3" fill="none" stroke="#bbb" stroke-dasharray="3 2"/><text x="91" y="58" font-size="8" fill="#888">bus parking</text>
+<path d="M150 82 L172 82 L172 135" fill="none" stroke="#ddd" stroke-width="5"/>
+<path d="M0 135 L190 135" fill="none" stroke="#ddd" stroke-width="8"/><text x="4" y="131" font-size="8" fill="#999">street</text>
+<path d="M10 0 L10 150" fill="none" stroke="#ddd" stroke-width="8"/>
+<circle cx="116.5" cy="71" r="33" fill="#3a8a3a" fill-opacity=".12" stroke="#3a8a3a" stroke-width="1.5"/>
+<circle cx="116.5" cy="71" r="8" fill="#3a8a3a" stroke="#fff" stroke-width="2"/>
+<circle cx="10" cy="33" r="4" fill="#fff" stroke="#444" stroke-width="2"/>
+<circle cx="128" cy="80" r="5" fill="#2a6fdb" stroke="#fff" stroke-width="1.5"/><text x="134" y="92" font-size="8" fill="#2a6fdb">AM</text>
+<circle cx="105" cy="62" r="5" fill="#2a6fdb" stroke="#fff" stroke-width="1.5"/><text x="90" y="56" font-size="8" fill="#2a6fdb">PM</text>
+</svg></div>
+<span class="mut">Position: between the bus spots</span>
+<span>"At school" circle: 35 m</span>
+<div class="btn off"><span class="bd"></span><span class="bd" style="margin-left:-3px"></span>Both spots · here</div>
+<div class="btn"><span class="wd"></span>Back to BusPlanner's point · 119 m</div>
+<div class="btn fill">Save</div>
+</div>
+<div class="cap"><b>Saved.</b> Each new morning or afternoon replaces its own dot; the circle stays as saved until the next Fit or Save.</div>
+</div>
+
+</div>
+</div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":1510}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":2290}}'>
 class Component extends DCLogic {
 renderVals() { return {}; }
 }
