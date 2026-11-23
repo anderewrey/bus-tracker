@@ -282,28 +282,37 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
                     }
                 }
                 // Back to BusPlanner's point also brings the default circle back, so it stays
-                // useful at the point itself while a corrected circle is kept.
+                // useful at the point itself while another circle is set. Like the blue button, it
+                // only moves the pin: nothing is kept until Save (user, 2026-11-23: it used to save at once).
                 val busPlannerHere = busPlannerM != null && busPlannerM < HERE_M
+                val defaultCircle = radius.roundToInt() == AT_SCHOOL_M.toInt()
                 DotButton(
                     blue = false,
-                    enabled = busPlanner != null && (!busPlannerHere || fixes[name] != null),
+                    enabled = busPlanner != null && (!busPlannerHere || !defaultCircle),
                     text = when {
                         busPlanner == null -> "BusPlanner's point: unknown"
-                        busPlannerHere && fixes[name] == null -> "BusPlanner's point · here"
+                        busPlannerHere && defaultCircle -> "BusPlanner's point · here"
                         busPlannerHere -> "Back to BusPlanner's point"
                         else -> "Back to BusPlanner's point" + (busPlannerM?.let { " · ${it.roundToInt()} m" } ?: "")
                     },
                 ) {
-                    Session.resetSchool(context, name)
-                    pin.value = busPlanner?.let { LatLng(it.lat, it.lon) }
-                    radius = AT_SCHOOL_M.toFloat()
-                    message = "Back to BusPlanner's point"
+                    busPlanner?.let { b ->
+                        pin.value = LatLng(b.lat, b.lon)
+                        radius = AT_SCHOOL_M.toFloat()
+                        mapRef.value?.let { m -> m.cameraPosition = CameraPosition.Builder().target(LatLng(b.lat, b.lon)).zoom(16.0).build() }
+                    }
                 }
             }
             Button(enabled = pin.value != null, onClick = {
                 val p = pin.value ?: return@Button
                 // At BusPlanner's own point (within 1 m): no correction of the position, only the circle.
                 val same = busPlanner != null && distanceM(p.latitude, p.longitude, busPlanner.lat, busPlanner.lon) < 1.0
+                // BusPlanner's point and the default circle: no correction left (a chosen school stays chosen).
+                if (same && radius.roundToInt() == AT_SCHOOL_M.toInt()) {
+                    Session.resetSchool(context, name)
+                    message = "Saved"
+                    return@Button
+                }
                 Session.setSchoolFix(
                     context,
                     SchoolFix(
