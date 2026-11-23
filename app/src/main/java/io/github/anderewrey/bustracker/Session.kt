@@ -107,10 +107,13 @@ data class ScanResult(val runs: List<Run>, val changes: List<RunChange>)
 /**
  * Live status of one run, shared by the service, the notification and the screens. [byHand]: the
  * answer to a tap on ↻; [at]: when it was set, on the monotonic clock ([System.nanoTime]).
+ * [kept]: the check failed and [reading] is the previous one, kept for the screens; it is not a
+ * new reading, so the zones and the end rule must not count it (a repeated position looked like a
+ * bus parked at the school; found by the scenario simulator, 2026-11-23).
  */
 data class RunStatus(
     val reading: Reading?, val line: String, val checkedAt: LocalTime?, val old: Boolean = false,
-    val byHand: Boolean = false, val at: Long = System.nanoTime(),
+    val byHand: Boolean = false, val at: Long = System.nanoTime(), val kept: Boolean = false,
 )
 
 /** What the screens show instead of the line of a run that isn't watched (DESIGN.md §4). */
@@ -771,7 +774,7 @@ object Session {
         // No network (e.g. just after the phone woke up): wait for it, it is not the session's fault.
         if (!online(context)) {
             if (_status.value[run.key]?.line != WAITING_NETWORK) AppLog.log("poll ${run.key}: no network, waiting")
-            val status = RunStatus(_status.value[run.key]?.reading, WAITING_NETWORK, now, old = true, byHand = refreshButton)
+            val status = RunStatus(_status.value[run.key]?.reading, WAITING_NETWORK, now, old = true, byHand = refreshButton, kept = true)
             setStatus(run.key, status)
             return status
         }
@@ -811,12 +814,12 @@ object Session {
             networkFailures[run.key] = failures
             AppLog.log("poll ${run.key}: network error ${e.javaClass.simpleName}: ${e.message}")
             if (failures >= NETWORK_RELOAD_AFTER) needsReload += run.key
-            RunStatus(_status.value[run.key]?.reading, NETWORK_PROBLEM, now, old = true, byHand = refreshButton)
+            RunStatus(_status.value[run.key]?.reading, NETWORK_PROBLEM, now, old = true, byHand = refreshButton, kept = true)
         } catch (e: Exception) {
             val message = e.message ?: e.javaClass.simpleName
             AppLog.log("poll ${run.key}: error $message")
             needsReload += run.key
-            RunStatus(_status.value[run.key]?.reading, "Error: $message", now, old = true, byHand = refreshButton)
+            RunStatus(_status.value[run.key]?.reading, "Error: $message", now, old = true, byHand = refreshButton, kept = true)
         }
         setStatus(run.key, status)
         return status

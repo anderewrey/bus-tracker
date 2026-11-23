@@ -455,9 +455,11 @@ class MonitorService : Service() {
                     continue
                 }
                 val status = read(run, manual)
-                if (key in until) checkHeadsUp(run, status)
-                if (key in until) checkZones(run, status)
-                if (key in until) checkEnd(run, status)
+                // A failed check keeps the previous reading for the screens: nothing new to decide
+                // on. Counted again, it made "parked at the school" out of a moving bus.
+                if (key in until && !status.kept) checkHeadsUp(run, status)
+                if (key in until && !status.kept) checkZones(run, status)
+                if (key in until && !status.kept) checkEnd(run, status)
                 if (key in until) {
                     showStatus(run, status)
                     if (firstCheck.remove(key)) warnIfNoVehicle(run, status)
