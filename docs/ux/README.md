@@ -13,6 +13,7 @@ control does in each context.
 | | 1.4 · The map | `MapView.dc.html` |
 | | 1.5 · Per-run rules | `PerRun.dc.html` |
 | | 1.6 · Heads-up zone | `HeadsUp.dc.html` |
+| | 1.7 · School page | `School.dc.html` |
 
 `canvas.json` lists the pages and artboards (names, positions, sizes). Each `.dc.html` is one
 artboard in the Design canvas format: it renders in the owner's Design canvas, not on its own

@@ -65,6 +65,14 @@
       "w": 1000,
       "x": 0,
       "y": 9010
+    },
+    "School.dc.html": {
+      "h": 1450,
+      "page": "flows",
+      "title": "Artboard 1.7 · School page",
+      "w": 1000,
+      "x": 0,
+      "y": 11330
     }
   },
   "createdOnFiles": {
@@ -84,7 +92,8 @@
     "AutoStart.dc.html",
     "MapView.dc.html",
     "PerRun.dc.html",
-    "HeadsUp.dc.html"
+    "HeadsUp.dc.html",
+    "School.dc.html"
   ],
   "pages": [
     {
