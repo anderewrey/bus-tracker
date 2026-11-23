@@ -18,7 +18,7 @@ const val SAME_SPOT_M = 15.0
  * whose bus waits at the school before leaving is not stopped at its start. Schools with no
  * known position are ignored.
  */
-class SchoolArrival(private val schools: List<SchoolSpot>) {
+class SchoolArrival(private val schools: List<SchoolSpot>, private val needAway: Boolean = true) {
     private var seenAway = false
     private val spots = ArrayList<Pair<Double, Double>>()
 
@@ -34,7 +34,9 @@ class SchoolArrival(private val schools: List<SchoolSpot>) {
             spots.clear()
             return false
         }
-        if (!seenAway) return false
+        // Learning a parking spot doesn't need it (user, 2026-11-23): a bus waiting at the school
+        // before an afternoon run is parked too. Ending watching does.
+        if (needAway && !seenAway) return false
         if (spots.isNotEmpty() && distanceM(lat, lon, spots.first().first, spots.first().second) > SAME_SPOT_M) spots.clear()
         spots += lat to lon
         if (spots.size < PARKED_READINGS) return false

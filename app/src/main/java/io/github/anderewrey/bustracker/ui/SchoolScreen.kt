@@ -73,6 +73,16 @@ import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.CircleLayer
+import io.github.anderewrey.bustracker.data.fitSpots
+import org.maplibre.android.style.layers.PropertyFactory.textOffset
+import org.maplibre.android.style.layers.PropertyFactory.textHaloWidth
+import org.maplibre.android.style.layers.PropertyFactory.textHaloColor
+import org.maplibre.android.style.layers.PropertyFactory.textColor
+import org.maplibre.android.style.layers.PropertyFactory.textSize
+import org.maplibre.android.style.layers.PropertyFactory.textFont
+import org.maplibre.android.style.layers.PropertyFactory.textField
+import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.PropertyFactory.circleColor
@@ -110,8 +120,16 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
     val runs by Session.runs.collectAsState()
     val spot = spots.firstOrNull { it.name == name }
     val busPlanner = remember(spots) { Store(context).schools.firstOrNull { it.name.equals(name, ignoreCase = true) } }
-    val parked = parkedAll[name]
     val parkedAtAll by Session.parkedAt.collectAsState()
+    val parkedPmAll by Session.parkedPm.collectAsState()
+    val parkedPmAtAll by Session.parkedPmAt.collectAsState()
+    // Where the bus parks on arrival (AM) and waits before leaving (PM); [parked]: one of them, for
+    // the single-spot button when only one is known.
+    val parkedAm = parkedAll[name]
+    val parkedPm = parkedPmAll[name]
+    val parked = parkedAm ?: parkedPm
+    val parkedWhen = if (parkedAm != null) parkedAtAll[name] else parkedPmAtAll[name]
+    val fit = if (parkedAm != null && parkedPm != null) fitSpots(parkedAm, parkedPm) else null
     val options = optionsAll[name].orEmpty()
     val going = runs.filter { it.school.equals(name, ignoreCase = true) }
 
@@ -153,10 +171,20 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
                             circleRadius(5f), circleColor("#FFFFFF"), circleStrokeColor("#6D6D6D"), circleStrokeWidth(2f),
                         )
                     )
-                    s.addSource(GeoJsonSource("parked", parked?.let { FeatureCollection.fromFeature(Feature.fromGeometry(Point.fromLngLat(it.second, it.first))) }))
+                    // Morning and afternoon spots, each labelled, so the two can be told apart.
+                    val spotsShown = listOfNotNull(parkedAm?.let { it to "AM" }, parkedPm?.let { it to "PM" }).map { (at, label) ->
+                        Feature.fromGeometry(Point.fromLngLat(at.second, at.first)).also { it.addStringProperty("label", label) }
+                    }
+                    s.addSource(GeoJsonSource("parked", FeatureCollection.fromFeatures(spotsShown)))
                     s.addLayer(
                         CircleLayer("parked-dot", "parked").withProperties(
                             circleRadius(6f), circleColor("#1565C0"), circleStrokeColor("#FFFFFF"), circleStrokeWidth(2f),
+                        )
+                    )
+                    s.addLayer(
+                        SymbolLayer("parked-label", "parked").withProperties(
+                            textField(Expression.get("label")), textFont(arrayOf("Noto Sans Regular")), textSize(11f),
+                            textColor("#1565C0"), textHaloColor("#FFFFFF"), textHaloWidth(1.5f), textOffset(arrayOf(0f, 1.3f)),
                         )
                     )
                     style.value = s
@@ -251,7 +279,8 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
                 when {
                     shown == null -> "Position unknown: \"Bus parked at the school\" is off for the runs going there."
                     busPlanner != null && distanceM(shown.latitude, shown.longitude, busPlanner.lat, busPlanner.lon) < HERE_M -> "Position: BusPlanner's point"
-                    parked != null && distanceM(shown.latitude, shown.longitude, parked.first, parked.second) < HERE_M -> "Position: bus parking"
+                    fit != null && distanceM(shown.latitude, shown.longitude, fit.first, fit.second) < HERE_M -> "Position: between the bus spots"
+                    listOfNotNull(parkedAm, parkedPm).any { distanceM(shown.latitude, shown.longitude, it.first, it.second) < HERE_M } -> "Position: bus parking"
                     else -> "Position: placed by hand"
                 } + if (unsaved) " · not saved" else "",
                 style = MaterialTheme.typography.bodySmall,
@@ -269,21 +298,36 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
             val parkedM = if (p != null && parked != null) distanceM(p.latitude, p.longitude, parked.first, parked.second) else null
             val busPlannerM = if (p != null && busPlanner != null) distanceM(p.latitude, p.longitude, busPlanner.lat, busPlanner.lon) else null
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                val parkedHere = parkedM != null && parkedM < HERE_M
-                DotButton(
-                    blue = true,
-                    enabled = parked != null && !parkedHere,
-                    text = when {
-                        parked == null -> "Where the bus parks: learned when a run ends here"
-                        parkedHere -> "Where the bus parked · here"
-                        else -> "Use where the bus parked" +
-                            (parkedM?.let { " · ${it.roundToInt()} m" } ?: "") +
-                            (parkedAtAll[name]?.let { " · ${dayAndTime(it)}" } ?: "")
-                    },
-                ) {
-                    parked?.let { (lat, lon) ->
-                        pin.value = LatLng(lat, lon)
-                        mapRef.value?.let { m -> m.cameraPosition = CameraPosition.Builder().target(LatLng(lat, lon)).zoom(16.0).build() }
+                if (fit != null) {
+                    // Both spots known: a circle that holds the two (Artboard 1.7.3).
+                    val fitR = fit.third.roundToInt()
+                    val fitHere = p != null && distanceM(p.latitude, p.longitude, fit.first, fit.second) < HERE_M && radius.roundToInt() == fitR
+                    DotButton(
+                        blue = true, double = true,
+                        enabled = !fitHere,
+                        text = if (fitHere) "Both spots · here" else "Fit both spots · $fitR m",
+                    ) {
+                        pin.value = LatLng(fit.first, fit.second)
+                        radius = fitR.toFloat()
+                        mapRef.value?.let { m -> m.cameraPosition = CameraPosition.Builder().target(LatLng(fit.first, fit.second)).zoom(16.0).build() }
+                    }
+                } else {
+                    val parkedHere = parkedM != null && parkedM < HERE_M
+                    DotButton(
+                        blue = true,
+                        enabled = parked != null && !parkedHere,
+                        text = when {
+                            parked == null -> "Where the bus parks: learned on the next runs"
+                            parkedHere -> "Where the bus parked · here"
+                            else -> "Use where the bus parked" +
+                                (parkedM?.let { " · ${it.roundToInt()} m" } ?: "") +
+                                (parkedWhen?.let { " · ${dayAndTime(it)}" } ?: "")
+                        },
+                    ) {
+                        parked?.let { (lat, lon) ->
+                            pin.value = LatLng(lat, lon)
+                            mapRef.value?.let { m -> m.cameraPosition = CameraPosition.Builder().target(LatLng(lat, lon)).zoom(16.0).build() }
+                        }
                     }
                 }
                 // Back to BusPlanner's point also brings the default circle back, so it stays
@@ -341,16 +385,18 @@ private fun dayAndTime(at: LocalDateTime): String =
 
 /** A button that starts with the mark of the map dot it is about: blue (where the bus parked) or white (BusPlanner's point). */
 @Composable
-private fun DotButton(blue: Boolean, enabled: Boolean, text: String, onClick: () -> Unit) {
+private fun DotButton(blue: Boolean, enabled: Boolean, text: String, double: Boolean = false, onClick: () -> Unit) {
     OutlinedButton(enabled = enabled, onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Box(
-            Modifier
-                .size(if (blue) 12.dp else 10.dp)
-                .alpha(if (enabled) 1f else 0.45f)
-                .clip(CircleShape)
-                .background(if (blue) Color(0xFF1565C0) else Color.White)
-                .border(2.dp, if (blue) Color.White else Color(0xFF6D6D6D), CircleShape)
-        )
+        repeat(if (double) 2 else 1) {
+            Box(
+                Modifier
+                    .size(if (blue) 12.dp else 10.dp)
+                    .alpha(if (enabled) 1f else 0.45f)
+                    .clip(CircleShape)
+                    .background(if (blue) Color(0xFF1565C0) else Color.White)
+                    .border(2.dp, if (blue) Color.White else Color(0xFF6D6D6D), CircleShape)
+            )
+        }
         Spacer(Modifier.width(8.dp))
         Text(text, modifier = Modifier.weight(1f))
     }
