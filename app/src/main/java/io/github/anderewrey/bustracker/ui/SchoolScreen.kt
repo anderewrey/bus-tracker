@@ -61,7 +61,6 @@ import io.github.anderewrey.bustracker.Session
 import io.github.anderewrey.bustracker.data.AT_SCHOOL_M
 import io.github.anderewrey.bustracker.data.MAX_SCHOOL_RADIUS_M
 import io.github.anderewrey.bustracker.data.MIN_SCHOOL_RADIUS_M
-import io.github.anderewrey.bustracker.data.PositionSource
 import io.github.anderewrey.bustracker.data.SchoolFix
 import io.github.anderewrey.bustracker.data.Store
 import io.github.anderewrey.bustracker.data.circlePoints
@@ -243,12 +242,18 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
                     }) { Text(option) }
                 }
             }
+            // Where the pin on screen comes from (user, 2026-11-23), and whether it is saved yet.
+            val shown = pin.value
+            val saved = spot?.takeIf { it.known }
+            val unsaved = shown != null && (saved == null ||
+                distanceM(shown.latitude, shown.longitude, saved.lat!!, saved.lon!!) >= 1.0 || radius.roundToInt() != saved.radius.roundToInt())
             Text(
-                when (spot?.source) {
-                    PositionSource.CORRECTED -> "Position: corrected"
-                    PositionSource.BUSPLANNER -> "Position: BusPlanner's"
-                    else -> "Position unknown: \"Bus parked at the school\" is off for the runs going there."
-                },
+                when {
+                    shown == null -> "Position unknown: \"Bus parked at the school\" is off for the runs going there."
+                    busPlanner != null && distanceM(shown.latitude, shown.longitude, busPlanner.lat, busPlanner.lon) < HERE_M -> "Position: BusPlanner's point"
+                    parked != null && distanceM(shown.latitude, shown.longitude, parked.first, parked.second) < HERE_M -> "Position: bus parking"
+                    else -> "Position: placed by hand"
+                } + if (unsaved) " · not saved" else "",
                 style = MaterialTheme.typography.bodySmall,
             )
             if (going.isNotEmpty()) Text("Runs going there: ${going.joinToString { it.key }}", style = MaterialTheme.typography.bodySmall)
