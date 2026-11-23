@@ -250,8 +250,7 @@ class MonitorService : Service() {
     /**
      * Learns where the bus parks at the run's school, apart from the end rule (user, 2026-11-23):
      * within the school's circle or 100 m, whichever is larger, for every watched run going there,
-     * so the blue dot shows up even when the circle misses the spot. Once per period. A morning run
-     * learns where the bus parks on arrival, an afternoon run where it waits before leaving.
+     * so the blue dot shows up even when the circle misses the spot. Once per period.
      */
     private val learner = HashMap<String, SchoolArrival>()
     private val endWatchFor = HashMap<String, Pair<EndRule, String?>>()
@@ -363,7 +362,7 @@ class MonitorService : Service() {
         ringing.remove(run.key)
         delayMin.remove(run.key)
         setEndWatch(run)
-        learner[run.key] = SchoolArrival(runSchools(run).map { it.copy(radius = maxOf(it.radius, AT_SCHOOL_M)) }, needAway = false)
+        learner[run.key] = SchoolArrival(runSchools(run).map { it.copy(radius = maxOf(it.radius, AT_SCHOOL_M)) })
         firstCheck += run.key
         val zs = Session.zones.value
         AppLog.log(
@@ -626,7 +625,7 @@ class MonitorService : Service() {
         if (!l.add(lat, lon)) return
         val school = l.parkedAt
         val spot = l.parkedSpot
-        if (school != null && spot != null) Session.markParked(this, school.name, spot, pm = run.key.endsWith("PM"))
+        if (school != null && spot != null) Session.markParked(this, school.name, spot)
         learner.remove(run.key)
     }
 

@@ -468,11 +468,6 @@ object Session {
     val parked: StateFlow<Map<String, Pair<Double, Double>>> = _parked
     private val _parkedAt = MutableStateFlow<Map<String, LocalDateTime>>(emptyMap())
     val parkedAt: StateFlow<Map<String, LocalDateTime>> = _parkedAt
-    /** Where, and when, the bus was last seen waiting at each school on an afternoon run. */
-    private val _parkedPm = MutableStateFlow<Map<String, Pair<Double, Double>>>(emptyMap())
-    val parkedPm: StateFlow<Map<String, Pair<Double, Double>>> = _parkedPm
-    private val _parkedPmAt = MutableStateFlow<Map<String, LocalDateTime>>(emptyMap())
-    val parkedPmAt: StateFlow<Map<String, LocalDateTime>> = _parkedPmAt
 
     fun refreshSchools(context: Context) {
         val store = Store(context)
@@ -480,8 +475,6 @@ object Session {
         _schoolFixes.value = ss.fixes
         _parked.value = ss.parked
         _parkedAt.value = ss.parkedAt
-        _parkedPm.value = ss.parkedPm
-        _parkedPmAt.value = ss.parkedPmAt
         _schoolOptions.value = store.schoolOptions
         _schools.value = schoolSpots(store.runs.map { it.school }, store.schools, ss.fixes)
     }
@@ -523,25 +516,14 @@ object Session {
         AppLog.log("school $name: " + (found.school?.let { String.format(Locale.US, "%.6f,%.6f", it.lat, it.lon) } ?: "position not found"))
     }
 
-    /**
-     * The bus was seen parked here at the school; the School page can use it. [pm]: on an afternoon
-     * run, where it waits before leaving; otherwise where it parks on arrival.
-     */
-    fun markParked(context: Context, school: String, at: Pair<Double, Double>, pm: Boolean = false) {
+    /** The "parked at the school" rule saw the bus stop here; the School page can use it. */
+    fun markParked(context: Context, school: String, at: Pair<Double, Double>) {
         val ss = SchoolStore(context)
-        val now = LocalDateTime.now().withNano(0)
-        if (pm) {
-            ss.parkedPm = ss.parkedPm + (school to at)
-            ss.parkedPmAt = ss.parkedPmAt + (school to now)
-        } else {
-            ss.parked = ss.parked + (school to at)
-            ss.parkedAt = ss.parkedAt + (school to now)
-        }
+        ss.parked = ss.parked + (school to at)
+        ss.parkedAt = ss.parkedAt + (school to LocalDateTime.now().withNano(0))
         _parked.value = ss.parked
         _parkedAt.value = ss.parkedAt
-        _parkedPm.value = ss.parkedPm
-        _parkedPmAt.value = ss.parkedPmAt
-        AppLog.log(String.format(Locale.US, "school %s: bus %s at %.6f,%.6f", school, if (pm) "waiting (PM)" else "parked", at.first, at.second))
+        AppLog.log(String.format(Locale.US, "school %s: bus parked at %.6f,%.6f", school, at.first, at.second))
     }
 
     /** Whether the run's alarm already rang in today's monitoring period. */

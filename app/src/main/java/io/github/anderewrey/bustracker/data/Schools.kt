@@ -138,10 +138,7 @@ class SchoolStore(context: Context) {
             prefs.edit().putString("fixes", o.toString()).apply()
         }
 
-    /**
-     * Where the bus was last seen parked at each school, by school name: on a morning run, where it
-     * parks on arrival. The afternoon's spot, where it waits before leaving, is [parkedPm].
-     */
+    /** Where the "parked at the school" rule last saw the bus stop, by school name. */
     var parked: Map<String, Pair<Double, Double>>
         get() {
             val o = JSONObject(prefs.getString("parked", "{}"))
@@ -155,30 +152,6 @@ class SchoolStore(context: Context) {
             prefs.edit().putString("parked", o.toString()).apply()
         }
 
-    /** Where the bus was last seen waiting at each school on an afternoon run (learned from 2026-11-23). */
-    var parkedPm: Map<String, Pair<Double, Double>>
-        get() {
-            val o = JSONObject(prefs.getString("parkedPm", "{}"))
-            return o.keys().asSequence().mapNotNull { k ->
-                runCatching { o.getJSONObject(k).let { p -> k to (p.getDouble("lat") to p.getDouble("lon")) } }.getOrNull()
-            }.toMap()
-        }
-        set(value) {
-            val o = JSONObject()
-            value.forEach { (k, v) -> o.put(k, JSONObject().put("lat", v.first).put("lon", v.second)) }
-            prefs.edit().putString("parkedPm", o.toString()).apply()
-        }
-
-    /** When [parkedPm] was seen. */
-    var parkedPmAt: Map<String, LocalDateTime>
-        get() {
-            val o = JSONObject(prefs.getString("parkedPmAt", "{}"))
-            return o.keys().asSequence().mapNotNull { k -> runCatching { k to LocalDateTime.parse(o.getString(k)) }.getOrNull() }.toMap()
-        }
-        set(value) {
-            prefs.edit().putString("parkedPmAt", JSONObject(value.mapValues { it.value.toString() }).toString()).apply()
-        }
-
     /** When the bus was last seen parked at each school; absent for spots learned before 2026-11-23. */
     var parkedAt: Map<String, LocalDateTime>
         get() {
@@ -189,17 +162,3 @@ class SchoolStore(context: Context) {
             prefs.edit().putString("parkedAt", JSONObject(value.mapValues { it.value.toString() }).toString()).apply()
         }
 }
-
-/**
- * The circle that holds both places where the bus was seen parked at the school, the morning's and
- * the afternoon's (user, 2026-11-23; Artboard 1.7.3): centred between them, half their distance
- * plus [FIT_MARGIN_M], rounded up to 5 m, within the slider's range. Returns lat, lon and radius.
- */
-fun fitSpots(a: Pair<Double, Double>, b: Pair<Double, Double>): Triple<Double, Double, Double> {
-    val d = io.github.anderewrey.bustracker.monitor.distanceM(a.first, a.second, b.first, b.second)
-    val r = (kotlin.math.ceil((d / 2 + FIT_MARGIN_M) / 5) * 5).coerceIn(MIN_SCHOOL_RADIUS_M, MAX_SCHOOL_RADIUS_M)
-    return Triple((a.first + b.first) / 2, (a.second + b.second) / 2, r)
-}
-
-/** Room left around the two parking spots by [fitSpots]. */
-const val FIT_MARGIN_M = 20.0

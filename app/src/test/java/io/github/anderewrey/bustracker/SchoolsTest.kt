@@ -7,9 +7,6 @@ import io.github.anderewrey.bustracker.data.PositionSource
 import io.github.anderewrey.bustracker.data.SchoolFix
 import io.github.anderewrey.bustracker.data.SchoolMatch
 import io.github.anderewrey.bustracker.data.circlePoints
-import io.github.anderewrey.bustracker.data.fitSpots
-import io.github.anderewrey.bustracker.data.SchoolArrival
-import io.github.anderewrey.bustracker.data.SchoolSpot
 import io.github.anderewrey.bustracker.data.matchSchool
 import io.github.anderewrey.bustracker.data.plainName
 import io.github.anderewrey.bustracker.data.schoolSpots
@@ -19,32 +16,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SchoolsTest {
-    @Test
-    fun fitBothSpotsHoldsTheTwoWithRoomLeft() {
-        // Two made-up spots about 29 m apart: centred between them, 14.5 + 20 m rounded up to 5.
-        val am = 45.00000 to -63.00000
-        val pm = 45.00026 to -63.00000
-        val (lat, lon, r) = fitSpots(am, pm)
-        assertEquals(45.00013, lat, 1e-9)
-        assertEquals(-63.0, lon, 1e-9)
-        assertEquals(35.0, r, 0.0)
-        // The same spot twice: the smallest circle the slider allows is 25 m.
-        assertEquals(25.0, fitSpots(am, am).third, 0.0)
-    }
-
-    @Test
-    fun learningCountsABusAlreadyWaitingAtTheSchool() {
-        val school = SchoolSpot("Sample School", 45.0, -63.0, 100.0, PositionSource.BUSPLANNER)
-        // An afternoon run: the bus is parked at the school from the first reading.
-        val learner = SchoolArrival(listOf(school), needAway = false)
-        assertEquals(false, learner.add(45.0001, -63.0))
-        assertEquals(false, learner.add(45.0001, -63.0))
-        assertEquals(true, learner.add(45.0001, -63.0))
-        // The end rule still waits for the bus to have been away first.
-        val end = SchoolArrival(listOf(school))
-        repeat(3) { assertEquals(false, end.add(45.0001, -63.0)) }
-    }
-
     @Test
     fun namesIgnoreCaseAccentsAndSpaces() {
         assertEquals("ecole sample", plainName("  École   SAMPLE "))
