@@ -26,6 +26,8 @@ import io.github.anderewrey.bustracker.data.EndWatch
 import io.github.anderewrey.bustracker.data.Store
 import java.time.LocalDate
 import io.github.anderewrey.bustracker.data.periodOn
+import io.github.anderewrey.bustracker.data.SchoolArrival
+import io.github.anderewrey.bustracker.data.AT_SCHOOL_M
 import io.github.anderewrey.bustracker.data.alarmArmed
 import io.github.anderewrey.bustracker.data.headsUpZoneOf
 import io.github.anderewrey.bustracker.data.mainZoneOf
@@ -245,6 +247,12 @@ class MonitorService : Service() {
     private val ringing = HashMap<String, Long>()
     /** Each watched run's end-of-monitoring rule (DESIGN.md §5.1), and the rule and zone it was made for. */
     private val endWatch = HashMap<String, EndWatch>()
+    /**
+     * Learns where the bus parks at the run's school, apart from the end rule (user, 2026-11-23):
+     * within the school's circle or 100 m, whichever is larger, for every watched run going there,
+     * so the blue dot shows up even when the circle misses the spot. Once per period.
+     */
+    private val learner = HashMap<String, SchoolArrival>()
     private val endWatchFor = HashMap<String, Pair<EndRule, String?>>()
     /** Minutes a BusPlanner delay notice added to each watched run's period. */
     private val delayMin = HashMap<String, Int>()
@@ -354,6 +362,7 @@ class MonitorService : Service() {
         ringing.remove(run.key)
         delayMin.remove(run.key)
         setEndWatch(run)
+        learner[run.key] = SchoolArrival(runSchools(run).map { it.copy(radius = maxOf(it.radius, AT_SCHOOL_M)) })
         firstCheck += run.key
         val zs = Session.zones.value
         AppLog.log(
@@ -384,6 +393,7 @@ class MonitorService : Service() {
         periodStart.remove(key)
         endWatch.remove(key)
         endWatchFor.remove(key)
+        learner.remove(key)
         delayMin.remove(key)
         Session.setWatchEnd(key, null)
         // The notice stays on the run's card for the rest of the day (user, 2026-11-21).
@@ -462,6 +472,7 @@ class MonitorService : Service() {
                 // on. Counted again, it made "parked at the school" out of a moving bus.
                 if (key in until && !status.kept) checkHeadsUp(run, status)
                 if (key in until && !status.kept) checkZones(run, status)
+                if (key in until && !status.kept) learnParking(run, status)
                 if (key in until && !status.kept) checkEnd(run, status)
                 if (key in until) {
                     showStatus(run, status)
@@ -483,11 +494,14 @@ class MonitorService : Service() {
      * corrected position and circle first (DESIGN.md §5.3). A school with no known position
      * never ends it: only the period's end and the Alarm switch do.
      */
+    /** The run's own school; every known school only for a run saved before 0.9, until the next scan. */
+    private fun runSchools(run: Run) =
+        Session.schools.value.filter { run.school.isEmpty() || it.name.equals(run.school, ignoreCase = true) }
+
     private fun setEndWatch(run: Run) {
         val rule = run.endOfWatch
         val zone = Session.zones.value.firstOrNull { it.id == run.endZoneId }
-        // The run's own school; every known school only for a run saved before 0.9, until the next scan.
-        val schools = Session.schools.value.filter { run.school.isEmpty() || it.name.equals(run.school, ignoreCase = true) }
+        val schools = runSchools(run)
         endWatch[run.key] = EndWatch(rule, zone, schools)
         endWatchFor[run.key] = rule to run.endZoneId
         AppLog.log(
@@ -599,10 +613,20 @@ class MonitorService : Service() {
         val lon = r.busLon ?: return
         val watch = endWatch[run.key] ?: return
         val reason = watch.add(lat, lon) ?: return
-        val school = watch.school
-        val spot = school?.parkedSpot
-        if (school?.parkedAt != null && spot != null) Session.markParked(this, school.parkedAt!!.name, spot)
         stop(run.key, reason)
+    }
+
+    /** Where the bus parked at the school, for the School page's blue dot; it never ends watching. */
+    private fun learnParking(run: Run, status: RunStatus) {
+        val r = status.reading ?: return
+        val lat = r.busLat ?: return
+        val lon = r.busLon ?: return
+        val l = learner[run.key] ?: return
+        if (!l.add(lat, lon)) return
+        val school = l.parkedAt
+        val spot = l.parkedSpot
+        if (school != null && spot != null) Session.markParked(this, school.name, spot)
+        learner.remove(run.key)
     }
 
     /** The ids of the last answer from the alerts page, to log it only when it changes. */
