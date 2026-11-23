@@ -38,7 +38,7 @@ The order of the work. **What** each feature does and **how** is in [DESIGN.md](
 | — | 2026-11-22 | Run workflow also builds the promoted commit again, so the official app is named after its version ("0.18") (§8) |
 | — | 2026-11-22 | The official app says when a newer official version is out: "Bus Tracker 0.19 is out · Download ›" on the run list, checked once a day on GitHub (§8, Updates) |
 | — | 2026-11-22 | Heads-up zone: one per run, a sound once when the bus enters it; option "Alarm only after the heads-up"; dashed on the map (§6.1, Artboard 1.6) |
-| — | 2026-11-23 | Trip replays: the watching decisions moved into `Watcher`, a small made-up test map at Porters Lake, whole bus trips replayed in the unit tests (§8, Tests; Artboard 0.3 · Test map) |
+| — | 2026-11-23 | Trip replays: the watching decisions moved into `Watcher`, made-up bus trips replayed through it in the unit tests (§8, Tests) |
 
 0.12 and 0.13 were committed together on 2026-11-06. 0.13 (with 0.11 and 0.12 in it) passed its first real run on the phone on 2026-11-09: automatic start, live checks, the main-zone alarm, and recovery from a short network loss.
 

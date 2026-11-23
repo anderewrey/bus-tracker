@@ -1,28 +1,23 @@
 # SPDX-FileCopyrightText: 2026 anderewrey
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# B101's morning on the test map (test-map.json), one BusPlanner check every 30 s. Made up.
-# The bus comes from the east on Highway 7 and passes This Street (the corner of Home zone),
-# goes west through the heads-up zone, turns back about 1.2 km west, comes back east, turns
-# onto This Street, does the loop, stops, then goes west to Sample School and parks there.
-# check     gps       lat        lon         where
-07:20:00  07:19:45  44.740000  -63.301400  Highway 7, from the east
-07:20:30  07:20:10  44.738875  -63.305153  Highway 7, passing This Street [home]
-07:21:00  07:20:40  44.737431  -63.312200  Highway 7, going west [heads-up]
-07:21:30  07:21:15  44.739645  -63.318901  Highway 7, going west
-07:22:00  07:21:50  44.741151  -63.320302  turning back
-07:22:30  07:22:05  44.741151  -63.320302  turning back
-07:23:00  07:22:45  44.738804  -63.316811  Highway 7, coming back east
-07:23:30  07:23:20  44.737580  -63.310281  Highway 7, coming back east [heads-up]
-07:24:00  07:23:40  44.738371  -63.306985  Highway 7, coming back east
-07:24:30  07:24:15  44.738429  -63.305506  This Street [home]
-07:25:00  07:24:35  44.738686  -63.304302  That Street [home]
-07:25:30  07:25:10  44.737881  -63.305110  the stop [home]
-07:26:00  07:25:50  44.738640  -63.305650  This Street, back to Highway 7 [home]
-07:26:30  07:26:20  44.737402  -63.312033  Highway 7, going west [heads-up]
-07:27:00  07:26:40  44.740166  -63.320179  Highway 7, going west
-07:27:30  07:27:15  44.740880  -63.331590  Highway 7, in front of the school
-07:28:00  07:27:45  44.741220  -63.331500  parked at the school
-07:28:30  07:28:05  44.741250  -63.331470  parked at the school
-07:29:00  07:28:40  44.741205  -63.331515  parked at the school
-07:29:30  07:28:40  44.741205  -63.331515  parked at the school
+# B101's morning on test-map.json, one check every 30 s: time, latitude, longitude, where.
+07:20:00  44.740000  -63.301400  Highway 7, from the east
+07:20:30  44.738875  -63.305153  Highway 7, passing This Street (corner of Home zone)
+07:21:00  44.737431  -63.312200  Highway 7, going west (heads-up zone)
+07:21:30  44.739645  -63.318901  Highway 7, going west
+07:22:00  44.741151  -63.320302  turning back
+07:22:30  44.741151  -63.320302  turning back
+07:23:00  44.738804  -63.316811  Highway 7, coming back east
+07:23:30  44.737580  -63.310281  Highway 7, coming back east (heads-up zone)
+07:24:00  44.738371  -63.306985  Highway 7, coming back east
+07:24:30  44.738429  -63.305506  This Street (Home zone)
+07:25:00  44.738686  -63.304302  That Street
+07:25:30  44.737881  -63.305110  the stop
+07:26:00  44.738640  -63.305650  This Street, back to Highway 7
+07:26:30  44.737402  -63.312033  Highway 7, going west (heads-up zone)
+07:27:00  44.740166  -63.320179  Highway 7, going west
+07:27:30  44.740880  -63.331590  Highway 7, in front of the school
+07:28:00  44.741220  -63.331500  parked at the school
+07:28:30  44.741250  -63.331470  parked at the school
+07:29:00  44.741205  -63.331515  parked at the school

@@ -40,22 +40,16 @@ object TestMap {
     }
 }
 
-/**
- * One BusPlanner check of a trip: when the app checked, the bus's GPS time ("Latest Reported
- * Time", 0 to 60 s behind), where it was, and where that is in words.
- */
-data class Fix(val check: LocalTime, val gps: LocalTime, val lat: Double, val lon: Double, val where: String)
+/** One BusPlanner check of a trip: when the app checked, where the bus was, and where that is in words. */
+data class Fix(val check: LocalTime, val lat: Double, val lon: Double, val where: String)
 
 private val HMS = DateTimeFormatter.ofPattern("HH:mm:ss")
 
-/**
- * A trip file (`*.trip`): one check per line, `check gps lat lon where`; `#` starts a comment.
- * A `[zone]` at the end of a line is only a note for the reader.
- */
+/** A trip file (`*.trip`): one check per line, `time lat lon where`; `#` starts a comment. */
 fun loadTrip(name: String): List<Fix> = resource(name).lines()
     .map { it.substringBefore('#').trim() }
     .filter { it.isNotEmpty() }
     .map { line ->
-        val f = line.split(Regex("\\s+"), limit = 5)
-        Fix(LocalTime.parse(f[0], HMS), LocalTime.parse(f[1], HMS), f[2].toDouble(), f[3].toDouble(), f.getOrElse(4) { "" }.substringBefore(" [").trim())
+        val f = line.split(Regex("\\s+"), limit = 4)
+        Fix(LocalTime.parse(f[0], HMS), f[1].toDouble(), f[2].toDouble(), f.getOrElse(3) { "" })
     }

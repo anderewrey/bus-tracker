@@ -1,19 +1,11 @@
 {
-  "note": "Made up, for the trip replays (DESIGN.md §8, Tests): the stop, the zones and Sample School, placed around This Street at Porters Lake, Nova Scotia. Highway 7 runs west-east just north of This Street.",
-  "stop": {"name": "This Street & The Other Street", "address": "123 This Street", "lat": 44.737881, "lon": -63.30511},
+  "note": "Made up, for the trip replays (DESIGN.md §8, Tests).",
+  "stop": {"address": "123 This Street", "lat": 44.737881, "lon": -63.30511},
   "zones": [
-    {
-      "id": "home",
-      "name": "Home zone",
-      "role": "MAIN",
-      "corners": [[44.7393, -63.3065], [44.73925, -63.3052], [44.73885, -63.3044], [44.7392, -63.30285], [44.73655, -63.30285], [44.73655, -63.3065]]
-    },
-    {
-      "id": "hwy7",
-      "name": "Highway 7 west",
-      "role": "HEADS_UP",
-      "corners": [[44.7383, -63.3094], [44.738, -63.3105], [44.7379, -63.3117], [44.7383, -63.3135], [44.7388, -63.315], [44.7377, -63.3152], [44.7372, -63.3135], [44.7368, -63.3117], [44.737, -63.3105], [44.7372, -63.3094]]
-    }
+    {"id": "home", "name": "Home zone", "role": "MAIN",
+     "corners": [[44.7393, -63.3065], [44.73925, -63.3052], [44.73885, -63.3044], [44.7392, -63.30285], [44.73655, -63.30285], [44.73655, -63.3065]]},
+    {"id": "hwy7", "name": "Highway 7 west", "role": "HEADS_UP",
+     "corners": [[44.7383, -63.3094], [44.738, -63.3105], [44.7379, -63.3117], [44.7383, -63.3135], [44.7388, -63.315], [44.7377, -63.3152], [44.7372, -63.3135], [44.7368, -63.3117], [44.737, -63.3105], [44.7372, -63.3094]]}
   ],
   "schools": [{"name": "Sample School", "lat": 44.7414, "lon": -63.33175, "radius": 100.0}]
 }

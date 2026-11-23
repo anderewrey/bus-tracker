@@ -14,7 +14,6 @@ import io.github.anderewrey.bustracker.net.Reading
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 /** A school morning: Monday 2026-11-23. */
 val DAY: LocalDate = LocalDate.of(2026, 11, 23)
@@ -69,13 +68,11 @@ class Scenario(
 )
 
 private val HMS = DateTimeFormatter.ofPattern("HH:mm:ss")
-private val BUSPLANNER_CLOCK = DateTimeFormatter.ofPattern("h:mm:ss a", Locale.US)
 
-/** The page's answer to a check: the bus at [fix], its "updated" time 40 s behind the clock (DESIGN.md §2.2). */
+/** The page's answer to a check: the bus at [fix]. Times aren't used by the decisions. */
 fun reading(fix: Fix) = Reading(
     busLat = fix.lat, busLon = fix.lon, stopLat = TestMap.stop.first, stopLon = TestMap.stop.second,
-    runLabel = "B101 AM Pickup", updated = fix.check.minusSeconds(40).format(BUSPLANNER_CLOCK),
-    reported = fix.gps.format(BUSPLANNER_CLOCK), bulletin = null,
+    runLabel = "B101 AM Pickup", updated = null, reported = null, bulletin = null,
 )
 
 /**

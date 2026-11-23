@@ -65,14 +65,6 @@
       "w": 1000,
       "x": 0,
       "y": 9010
-    },
-    "TestMap.dc.html": {
-      "h": 1030,
-      "page": "nav",
-      "title": "Artboard 0.3 · Test map",
-      "w": 1264,
-      "x": 0,
-      "y": 2120
     }
   },
   "createdOnFiles": {
@@ -87,7 +79,6 @@
   "order": [
     "Navigation.dc.html",
     "Notifications.dc.html",
-    "TestMap.dc.html",
     "Main.dc.html",
     "AlarmSwitch.dc.html",
     "AutoStart.dc.html",
