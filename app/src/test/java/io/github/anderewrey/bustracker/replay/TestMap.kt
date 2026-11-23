@@ -6,7 +6,6 @@ package io.github.anderewrey.bustracker.replay
 import io.github.anderewrey.bustracker.data.PositionSource
 import io.github.anderewrey.bustracker.data.SchoolSpot
 import io.github.anderewrey.bustracker.data.Zone
-import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -16,25 +15,12 @@ internal fun resource(name: String): String =
     requireNotNull(TestMap::class.java.getResourceAsStream("/replay/$name")) { "no test resource replay/$name" }
         .bufferedReader().use { it.readText() }
 
-private fun JSONArray.latLon(i: Int): Pair<Double, Double> = getJSONArray(i).let { it.getDouble(0) to it.getDouble(1) }
-
 /**
- * The test map (`porters-lake.json`, DESIGN.md §8): real streets at Porters Lake, Nova Scotia
- * (© OpenStreetMap contributors, ODbL), with a made-up stop, zones and school.
+ * The test map (`test-map.json`, DESIGN.md §8, Tests): a made-up stop, zones and school around
+ * This Street at Porters Lake, Nova Scotia.
  */
 object TestMap {
-    private val json = JSONObject(resource("porters-lake.json"))
-
-    val attribution: String = json.getString("attribution")
-
-    /** Each street's line, in the order of its points. */
-    val streets: Map<String, List<Pair<Double, Double>>> = json.getJSONArray("streets").let { a ->
-        (0 until a.length()).associate { i ->
-            val s = a.getJSONObject(i)
-            val p = s.getJSONArray("points")
-            s.getString("name") to (0 until p.length()).map { p.latLon(it) }
-        }
-    }
+    private val json = JSONObject(resource("test-map.json"))
 
     /** The stop at This Street & The Other Street. */
     val stop: Pair<Double, Double> = json.getJSONObject("stop").let { it.getDouble("lat") to it.getDouble("lon") }

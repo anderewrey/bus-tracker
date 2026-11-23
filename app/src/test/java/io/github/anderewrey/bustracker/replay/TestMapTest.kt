@@ -14,14 +14,6 @@ class TestMapTest {
     private val morning = loadTrip("morning.trip")
 
     @Test
-    fun theMapSaysWhereItsStreetsComeFrom() {
-        assertTrue(TestMap.attribution.contains("© OpenStreetMap contributors (ODbL)"))
-        for (name in listOf("Highway 7", "This Street", "That Street", "The Other Street")) {
-            assertTrue(name, TestMap.streets.getValue(name).size >= 2)
-        }
-    }
-
-    @Test
     fun theZonesAreWhereTheSetupSays() {
         assertEquals(ZoneRole.MAIN, TestMap.home.role)
         assertEquals(ZoneRole.HEADS_UP, TestMap.headsUp.role)
