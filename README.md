@@ -66,6 +66,9 @@ it; turn it on once in your clone:
 git config core.hooksPath .githooks
 ```
 
+The unit tests include trip replays: whole bus trips on a test map of real streets
+(OpenStreetMap), run through the app's watching logic. To add one, see DESIGN.md §8, Tests.
+
 GitHub Actions runs the same header check, the unit tests and the debug build on every push,
 and keeps the APKs on the run's page. Each push to `main` also publishes the official app's
 release build as a pre-release under [Releases](https://github.com/anderewrey/bus-tracker/releases);

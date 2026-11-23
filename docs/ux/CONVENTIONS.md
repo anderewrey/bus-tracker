@@ -25,8 +25,8 @@ changing a flow, an artboard or the navigation page.
   Inside a scenario's screens, example content ("Mon–Fri", "Off until Tue Nov 24") is fine.
 - **The app's words**: "watching" (never "monitoring" or "tracking" on screen), Stop watching,
   Test alarm, Reload from BusPlanner, Watching days (DESIGN.md §8, Words and labels on screen).
-- **Fake data only**: B101, 123 This Street, This Street, That Street, Home zone. Never a real
-  child, school, stop, street or route from the logs.
+- **Fake data only**: B101, 123 This Street, This Street, That Street, The Other Street, Home zone,
+  Sample School. Never a real child, school, stop, street or route from the logs.
 
 ## Scenarios
 
@@ -40,7 +40,8 @@ changing a flow, an artboard or the navigation page.
 ## Reference page (Page 0)
 
 What the app has, as opposed to Page 1 · Flows, what happens over time: the views and how to move
-between them (0.1), the notifications (0.2).
+between them (0.1), the notifications (0.2), and the test map the trip replays run on (0.3,
+DESIGN.md §8), which is a map, not a screen.
 
 ### Navigation (0.1)
 
