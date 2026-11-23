@@ -132,7 +132,8 @@ fun noticeAlert(context: Context, key: String, alert: BusAlert): Notification {
 
 /**
  * The heads-up zone's notification (DESIGN.md §6.1): sounds once (not insistent), on its own
- * channel; opening it opens the run's map. It stays until swiped away.
+ * channel; opening it opens the run's map. It goes away when the main zone's alarm rings, or when
+ * watching ends.
  */
 fun headsUpAlert(context: Context, key: String, title: String, text: String): Notification {
     val id = headsUpId(key)
@@ -404,6 +405,8 @@ class MonitorService : Service() {
             }
         }
         if (!keepAlarm) getSystemService(NotificationManager::class.java).cancel(runNotificationId(key))
+        // The heads-up is only about this trip: it goes away with it, whatever ended watching.
+        getSystemService(NotificationManager::class.java).cancel(headsUpId(key))
         if (until.isEmpty()) {
             loop?.cancel()
             releaseWakeLock()
@@ -542,6 +545,8 @@ class MonitorService : Service() {
             }
             Session.markRang(this, run.key)
             AppLog.log("${run.key}: bus entered main zone ${main.name}, ringing")
+            // The alarm takes over from the heads-up: it goes away (user, 2026-11-23: it stayed in the list).
+            getSystemService(NotificationManager::class.java).cancel(headsUpId(run.key))
             val bus = r.runLabel?.substringBefore(' ') ?: run.bus
             // In place of the tracking notification: one notification per run, not two.
             ringing[run.key] = SystemClock.elapsedRealtime()
