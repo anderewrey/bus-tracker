@@ -21,11 +21,11 @@ import org.junit.Test
 class SchoolsTest {
     @Test
     fun fitBothSpotsHoldsTheTwoWithRoomLeft() {
-        // Two made-up spots about 30 m apart: centred between them, 15 + 20 m rounded up to 5.
+        // Two made-up spots about 29 m apart: centred between them, 14.5 + 20 m rounded up to 5.
         val am = 45.00000 to -63.00000
-        val pm = 45.00027 to -63.00000
+        val pm = 45.00026 to -63.00000
         val (lat, lon, r) = fitSpots(am, pm)
-        assertEquals(45.000135, lat, 1e-9)
+        assertEquals(45.00013, lat, 1e-9)
         assertEquals(-63.0, lon, 1e-9)
         assertEquals(35.0, r, 0.0)
         // The same spot twice: the smallest circle the slider allows is 25 m.
