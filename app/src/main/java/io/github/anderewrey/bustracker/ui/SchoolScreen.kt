@@ -25,11 +25,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.draw.alpha
-import io.github.anderewrey.bustracker.data.clock
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.format.TextStyle
-import java.util.Locale
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -73,6 +68,16 @@ import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.CircleLayer
+import io.github.anderewrey.bustracker.data.fitSpots
+import org.maplibre.android.style.layers.PropertyFactory.textOffset
+import org.maplibre.android.style.layers.PropertyFactory.textHaloWidth
+import org.maplibre.android.style.layers.PropertyFactory.textHaloColor
+import org.maplibre.android.style.layers.PropertyFactory.textColor
+import org.maplibre.android.style.layers.PropertyFactory.textSize
+import org.maplibre.android.style.layers.PropertyFactory.textFont
+import org.maplibre.android.style.layers.PropertyFactory.textField
+import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.PropertyFactory.circleColor
@@ -110,8 +115,11 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
     val runs by Session.runs.collectAsState()
     val spot = spots.firstOrNull { it.name == name }
     val busPlanner = remember(spots) { Store(context).schools.firstOrNull { it.name.equals(name, ignoreCase = true) } }
-    val parked = parkedAll[name]
-    val parkedAtAll by Session.parkedAt.collectAsState()
+    val parkedPmAll by Session.parkedPm.collectAsState()
+    // Where the bus parks on arrival (AM) and waits before leaving (PM), and the circle they suggest.
+    val parkedAm = parkedAll[name]
+    val parkedPm = parkedPmAll[name]
+    val suggestion = listOfNotNull(parkedAm, parkedPm).takeIf { it.isNotEmpty() }?.let { fitSpots(it.first(), it.last()) }
     val options = optionsAll[name].orEmpty()
     val going = runs.filter { it.school.equals(name, ignoreCase = true) }
 
@@ -153,10 +161,20 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
                             circleRadius(5f), circleColor("#FFFFFF"), circleStrokeColor("#6D6D6D"), circleStrokeWidth(2f),
                         )
                     )
-                    s.addSource(GeoJsonSource("parked", parked?.let { FeatureCollection.fromFeature(Feature.fromGeometry(Point.fromLngLat(it.second, it.first))) }))
+                    // Morning and afternoon spots, each labelled, so the two can be told apart.
+                    val spotsShown = listOfNotNull(parkedAm?.let { it to "AM" }, parkedPm?.let { it to "PM" }).map { (at, label) ->
+                        Feature.fromGeometry(Point.fromLngLat(at.second, at.first)).also { it.addStringProperty("label", label) }
+                    }
+                    s.addSource(GeoJsonSource("parked", FeatureCollection.fromFeatures(spotsShown)))
                     s.addLayer(
                         CircleLayer("parked-dot", "parked").withProperties(
                             circleRadius(6f), circleColor("#1565C0"), circleStrokeColor("#FFFFFF"), circleStrokeWidth(2f),
+                        )
+                    )
+                    s.addLayer(
+                        SymbolLayer("parked-label", "parked").withProperties(
+                            textField(Expression.get("label")), textFont(arrayOf("Noto Sans Regular")), textSize(11f),
+                            textColor("#1565C0"), textHaloColor("#FFFFFF"), textHaloWidth(1.5f), textOffset(arrayOf(0f, 1.3f)),
                         )
                     )
                     style.value = s
@@ -251,7 +269,9 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
                 when {
                     shown == null -> "Position unknown: \"Bus parked at the school\" is off for the runs going there."
                     busPlanner != null && distanceM(shown.latitude, shown.longitude, busPlanner.lat, busPlanner.lon) < HERE_M -> "Position: BusPlanner's point"
-                    parked != null && distanceM(shown.latitude, shown.longitude, parked.first, parked.second) < HERE_M -> "Position: bus parking"
+                    suggestion != null && distanceM(shown.latitude, shown.longitude, suggestion.first, suggestion.second) < HERE_M &&
+                        radius.roundToInt() == suggestion.third.roundToInt() -> "Position: suggested"
+                    listOfNotNull(parkedAm, parkedPm).any { distanceM(shown.latitude, shown.longitude, it.first, it.second) < HERE_M } -> "Position: bus parking"
                     else -> "Position: placed by hand"
                 } + if (unsaved) " · not saved" else "",
                 style = MaterialTheme.typography.bodySmall,
@@ -266,23 +286,25 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
             // Each dot on the map has the button that uses it, with the same mark (user, 2026-11-23;
             // Artboard 1.7): no legend needed. A button about the pin's own place says "here" and rests.
             val p = pin.value
-            val parkedM = if (p != null && parked != null) distanceM(p.latitude, p.longitude, parked.first, parked.second) else null
             val busPlannerM = if (p != null && busPlanner != null) distanceM(p.latitude, p.longitude, busPlanner.lat, busPlanner.lon) else null
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                val parkedHere = parkedM != null && parkedM < HERE_M
+                // One button: a circle suggested from where the bus was seen parked (user, 2026-11-23;
+                // Artboard 1.7): centred between the morning and afternoon spots, or on the one known.
+                val suggestedR = suggestion?.third?.roundToInt()
+                val suggestedHere = suggestion != null && p != null &&
+                    distanceM(p.latitude, p.longitude, suggestion.first, suggestion.second) < HERE_M && radius.roundToInt() == suggestedR
                 DotButton(
                     blue = true,
-                    enabled = parked != null && !parkedHere,
+                    enabled = suggestion != null && !suggestedHere,
                     text = when {
-                        parked == null -> "Where the bus parks: learned when a run ends here"
-                        parkedHere -> "Where the bus parked · here"
-                        else -> "Use where the bus parked" +
-                            (parkedM?.let { " · ${it.roundToInt()} m" } ?: "") +
-                            (parkedAtAll[name]?.let { " · ${dayAndTime(it)}" } ?: "")
+                        suggestion == null -> "Circle suggestion: after the next runs"
+                        suggestedHere -> "Suggested circle · here"
+                        else -> "Suggest a circle · $suggestedR m"
                     },
                 ) {
-                    parked?.let { (lat, lon) ->
+                    suggestion?.let { (lat, lon, r) ->
                         pin.value = LatLng(lat, lon)
+                        radius = r.toFloat()
                         mapRef.value?.let { m -> m.cameraPosition = CameraPosition.Builder().target(LatLng(lat, lon)).zoom(16.0).build() }
                     }
                 }
@@ -334,10 +356,6 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
 
 /** Within this distance, a dot is where the pin already is. */
 private const val HERE_M = 3.0
-
-/** "today 7:57 AM", or "Mon 7:57 AM" for another day. */
-private fun dayAndTime(at: LocalDateTime): String =
-    (if (at.toLocalDate() == LocalDate.now()) "today" else at.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.ENGLISH)) + " " + clock(at)
 
 /** A button that starts with the mark of the map dot it is about: blue (where the bus parked) or white (BusPlanner's point). */
 @Composable
