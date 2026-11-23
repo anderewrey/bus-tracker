@@ -463,12 +463,15 @@ object Session {
     /** Where the bus was last seen parked at each school. */
     private val _parked = MutableStateFlow<Map<String, Pair<Double, Double>>>(emptyMap())
     val parked: StateFlow<Map<String, Pair<Double, Double>>> = _parked
+    private val _parkedAt = MutableStateFlow<Map<String, LocalDateTime>>(emptyMap())
+    val parkedAt: StateFlow<Map<String, LocalDateTime>> = _parkedAt
 
     fun refreshSchools(context: Context) {
         val store = Store(context)
         val ss = SchoolStore(context)
         _schoolFixes.value = ss.fixes
         _parked.value = ss.parked
+        _parkedAt.value = ss.parkedAt
         _schoolOptions.value = store.schoolOptions
         _schools.value = schoolSpots(store.runs.map { it.school }, store.schools, ss.fixes)
     }
@@ -514,7 +517,9 @@ object Session {
     fun markParked(context: Context, school: String, at: Pair<Double, Double>) {
         val ss = SchoolStore(context)
         ss.parked = ss.parked + (school to at)
+        ss.parkedAt = ss.parkedAt + (school to LocalDateTime.now().withNano(0))
         _parked.value = ss.parked
+        _parkedAt.value = ss.parkedAt
         AppLog.log(String.format(Locale.US, "school %s: bus parked at %.6f,%.6f", school, at.first, at.second))
     }
 

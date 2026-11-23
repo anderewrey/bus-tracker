@@ -427,7 +427,7 @@ Anything waiting for an answer (a stop change, a school to choose) shows in red 
 - **Move:** drag the pin to where the bus really parks, in case BusPlanner's point is wrong or far from the bus loop (on 2026-11-05 the parked bus was 83 m from it).
 - **Resize:** make the circle bigger or smaller (e.g. a slider from 25 m to 300 m, default 100 m), with the radius shown in metres while it changes. The size is part of the school's correction.
 - **Use where the bus parked:** puts the pin where the "parked at the school" rule last saw the bus stop.
-- **Reset to BusPlanner's position** (and the default 100 m size).
+- **Back to BusPlanner's point** (and the default 100 m size); "Reset" until 2026-11-23.
 - The correction belongs to the school, so every run going there uses it. Rescans never overwrite it. If BusPlanner's own point changes later, the Changes screen says so and the corrected position is kept.
 
 **Finding the school on BusPlanner** (the name on the child's school stop, looked up in the SchoolInfo dropdown, §3.1):
@@ -441,6 +441,11 @@ Anything waiting for an answer (a stop change, a school to choose) shows in red 
 - **Zones from the overview** (2026-11-18): a zone line opens the zone screen (§6.2) on that zone; Save changes it for every run using it (there is no "this run only" here: that stays on the run's page). **Draw new zone** opens the zone screen on the first run's stop; the new zone becomes the main zone of every run without one whose stop is inside it (the page says which), else it waits to be chosen on a run's page.
 - At the top, in red: stop changes waiting (to the Changes screen) and schools to choose among several (to the School page).
 - **School page:** the map with the school's pin (green, draggable; a tap on the map moves it there, which also places a school with no position), its circle, BusPlanner's own point (white dot) and where the bus last parked (blue dot). A slider sets the circle from 25 m to 300 m by 5 m. **Use where the bus parked**, **Reset** (BusPlanner's position, 100 m) and **Save**; nothing changes until Save. A pin left on BusPlanner's point saves only the circle.
+  - **Each dot has its button** (user, 2026-11-23; Artboard 1.7 · School page), so no legend is needed: each button starts with the mark of the dot it is about, and says how far it is from the pin.
+    - Blue: "Use where the bus parked · 20 m · Mon 7:57 AM" (the time is kept from 2026-11-23 on). Before any run ended at the school, it rests and says "Where the bus parks: learned when a run ends here". On the pin, it says "Where the bus parked · here".
+    - White: "Back to BusPlanner's point · 117 m", which replaces "Reset" and still applies at once, with the 100 m circle. On the pin with no correction, it says "BusPlanner's point · here". Without a BusPlanner point, it says "BusPlanner's point: unknown".
+    - The Position line no longer says "(white dot)" or the distance: the white button does. The help line under the buttons is gone: the blue button says it.
+  - The learned spot only feeds this page. It is learned only when a run ends by "Bus parked at the school", so a BusPlanner point farther than the circle from where the buses park must be corrected first, or nothing is ever learned.
 - **Where the bus parked:** each time the "parked at the school" rule ends a run, the middle of the readings at the spot is kept for that school, apart from the login.
 - Corrections are kept apart from the login (logging out keeps them), by the school's name. A rescan never changes them; when BusPlanner's own point of a corrected school moves more than 30 m, the Log says so (not the Changes screen, not built).
 - **Finding the school:** the name on the stop is looked up in the SchoolInfo list ignoring case, accents and extra spaces. A school chosen before comes first, then one exact name, then the only name containing it (or contained in it). Several: no guess, the school's position stays unknown and its School page lists them; a choice fetches its position at once and is remembered for the next rescans. A lookup that fails (network) keeps the position from the last scan.

@@ -22,6 +22,14 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.alpha
+import io.github.anderewrey.bustracker.data.clock
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.TextStyle
+import java.util.Locale
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -104,6 +112,7 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
     val spot = spots.firstOrNull { it.name == name }
     val busPlanner = remember(spots) { Store(context).schools.firstOrNull { it.name.equals(name, ignoreCase = true) } }
     val parked = parkedAll[name]
+    val parkedAtAll by Session.parkedAt.collectAsState()
     val options = optionsAll[name].orEmpty()
     val going = runs.filter { it.school.equals(name, ignoreCase = true) }
 
@@ -236,9 +245,7 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
             }
             Text(
                 when (spot?.source) {
-                    PositionSource.CORRECTED -> "Position: corrected" + (busPlanner?.let { b ->
-                        pin.value?.let { " · ${distanceM(it.latitude, it.longitude, b.lat, b.lon).toInt()} m from BusPlanner's point (white dot)" }
-                    } ?: "")
+                    PositionSource.CORRECTED -> "Position: corrected"
                     PositionSource.BUSPLANNER -> "Position: BusPlanner's"
                     else -> "Position unknown: \"Bus parked at the school\" is off for the runs going there."
                 },
@@ -251,21 +258,48 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
                 onValueChange = { radius = (it / 5f).roundToInt() * 5f },
                 valueRange = MIN_SCHOOL_RADIUS_M.toFloat()..MAX_SCHOOL_RADIUS_M.toFloat(),
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(enabled = parked != null, onClick = {
+            // Each dot on the map has the button that uses it, with the same mark (user, 2026-11-23;
+            // Artboard 1.7): no legend needed. A button about the pin's own place says "here" and rests.
+            val p = pin.value
+            val parkedM = if (p != null && parked != null) distanceM(p.latitude, p.longitude, parked.first, parked.second) else null
+            val busPlannerM = if (p != null && busPlanner != null) distanceM(p.latitude, p.longitude, busPlanner.lat, busPlanner.lon) else null
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                val parkedHere = parkedM != null && parkedM < HERE_M
+                DotButton(
+                    blue = true,
+                    enabled = parked != null && !parkedHere,
+                    text = when {
+                        parked == null -> "Where the bus parks: learned when a run ends here"
+                        parkedHere -> "Where the bus parked · here"
+                        else -> "Use where the bus parked" +
+                            (parkedM?.let { " · ${it.roundToInt()} m" } ?: "") +
+                            (parkedAtAll[name]?.let { " · ${dayAndTime(it)}" } ?: "")
+                    },
+                ) {
                     parked?.let { (lat, lon) ->
                         pin.value = LatLng(lat, lon)
                         mapRef.value?.let { m -> m.cameraPosition = CameraPosition.Builder().target(LatLng(lat, lon)).zoom(16.0).build() }
                     }
-                }) { Text("Use where the bus parked") }
-                OutlinedButton(enabled = busPlanner != null || fixes[name] != null, onClick = {
+                }
+                // Back to BusPlanner's point also brings the default circle back, so it stays
+                // useful at the point itself while a corrected circle is kept.
+                val busPlannerHere = busPlannerM != null && busPlannerM < HERE_M
+                DotButton(
+                    blue = false,
+                    enabled = busPlanner != null && (!busPlannerHere || fixes[name] != null),
+                    text = when {
+                        busPlanner == null -> "BusPlanner's point: unknown"
+                        busPlannerHere && fixes[name] == null -> "BusPlanner's point · here"
+                        busPlannerHere -> "Back to BusPlanner's point"
+                        else -> "Back to BusPlanner's point" + (busPlannerM?.let { " · ${it.roundToInt()} m" } ?: "")
+                    },
+                ) {
                     Session.resetSchool(context, name)
                     pin.value = busPlanner?.let { LatLng(it.lat, it.lon) }
                     radius = AT_SCHOOL_M.toFloat()
-                    message = "Back to BusPlanner's position"
-                }) { Text("Reset") }
+                    message = "Back to BusPlanner's point"
+                }
             }
-            if (parked == null) Text("The blue dot shows where the bus parked, once a run has ended at the school.", style = MaterialTheme.typography.bodySmall)
             Button(enabled = pin.value != null, onClick = {
                 val p = pin.value ?: return@Button
                 // At BusPlanner's own point (within 1 m): no correction of the position, only the circle.
@@ -281,5 +315,29 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
             }) { Text("Save") }
             message?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }
         }
+    }
+}
+
+/** Within this distance, a dot is where the pin already is. */
+private const val HERE_M = 3.0
+
+/** "today 7:57 AM", or "Mon 7:57 AM" for another day. */
+private fun dayAndTime(at: LocalDateTime): String =
+    (if (at.toLocalDate() == LocalDate.now()) "today" else at.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.ENGLISH)) + " " + clock(at)
+
+/** A button that starts with the mark of the map dot it is about: blue (where the bus parked) or white (BusPlanner's point). */
+@Composable
+private fun DotButton(blue: Boolean, enabled: Boolean, text: String, onClick: () -> Unit) {
+    OutlinedButton(enabled = enabled, onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Box(
+            Modifier
+                .size(if (blue) 12.dp else 10.dp)
+                .alpha(if (enabled) 1f else 0.45f)
+                .clip(CircleShape)
+                .background(if (blue) Color(0xFF1565C0) else Color.White)
+                .border(2.dp, if (blue) Color.White else Color(0xFF6D6D6D), CircleShape)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(text, modifier = Modifier.weight(1f))
     }
 }

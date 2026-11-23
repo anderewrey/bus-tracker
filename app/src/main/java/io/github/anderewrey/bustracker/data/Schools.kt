@@ -6,6 +6,7 @@ package io.github.anderewrey.bustracker.data
 import android.content.Context
 import io.github.anderewrey.bustracker.net.School
 import org.json.JSONObject
+import java.time.LocalDateTime
 import java.text.Normalizer
 import java.util.Locale
 
@@ -149,5 +150,15 @@ class SchoolStore(context: Context) {
             val o = JSONObject()
             value.forEach { (k, v) -> o.put(k, JSONObject().put("lat", v.first).put("lon", v.second)) }
             prefs.edit().putString("parked", o.toString()).apply()
+        }
+
+    /** When the bus was last seen parked at each school; absent for spots learned before 2026-11-23. */
+    var parkedAt: Map<String, LocalDateTime>
+        get() {
+            val o = JSONObject(prefs.getString("parkedAt", "{}"))
+            return o.keys().asSequence().mapNotNull { k -> runCatching { k to LocalDateTime.parse(o.getString(k)) }.getOrNull() }.toMap()
+        }
+        set(value) {
+            prefs.edit().putString("parkedAt", JSONObject(value.mapValues { it.value.toString() }).toString()).apply()
         }
 }
