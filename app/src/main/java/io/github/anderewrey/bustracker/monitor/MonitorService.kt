@@ -21,14 +21,9 @@ import io.github.anderewrey.bustracker.Session
 import io.github.anderewrey.bustracker.data.AppSettings
 import io.github.anderewrey.bustracker.data.Run
 import io.github.anderewrey.bustracker.data.RunChange
-import io.github.anderewrey.bustracker.data.EndRule
-import io.github.anderewrey.bustracker.data.EndWatch
 import io.github.anderewrey.bustracker.data.Store
 import java.time.LocalDate
 import io.github.anderewrey.bustracker.data.periodOn
-import io.github.anderewrey.bustracker.data.alarmArmed
-import io.github.anderewrey.bustracker.data.headsUpZoneOf
-import io.github.anderewrey.bustracker.data.mainZoneOf
 import io.github.anderewrey.bustracker.net.BusAlert
 import io.github.anderewrey.bustracker.net.LoginFailed
 import io.github.anderewrey.bustracker.net.alertsFor
@@ -222,19 +217,22 @@ private fun notifyChanges(context: Context, found: List<RunChange>) {
     AppLog.log("schedule change notification posted")
 }
 
+/** The run's heads-up and alarm marks, kept by Session for the day. */
+private class SessionMarks(private val context: Context, private val key: String) : PeriodMarks {
+    override val rang get() = Session.hasRung(key)
+    override val headsUp get() = Session.hasHeadsUp(key)
+    override fun markRang() = Session.markRang(context, key)
+    override fun markHeadsUp() = Session.markHeadsUp(context, key)
+}
+
 /** Polls BusPlanner for the monitored runs and keeps one notification per run. */
 class MonitorService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private val until = LinkedHashMap<String, LocalDateTime>()
-    /** The start of the period each watched run is in, to mark it ended when watching ends by itself. */
-    private val periodStart = HashMap<String, LocalDateTime>()
+    /** Each watched run's decisions for its period (Watcher.kt): zones, end of watching, the period's end. */
+    private val watchers = LinkedHashMap<String, Watcher>()
     private var wakeLock: PowerManager.WakeLock? = null
     private var loop: Job? = null
     private var foregroundKey: String? = null
-    private val inMainZone = HashMap<String, Boolean>()
-    private val inHeadsUpZone = HashMap<String, Boolean>()
-    /** Runs whose "bus in the main zone before the heads-up" was logged this period. */
-    private val blockedLogged = HashSet<String>()
     /**
      * Runs whose notification is the main-zone alarm, with when it rang (elapsedRealtime). The
      * checks don't update it (that would stop the sound) for [RING_MS]; then it goes back to the
@@ -242,11 +240,6 @@ class MonitorService : Service() {
      * or by pulling the shade down (seen 2026-11-18).
      */
     private val ringing = HashMap<String, Long>()
-    /** Each watched run's end-of-monitoring rule (DESIGN.md §5.1), and the rule and zone it was made for. */
-    private val endWatch = HashMap<String, EndWatch>()
-    private val endWatchFor = HashMap<String, Pair<EndRule, String?>>()
-    /** Minutes a BusPlanner delay notice added to each watched run's period. */
-    private val delayMin = HashMap<String, Int>()
     /** Runs just started: their first check tells whether BusPlanner has a vehicle at all. */
     private val firstCheck = HashSet<String>()
 
@@ -259,7 +252,7 @@ class MonitorService : Service() {
         // ringing alarm is left alone (showStatus), as an update would stop its sound.
         scope.launch {
             Session.streetFound.collect { key ->
-                if (key !in until) return@collect
+                if (key !in watchers) return@collect
                 val run = Store(this@MonitorService).runs.firstOrNull { it.key == key } ?: return@collect
                 Session.status.value[key]?.let { showStatus(run, it) }
             }
@@ -293,7 +286,7 @@ class MonitorService : Service() {
                 backToTracking(key, run)
             }
         }
-        if (until.isEmpty()) stopSelf()
+        if (watchers.isEmpty()) stopSelf()
         return START_NOT_STICKY
     }
 
@@ -305,7 +298,7 @@ class MonitorService : Service() {
     private fun backToTracking(key: String, run: Run?) {
         ringing.remove(key)
         val nm = getSystemService(NotificationManager::class.java)
-        if (key in until && run != null) {
+        if (key in watchers && run != null) {
             nm.notify(runNotificationId(key), notification(run, Session.status.value[key] ?: RunStatus(null, "", null)))
         } else {
             nm.cancel(runNotificationId(key))
@@ -342,29 +335,18 @@ class MonitorService : Service() {
             return
         }
         // A new period starts with a new login: the session left from earlier may be gone on the server.
-        if (until.isEmpty()) Session.renewLogin("monitoring period start")
+        if (watchers.isEmpty()) Session.renewLogin("monitoring period start")
         // Stops at the period's end, or later after a BusPlanner delay notice (checkNotices).
-        until[run.key] = period.end
-        periodStart[run.key] = period.start
+        val watcher = Watcher(run, Session.zones.value, Session.schools.value, period, SessionMarks(this, run.key))
+        watchers[run.key] = watcher
         Session.setWatchEnd(run.key, period.end)
-        inMainZone.remove(run.key)
-        inHeadsUpZone.remove(run.key)
-        blockedLogged.remove(run.key)
         ringing.remove(run.key)
-        delayMin.remove(run.key)
-        setEndWatch(run)
         firstCheck += run.key
-        val zs = Session.zones.value
-        AppLog.log(
-            "zones of ${run.key}: " + listOfNotNull(
-                headsUpZoneOf(run, zs)?.let { "${it.name} (heads-up${if (run.alarmAfterHeadsUp) ", alarm only after it" else ""})" },
-                mainZoneOf(run, zs)?.let { "${it.name} (main)" },
-            ).joinToString().ifEmpty { "none" }
-        )
+        applyEvents(run, watcher.started)
         val status = Session.status.value[run.key] ?: RunStatus(null, "Starting…", null)
         promote(run.key, notification(run, status))
-        Session.setActive(until.keys.toSet())
-        AppLog.log("monitoring ${run.key} started, until ${until[run.key]!!.toLocalTime().withNano(0)}")
+        Session.setActive(watchers.keys.toSet())
+        AppLog.log("monitoring ${run.key} started, until ${watcher.until.toLocalTime().withNano(0)}")
         acquireWakeLock()
         if (loop?.isActive != true) loop = scope.launch { poll() }
         rescanIfDue(applicationContext)
@@ -375,18 +357,14 @@ class MonitorService : Service() {
      * otherwise it ended by itself and the switch moves on to the run's next period.
      */
     private fun stop(key: String, reason: String, byUser: Boolean = false) {
-        if (until.remove(key) != null) {
+        val watcher = watchers.remove(key)
+        if (watcher != null) {
             AppLog.log("monitoring $key stopped: $reason")
-            val start = periodStart[key]
-            if (!byUser && start != null) Session.markEnded(this, key, start)
+            if (!byUser) Session.markEnded(this, key, watcher.periodStart)
         }
-        periodStart.remove(key)
-        endWatch.remove(key)
-        endWatchFor.remove(key)
-        delayMin.remove(key)
         Session.setWatchEnd(key, null)
         // The notice stays on the run's card for the rest of the day (user, 2026-11-21).
-        Session.setActive(until.keys.toSet())
+        Session.setActive(watchers.keys.toSet())
         // An alarm that just rang stays until answered, even once watching has ended (a dropoff run
         // can end at the next check after the bus entered the zone). An older one goes away in
         // silence: keeping it would make Android ring it again (seen 2026-11-18 at 7:55).
@@ -394,7 +372,7 @@ class MonitorService : Service() {
         val keepAlarm = rang != null && SystemClock.elapsedRealtime() - rang < RING_MS
         if (keepAlarm) AppLog.log("$key: alarm just rang, left until answered")
         if (foregroundKey == key) {
-            val next = until.keys.firstOrNull()
+            val next = watchers.keys.firstOrNull()
             val run = next?.let { k -> Store(this).runs.firstOrNull { it.key == k } }
             if (run != null) {
                 promote(run.key, notification(run, Session.status.value[run.key] ?: RunStatus(null, "", null)))
@@ -404,7 +382,7 @@ class MonitorService : Service() {
             }
         }
         if (!keepAlarm) getSystemService(NotificationManager::class.java).cancel(runNotificationId(key))
-        if (until.isEmpty()) {
+        if (watchers.isEmpty()) {
             loop?.cancel()
             releaseWakeLock()
             stopSelf()
@@ -439,32 +417,27 @@ class MonitorService : Service() {
 
     private suspend fun pollRounds() {
         var manual = false
-        while (scope.isActive && until.isNotEmpty()) {
+        while (scope.isActive && watchers.isNotEmpty()) {
             Session.setNextCheck(null)
             val now = LocalDateTime.now()
-            for (key in until.keys.toList()) {
+            for (key in watchers.keys.toList()) {
                 val run = Store(this).runs.firstOrNull { it.key == key }
                 if (run == null) {
                     stop(key, "run no longer on the account after a rescan, see Changes")
                     continue
                 }
                 // First, so a period lengthened on the run's page doesn't end at its old end.
-                followConfiguration(run)
-                if (now.isAfter(until.getValue(key))) {
-                    stop(key, "monitoring period ended")
-                    continue
-                }
+                applyEvents(run, watchers.getValue(key).beforeCheck(run, Session.zones.value, Session.schools.value, now))
+                if (key !in watchers) continue
                 val status = read(run, manual)
-                if (key in until) checkHeadsUp(run, status)
-                if (key in until) checkZones(run, status)
-                if (key in until) checkEnd(run, status)
-                if (key in until) {
+                watchers[key]?.let { applyEvents(run, it.check(run, Session.zones.value, status.reading), status) }
+                if (key in watchers) {
                     showStatus(run, status)
                     if (firstCheck.remove(key)) warnIfNoVehicle(run, status)
                 }
             }
             checkNotices()
-            if (until.isEmpty()) break
+            if (watchers.isEmpty()) break
             // A tap on the map's Refresh during the round was for this round: drop it.
             while (Session.checkNowRequests.tryReceive().isSuccess) Unit
             Session.setNextCheck(SystemClock.elapsedRealtime() + POLL_MS)
@@ -474,128 +447,42 @@ class MonitorService : Service() {
     }
 
     /**
-     * The run's end-of-monitoring rule, for the zone and schools it is about: the school's
-     * corrected position and circle first (DESIGN.md §5.3). A school with no known position
-     * never ends it: only the period's end and the Alarm switch do.
+     * Applies what the run's [Watcher] decided, in order: the Log line, then the sound, the
+     * notification or the end of watching. [status]: the check the events come from, for the
+     * notification's text.
      */
-    private fun setEndWatch(run: Run) {
-        val rule = run.endOfWatch
-        val zone = Session.zones.value.firstOrNull { it.id == run.endZoneId }
-        // The run's own school; every known school only for a run saved before 0.9, until the next scan.
-        val schools = Session.schools.value.filter { run.school.isEmpty() || it.name.equals(run.school, ignoreCase = true) }
-        endWatch[run.key] = EndWatch(rule, zone, schools)
-        endWatchFor[run.key] = rule to run.endZoneId
-        AppLog.log(
-            "${run.key}: watching ends by itself: " + when (rule) {
-                EndRule.SCHOOL -> if (schools.any { it.known }) "${rule.label} (${schools.filter { it.known }.joinToString { "${it.name}, ${it.radius.toInt()} m" }})"
-                else "${rule.label}, but the school's position is unknown: only at the period's end"
-                EndRule.LEAVES_ZONE, EndRule.ENTERS_ZONE -> if (zone != null) "${rule.label} (${zone.name})" else "${rule.label}, but there is no zone: only at the period's end"
-                EndRule.PERIOD_END -> rule.label
-            }
-        )
-    }
-
-    /**
-     * A change made on the run's page while it is watched applies at once: the period's minutes
-     * (its end, plus any BusPlanner delay) and the end-of-monitoring rule.
-     */
-    private fun followConfiguration(run: Run) {
-        val start = periodStart[run.key] ?: return
-        val period = run.periodOn(start.toLocalDate()) ?: return
-        val end = period.end.plusMinutes((delayMin[run.key] ?: 0).toLong())
-        if (until[run.key] != end) {
-            AppLog.log("${run.key}: period changed, watching until ${end.toLocalTime()} instead of ${until[run.key]?.toLocalTime()}")
-            until[run.key] = end
-            periodStart[run.key] = period.start
-            Session.setWatchEnd(run.key, end)
-        }
-        if (endWatchFor[run.key] != (run.endOfWatch to run.endZoneId)) setEndWatch(run)
-    }
-
-    /**
-     * Rings when the bus enters the run's main zone, once per monitoring period: a restart doesn't
-     * ring again, unless the Alarm switch was turned off and on. What ends watching is the run's
-     * end-of-monitoring rule (checkEnd). The alarm rings until answered, for [RING_MS] at most, or
-     * until the bus leaves the zone.
-     */
-    private fun checkZones(run: Run, status: RunStatus) {
-        val r = status.reading ?: return
-        val lat = r.busLat ?: return
-        val lon = r.busLon ?: return
-        val main = mainZoneOf(run, Session.zones.value) ?: return
-        val inside = main.contains(lat, lon)
-        val wasInside = inMainZone[run.key] == true
-        // Alarm only after the heads-up (user, 2026-11-22): before it, the bus inside the main zone
-        // only crosses it. It isn't counted as inside, so the first check inside after the
-        // heads-up sounded rings.
-        if (inside && !wasInside && !alarmArmed(run, Session.zones.value, Session.hasHeadsUp(run.key))) {
-            if (blockedLogged.add(run.key)) AppLog.log("${run.key}: bus in main zone ${main.name} before the heads-up zone, no alarm")
-            return
-        }
-        if (inside && !wasInside) {
-            inMainZone[run.key] = true
-            if (Session.hasRung(run.key)) {
-                AppLog.log("${run.key}: bus in main zone ${main.name}, already rang this period (Alarm switch off and on to ring again)")
-                return
-            }
-            Session.markRang(this, run.key)
-            AppLog.log("${run.key}: bus entered main zone ${main.name}, ringing")
-            val bus = r.runLabel?.substringBefore(' ') ?: run.bus
-            // In place of the tracking notification: one notification per run, not two.
-            ringing[run.key] = SystemClock.elapsedRealtime()
-            getSystemService(NotificationManager::class.java)
-                .notify(runNotificationId(run.key), zoneAlert(this, run.key, "$bus entered ${main.name}", status.line))
-        } else if (!inside && wasInside) {
-            inMainZone[run.key] = false
-            AppLog.log("${run.key}: bus left main zone ${main.name}")
-            // The alarm was about the bus being in the zone: it goes away with it (user, 2026-11-18).
-            if (run.key in ringing) {
-                AppLog.log("${run.key}: alarm removed, the bus left the zone")
-                backToTracking(run.key, run)
+    private fun applyEvents(run: Run, events: List<WatchEvent>, status: RunStatus? = null) {
+        for (event in events) {
+            if (run.key !in watchers) return
+            event.line(run.key)?.let { AppLog.log(it) }
+            val bus = status?.reading?.runLabel?.substringBefore(' ') ?: run.bus
+            when (event) {
+                is WatchEvent.PeriodChanged -> Session.setWatchEnd(run.key, event.end)
+                is WatchEvent.Delayed -> Session.setWatchEnd(run.key, event.end)
+                is WatchEvent.PeriodOver -> stop(run.key, "monitoring period ended")
+                // Beside the run's own notification: the alarm can't replace it.
+                is WatchEvent.HeadsUp -> getSystemService(NotificationManager::class.java)
+                    .notify(headsUpId(run.key), headsUpAlert(this, run.key, "$bus entered ${event.zone.name}", status?.line ?: ""))
+                // In place of the tracking notification: one notification per run, not two. The
+                // alarm rings until answered, for [RING_MS] at most, or until the bus leaves the zone.
+                is WatchEvent.Ring -> {
+                    ringing[run.key] = SystemClock.elapsedRealtime()
+                    getSystemService(NotificationManager::class.java)
+                        .notify(runNotificationId(run.key), zoneAlert(this, run.key, "$bus entered ${event.zone.name}", status?.line ?: ""))
+                }
+                // The alarm was about the bus being in the zone: it goes away with it (user, 2026-11-18).
+                is WatchEvent.LeftMainZone -> if (run.key in ringing) {
+                    AppLog.log("${run.key}: alarm removed, the bus left the zone")
+                    backToTracking(run.key, run)
+                }
+                is WatchEvent.End -> {
+                    if (event.parkedAt != null && event.spot != null) Session.markParked(this, event.parkedAt.name, event.spot)
+                    stop(run.key, event.reason)
+                }
+                is WatchEvent.Zones, is WatchEvent.EndRuleSet, is WatchEvent.HeadsUpAlreadySounded,
+                is WatchEvent.BlockedBeforeHeadsUp, is WatchEvent.AlreadyRang -> Unit
             }
         }
-    }
-
-    /**
-     * The heads-up zone (DESIGN.md §6.1): when the bus enters it, a notification that sounds once,
-     * beside the run's own; at most once per period (the Alarm switch off and on lets it sound
-     * again). It never stops or replaces the alarm.
-     */
-    private fun checkHeadsUp(run: Run, status: RunStatus) {
-        val r = status.reading ?: return
-        val lat = r.busLat ?: return
-        val lon = r.busLon ?: return
-        val zone = headsUpZoneOf(run, Session.zones.value) ?: return
-        val inside = zone.contains(lat, lon)
-        val wasInside = inHeadsUpZone[run.key] == true
-        inHeadsUpZone[run.key] = inside
-        if (!inside || wasInside) return
-        if (Session.hasHeadsUp(run.key)) {
-            AppLog.log("${run.key}: bus in heads-up zone ${zone.name}, already sounded this period")
-            return
-        }
-        Session.markHeadsUp(this, run.key)
-        AppLog.log("${run.key}: bus entered heads-up zone ${zone.name}, sounding once")
-        val bus = r.runLabel?.substringBefore(' ') ?: run.bus
-        getSystemService(NotificationManager::class.java)
-            .notify(headsUpId(run.key), headsUpAlert(this, run.key, "$bus entered ${zone.name}", status.line))
-    }
-
-    /**
-     * Ends watching when the run's end-of-monitoring rule says so (DESIGN.md §5.1): e.g. the bus
-     * parked at the school (three readings in a row at one spot inside its circle, after it was
-     * seen away from it), or the bus leaving the main zone (children dropped off).
-     */
-    private fun checkEnd(run: Run, status: RunStatus) {
-        val r = status.reading ?: return
-        val lat = r.busLat ?: return
-        val lon = r.busLon ?: return
-        val watch = endWatch[run.key] ?: return
-        val reason = watch.add(lat, lon) ?: return
-        val school = watch.school
-        val spot = school?.parkedSpot
-        if (school?.parkedAt != null && spot != null) Session.markParked(this, school.parkedAt!!.name, spot)
-        stop(run.key, reason)
     }
 
     /** The ids of the last answer from the alerts page, to log it only when it changes. */
@@ -606,7 +493,7 @@ class MonitorService : Service() {
      * monitored bus rings once. A failure is only logged; monitoring goes on.
      */
     private suspend fun checkNotices() {
-        val runs = until.keys.mapNotNull { k -> Store(this).runs.firstOrNull { it.key == k } }
+        val runs = watchers.keys.mapNotNull { k -> Store(this).runs.firstOrNull { it.key == k } }
         if (runs.isEmpty()) return
         val portal = Store(this).portal ?: return
         val all = try {
@@ -656,14 +543,8 @@ class MonitorService : Service() {
      */
     private fun applyDelay(run: Run, alert: BusAlert) {
         val minutes = delayMinutes(alert.action) ?: return
-        val start = periodStart[run.key] ?: return
-        val planned = run.periodOn(start.toLocalDate())?.end ?: return
-        val end = planned.plusMinutes(minutes.toLong())
-        if (run.key !in until || until[run.key] == end) return
-        delayMin[run.key] = minutes
-        until[run.key] = end
-        Session.setWatchEnd(run.key, end)
-        AppLog.log("${run.key}: BusPlanner says delayed $minutes minutes, watching until ${end.toLocalTime()} instead of ${planned.toLocalTime()}")
+        val event = watchers[run.key]?.delay(run, minutes) ?: return
+        applyEvents(run, listOf(event))
     }
 
     /** One notification when monitoring starts while BusPlanner has no vehicle for the run. */
@@ -694,7 +575,7 @@ class MonitorService : Service() {
         Session.poll(this, run, refreshButton)
     } catch (_: LoginFailed) {
         // A refused password must not be retried every 30 s.
-        for (key in until.keys.toList()) stop(key, "login refused")
+        for (key in watchers.keys.toList()) stop(key, "login refused")
         RunStatus(null, "Login failed. Log out and log in again.", null)
     }
 
@@ -723,13 +604,13 @@ class MonitorService : Service() {
     }
 
     override fun onTimeout(startId: Int, fgsType: Int) {
-        for (key in until.keys.toList()) stop(key, "Android's foreground time limit reached")
+        for (key in watchers.keys.toList()) stop(key, "Android's foreground time limit reached")
     }
 
     override fun onDestroy() {
         scope.cancel()
         releaseWakeLock()
-        until.clear()
+        watchers.clear()
         Session.setActive(emptySet())
         super.onDestroy()
     }
