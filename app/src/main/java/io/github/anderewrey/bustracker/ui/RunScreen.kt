@@ -46,8 +46,10 @@ import io.github.anderewrey.bustracker.data.Zone
 import io.github.anderewrey.bustracker.data.ZoneRole
 import io.github.anderewrey.bustracker.data.autoText
 import io.github.anderewrey.bustracker.data.nameTaken
-import io.github.anderewrey.bustracker.data.zonesFor
+import io.github.anderewrey.bustracker.data.headsUpZoneOf
+import io.github.anderewrey.bustracker.data.mainZoneOf
 import io.github.anderewrey.bustracker.monitor.Scheduler
+import io.github.anderewrey.bustracker.monitor.testHeadsUp
 import io.github.anderewrey.bustracker.monitor.testRing
 import java.time.DayOfWeek
 import java.time.format.TextStyle
@@ -66,9 +68,12 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
     val runs by Session.runs.collectAsState()
     val schools by Session.schools.collectAsState()
     val pending = changes.firstOrNull { it.needsChoice && it.new?.key == run.key }
-    val main = zonesFor(run, allZones).firstOrNull()
+    val main = mainZoneOf(run, allZones)
+    val headsUp = headsUpZoneOf(run, allZones)
     // The zone screen: open with null for a new zone, or with the zone to change.
     var editing by remember { mutableStateOf(false) }
+    // Which of the run's zones the zone screen is for.
+    var editingHeadsUp by remember { mutableStateOf(false) }
     var editZone by remember { mutableStateOf<Zone?>(null) }
     // A changed zone that other runs use too, waiting for "all runs" or "this run only".
     var sharedSave by remember { mutableStateOf<Zone?>(null) }
@@ -77,14 +82,17 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
     if (editing) {
         BackHandler { editing = false }
         val stop = if (run.lat != null && run.lon != null) run.lat to run.lon else null
-        val title = editZone?.let { "Main zone · ${it.name}" } ?: "New main zone · ${run.key}"
-        ZoneEditorScreen(stop, title, editZone, taken = { nameTaken(allZones, it, editZone?.id) }, onCancel = { editing = false }) { name, corners ->
-            val zone = Zone(editZone?.id ?: "", name, ZoneRole.MAIN, corners)
+        val kind = if (editingHeadsUp) "heads-up zone" else "main zone"
+        val title = editZone?.let { "${kind.replaceFirstChar { c -> c.uppercase() }} · ${it.name}" } ?: "New $kind · ${run.key}"
+        // A heads-up zone is drawn with the main zone shown faintly, so it goes where the bus comes from.
+        val faint = if (editingHeadsUp) main else null
+        ZoneEditorScreen(stop, title, editZone, taken = { nameTaken(allZones, it, editZone?.id) }, onCancel = { editing = false }, faint = faint) { name, corners ->
+            val zone = Zone(editZone?.id ?: "", name, if (editingHeadsUp) ZoneRole.HEADS_UP else ZoneRole.MAIN, corners)
             val base = editZone
             if (base != null && Session.runsUsing(base.id).any { it.key != run.key }) {
                 sharedSave = zone
             } else {
-                val others = Session.saveZone(context, run.key, zone)
+                val others = Session.saveZone(context, run.key, zone, headsUp = editingHeadsUp)
                 notice = if (others.isEmpty()) null else "Also the main zone of ${others.joinToString()}: its stop is inside."
                 editing = false
             }
@@ -104,7 +112,7 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        Session.saveZone(context, run.key, zone)
+                        Session.saveZone(context, run.key, zone, headsUp = editingHeadsUp)
                         sharedSave = null
                         editing = false
                     }) { Text("Change for all runs") }
@@ -113,7 +121,7 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
                     Row {
                         TextButton(onClick = { sharedSave = null }) { Text("Cancel") }
                         TextButton(enabled = !copyNameTaken, onClick = {
-                            Session.saveZone(context, run.key, zone, copy = true)
+                            Session.saveZone(context, run.key, zone, copy = true, headsUp = editingHeadsUp)
                             sharedSave = null
                             editing = false
                         }) { Text("This run only") }
@@ -183,6 +191,60 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
             style = MaterialTheme.typography.bodySmall,
         )
 
+        // In the order the bus meets them: the heads-up zone, then the main zone (DESIGN.md §6.1).
+        Section("Heads-up zone")
+        Text(
+            headsUp?.let { "${it.name}: a sound once when the bus enters it." } ?: "None: no heads-up.",
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        headsUp?.let { z ->
+            val others = runs.filter { (it.headsUpZone == z.id || it.mainZone == z.id) && it.key != run.key }
+            if (others.isNotEmpty()) Text("Also used by ${others.joinToString { it.key }}", style = MaterialTheme.typography.bodySmall)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = {
+                editZone = null
+                editingHeadsUp = true
+                notice = null
+                editing = true
+            }) { Text("Draw new") }
+            if (headsUp != null) OutlinedButton(onClick = {
+                editZone = headsUp
+                editingHeadsUp = true
+                notice = null
+                editing = true
+            }) { Text("Edit") }
+            val choices = allZones.filter { it.id != headsUp?.id && it.id != main?.id }
+            if (choices.isNotEmpty()) Box {
+                var open by remember { mutableStateOf(false) }
+                OutlinedButton(onClick = { open = true }) { Text("Choose") }
+                DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                    choices.forEach { z ->
+                        DropdownMenuItem(text = { Text(z.name) }, onClick = {
+                            Session.setHeadsUpZone(context, run.key, z.id)
+                            notice = null
+                            open = false
+                        })
+                    }
+                }
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (headsUp != null) TextButton(onClick = { Session.setHeadsUpZone(context, run.key, null) }) { Text("Remove") }
+            OutlinedButton(onClick = { testHeadsUp(context) }) { Text("Test sound") }
+        }
+        if (headsUp != null) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = run.alarmAfterHeadsUp, onCheckedChange = { Session.setAlarmAfterHeadsUp(context, run.key, it) })
+                Text("Alarm only after the heads-up")
+            }
+            Text(
+                if (run.alarmAfterHeadsUp) "The main zone rings only once the bus came through ${headsUp.name}. If no position falls in it, the alarm doesn't ring: draw it 500 m long or more."
+                else "The main zone rings whether or not the bus came through ${headsUp.name}.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+
         Section("Main zone")
         Text(
             main?.let { "${it.name}: the alarm rings when the bus enters it." } ?: "None: no alarm for this run.",
@@ -196,15 +258,17 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = {
                 editZone = null
+                editingHeadsUp = false
                 notice = null
                 editing = true
             }) { Text("Draw new") }
             if (main != null) OutlinedButton(onClick = {
                 editZone = main
+                editingHeadsUp = false
                 notice = null
                 editing = true
             }) { Text("Edit") }
-            val choices = allZones.filter { it.id != main?.id }
+            val choices = allZones.filter { it.id != main?.id && it.id != headsUp?.id }
             if (choices.isNotEmpty()) Box {
                 var open by remember { mutableStateOf(false) }
                 OutlinedButton(onClick = { open = true }) { Text("Choose") }
@@ -226,7 +290,6 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
             }) { Text("Remove") }
             OutlinedButton(onClick = { testRing(context) }) { Text("Test alarm") }
         }
-        NotBuilt("Heads-up zones")
 
         Section("End of watching")
         Text("Watching ends by itself when:", style = MaterialTheme.typography.bodyMedium)

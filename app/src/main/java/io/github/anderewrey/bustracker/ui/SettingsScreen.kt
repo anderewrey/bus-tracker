@@ -43,6 +43,7 @@ import io.github.anderewrey.bustracker.monitor.remakeChannel
 import io.github.anderewrey.bustracker.monitor.ringSettings
 import io.github.anderewrey.bustracker.monitor.setQuietOverride
 import io.github.anderewrey.bustracker.monitor.soundTitle
+import io.github.anderewrey.bustracker.monitor.testHeadsUp
 import io.github.anderewrey.bustracker.monitor.testNotice
 import io.github.anderewrey.bustracker.monitor.testRing
 
@@ -70,6 +71,10 @@ fun SettingsScreen(onBack: () -> Unit, onOverview: () -> Unit, onDebug: () -> Un
         Section("Main zone alarm")
         RingingRows(Ringing.MAIN_ZONE, version, onChanged = { version++ }, onTest = { testRing(context) })
 
+        Section("Heads-up zone")
+        Text("Sounds once when the bus enters a run's heads-up zone.", style = MaterialTheme.typography.bodySmall)
+        RingingRows(Ringing.HEADS_UP, version, onChanged = { version++ }, onTest = { testHeadsUp(context) })
+
         Section("Bus alerts")
         val noVehicle = remember(version) { settings.noVehicleWarning }
         val notices = remember(version) { settings.busNotices }
@@ -94,7 +99,7 @@ fun SettingsScreen(onBack: () -> Unit, onOverview: () -> Unit, onDebug: () -> Un
             version++
         }
         Text(
-            "The alarm and the BusPlanner notices ring as alarms: Do Not Disturb lets them through, at the alarm volume.",
+            "The alarm, the heads-up and the BusPlanner notices sound as alarms: Do Not Disturb lets them through, at the alarm volume.",
             style = MaterialTheme.typography.bodySmall,
         )
 

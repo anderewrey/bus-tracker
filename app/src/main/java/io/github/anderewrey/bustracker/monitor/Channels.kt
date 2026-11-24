@@ -27,6 +27,8 @@ const val BUS_ALERT_CHANNEL = "bus_alerts"
 enum class Ringing(val base: String, val title: String, val description: String) {
     MAIN_ZONE("main_zone", "Main zone", "Rings until acknowledged when the bus enters the main zone"),
     NOTICE("bus_notices", "BusPlanner notices", "Rings until acknowledged when BusPlanner reports a late or cancelled bus"),
+    /** Not ringing like the others: posted without the insistent flag, it sounds once (DESIGN.md §6.1). */
+    HEADS_UP("heads_up", "Heads-up zone", "Sounds once when the bus enters the heads-up zone"),
 }
 
 fun channelId(context: Context, type: Ringing): String {

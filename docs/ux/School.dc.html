@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>School page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.ph{width:220px;height:440px;border:2px solid #444;border-radius:22px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;background:#fff;font-size:12px}
+.bx{border:1.5px dashed #888;border-radius:8px;padding:6px 8px;display:flex;flex-direction:column;gap:3px}
+.row{display:flex;justify-content:space-between;align-items:center}
+.ar{width:110px;height:440px;margin-top:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;color:#333;text-align:center;flex-shrink:0}
+.cap{width:220px;font-size:12px;color:#333;line-height:1.4}
+.mut{color:#666}
+.dim{opacity:.3}
+.col{display:flex;flex-direction:column;gap:10px}
+.nt{width:220px;height:100px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px}
+.nl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.04em}
+.h2{font-size:16px;font-weight:600}
+.map{height:150px;border:1.5px dashed #888;border-radius:8px;position:relative;overflow:hidden;flex-shrink:0}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.btn{border:1.5px solid #888;border-radius:14px;padding:4px 8px;font-size:11px;display:flex;gap:5px;align-items:center}
+.btn.off{color:#999;border-color:#ccc}
+.btn.fill{background:#444;color:#fff;border-color:#444;justify-content:center}
+.bd{width:9px;height:9px;border-radius:50%;background:#2a6fdb;flex-shrink:0}
+.wd{width:7px;height:7px;border-radius:50%;background:#fff;border:2px solid #444;flex-shrink:0}
+.off .bd{opacity:.45}
+.off .wd{opacity:.45}
+</style>
+</helmet>
+<div style="width:1000px;height:1510px;box-sizing:border-box;padding:28px 32px;font-family:Inter,system-ui,sans-serif;background:#f6f6f4;display:flex;flex-direction:column;gap:18px">
+<div style="font-size:20px;font-weight:600">School page: the dots show where the bus parked; the blue button suggests a circle from them</div>
+
+<div class="h2">Row 1.7.1 · BusPlanner's point is off: correct it, then the app learns where the bus parks</div>
+<div style="display:flex;align-items:flex-start">
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>Sample School</b></div>
+<div class="map"><svg viewBox="0 0 190 150" aria-hidden="true">
+<rect x="18" y="4" width="170" height="122" rx="4" fill="#eef5ea" stroke="#b9d3b0" stroke-dasharray="4 3"/>
+<rect x="28" y="14" width="44" height="34" fill="#e2e2e2"/><text x="31" y="34" font-size="8" fill="#888">school</text>
+<rect x="88" y="62" width="62" height="38" rx="3" fill="none" stroke="#bbb" stroke-dasharray="3 2"/><text x="91" y="58" font-size="8" fill="#888">bus parking</text>
+<path d="M150 82 L172 82 L172 135" fill="none" stroke="#ddd" stroke-width="5"/>
+<path d="M0 135 L190 135" fill="none" stroke="#ddd" stroke-width="8"/><text x="4" y="131" font-size="8" fill="#999">street</text>
+<path d="M10 0 L10 150" fill="none" stroke="#ddd" stroke-width="8"/>
+<circle cx="10" cy="33" r="95" fill="#3a8a3a" fill-opacity=".12" stroke="#3a8a3a" stroke-width="1.5"/>
+<circle cx="10" cy="33" r="8" fill="#3a8a3a" stroke="#fff" stroke-width="2"/>
+</svg></div>
+<span class="mut">Position: BusPlanner's point</span>
+<span>"At school" circle: 100 m</span>
+<div class="btn off"><span class="bd"></span>Circle suggestion: after the next runs</div>
+<div class="btn off"><span class="wd"></span>BusPlanner's point · here</div>
+<div class="btn fill">Save</div>
+</div>
+<div class="cap"><b>First visit.</b> The pin is on BusPlanner's point, on the side street, while the buses park far back on the grounds. Nothing learned yet: the blue button says when a suggestion will come.</div>
+</div>
+<div class="ar"><b>drag the pin onto the bus parking, circle 40 m, Save</b><span style="font-size:22px">→</span></div>
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>Sample School</b></div>
+<div class="map"><svg viewBox="0 0 190 150" aria-hidden="true">
+<rect x="18" y="4" width="170" height="122" rx="4" fill="#eef5ea" stroke="#b9d3b0" stroke-dasharray="4 3"/>
+<rect x="28" y="14" width="44" height="34" fill="#e2e2e2"/><text x="31" y="34" font-size="8" fill="#888">school</text>
+<rect x="88" y="62" width="62" height="38" rx="3" fill="none" stroke="#bbb" stroke-dasharray="3 2"/><text x="91" y="58" font-size="8" fill="#888">bus parking</text>
+<path d="M150 82 L172 82 L172 135" fill="none" stroke="#ddd" stroke-width="5"/>
+<path d="M0 135 L190 135" fill="none" stroke="#ddd" stroke-width="8"/><text x="4" y="131" font-size="8" fill="#999">street</text>
+<path d="M10 0 L10 150" fill="none" stroke="#ddd" stroke-width="8"/>
+<circle cx="110" cy="82" r="40" fill="#3a8a3a" fill-opacity=".12" stroke="#3a8a3a" stroke-width="1.5"/>
+<circle cx="110" cy="82" r="8" fill="#3a8a3a" stroke="#fff" stroke-width="2"/>
+<circle cx="10" cy="33" r="4" fill="#fff" stroke="#444" stroke-width="2"/>
+</svg></div>
+<span class="mut">Position: placed by hand</span>
+<span>"At school" circle: 40 m</span>
+<div class="btn off"><span class="bd"></span>Circle suggestion: after the next runs</div>
+<div class="btn"><span class="wd"></span>Back to BusPlanner's point · 117 m</div>
+<div class="btn fill">Save</div>
+</div>
+<div class="cap"><b>The white dot is BusPlanner's point</b>, and its button says how far it is. Like every button here, it only moves the pin: Save keeps it.</div>
+</div>
+<div class="ar"><i>next morning, the bus parks at the school</i><span style="font-size:22px">→</span></div>
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>Sample School</b></div>
+<div class="map"><svg viewBox="0 0 190 150" aria-hidden="true">
+<rect x="18" y="4" width="170" height="122" rx="4" fill="#eef5ea" stroke="#b9d3b0" stroke-dasharray="4 3"/>
+<rect x="28" y="14" width="44" height="34" fill="#e2e2e2"/><text x="31" y="34" font-size="8" fill="#888">school</text>
+<rect x="88" y="62" width="62" height="38" rx="3" fill="none" stroke="#bbb" stroke-dasharray="3 2"/><text x="91" y="58" font-size="8" fill="#888">bus parking</text>
+<path d="M150 82 L172 82 L172 135" fill="none" stroke="#ddd" stroke-width="5"/>
+<path d="M0 135 L190 135" fill="none" stroke="#ddd" stroke-width="8"/><text x="4" y="131" font-size="8" fill="#999">street</text>
+<path d="M10 0 L10 150" fill="none" stroke="#ddd" stroke-width="8"/>
+<circle cx="110" cy="82" r="40" fill="#3a8a3a" fill-opacity=".12" stroke="#3a8a3a" stroke-width="1.5"/>
+<circle cx="110" cy="82" r="8" fill="#3a8a3a" stroke="#fff" stroke-width="2"/>
+<circle cx="10" cy="33" r="4" fill="#fff" stroke="#444" stroke-width="2"/>
+<circle cx="128" cy="80" r="5" fill="#2a6fdb" stroke="#fff" stroke-width="1.5"/><text x="134" y="92" font-size="8" fill="#2a6fdb">AM</text>
+</svg></div>
+<span class="mut">Position: placed by hand</span>
+<span>"At school" circle: 40 m</span>
+<div class="btn"><span class="bd"></span>Suggest a circle · 25 m</div>
+<div class="btn"><span class="wd"></span>Back to BusPlanner's point · 117 m</div>
+<div class="btn fill">Save</div>
+</div>
+<div class="cap"><b>Learned (AM):</b> where the bus parked on arrival, within 100 m of the school at least. One spot so far: the suggestion is a small circle on it. The afternoon's spot comes with the afternoon run.</div>
+</div>
+</div>
+
+<div class="h2" style="margin-top:12px">Row 1.7.2 · After a school day: a circle suggested from the morning and afternoon spots</div>
+<div style="display:flex;align-items:flex-start">
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>Sample School</b></div>
+<div class="map"><svg viewBox="0 0 190 150" aria-hidden="true">
+<rect x="18" y="4" width="170" height="122" rx="4" fill="#eef5ea" stroke="#b9d3b0" stroke-dasharray="4 3"/>
+<rect x="28" y="14" width="44" height="34" fill="#e2e2e2"/><text x="31" y="34" font-size="8" fill="#888">school</text>
+<rect x="88" y="62" width="62" height="38" rx="3" fill="none" stroke="#bbb" stroke-dasharray="3 2"/><text x="91" y="58" font-size="8" fill="#888">bus parking</text>
+<path d="M150 82 L172 82 L172 135" fill="none" stroke="#ddd" stroke-width="5"/>
+<path d="M0 135 L190 135" fill="none" stroke="#ddd" stroke-width="8"/><text x="4" y="131" font-size="8" fill="#999">street</text>
+<path d="M10 0 L10 150" fill="none" stroke="#ddd" stroke-width="8"/>
+<circle cx="110" cy="82" r="40" fill="#3a8a3a" fill-opacity=".12" stroke="#3a8a3a" stroke-width="1.5"/>
+<circle cx="110" cy="82" r="8" fill="#3a8a3a" stroke="#fff" stroke-width="2"/>
+<circle cx="10" cy="33" r="4" fill="#fff" stroke="#444" stroke-width="2"/>
+<circle cx="128" cy="80" r="5" fill="#2a6fdb" stroke="#fff" stroke-width="1.5"/><text x="134" y="92" font-size="8" fill="#2a6fdb">AM</text>
+<circle cx="105" cy="62" r="5" fill="#2a6fdb" stroke="#fff" stroke-width="1.5"/><text x="90" y="56" font-size="8" fill="#2a6fdb">PM</text>
+</svg></div>
+<span class="mut">Position: placed by hand</span>
+<span>"At school" circle: 40 m</span>
+<div class="btn"><span class="bd"></span>Suggest a circle · 35 m</div>
+<div class="btn"><span class="wd"></span>Back to BusPlanner's point · 117 m</div>
+<div class="btn fill">Save</div>
+</div>
+<div class="cap"><b>After a school day.</b> AM: where the bus parks on arrival. PM: where it waits before leaving. Each is replaced by the next of its half-day.</div>
+</div>
+<div class="ar"><b>Suggest a circle</b><span style="font-size:22px">→</span></div>
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>Sample School</b></div>
+<div class="map"><svg viewBox="0 0 190 150" aria-hidden="true">
+<rect x="18" y="4" width="170" height="122" rx="4" fill="#eef5ea" stroke="#b9d3b0" stroke-dasharray="4 3"/>
+<rect x="28" y="14" width="44" height="34" fill="#e2e2e2"/><text x="31" y="34" font-size="8" fill="#888">school</text>
+<rect x="88" y="62" width="62" height="38" rx="3" fill="none" stroke="#bbb" stroke-dasharray="3 2"/><text x="91" y="58" font-size="8" fill="#888">bus parking</text>
+<path d="M150 82 L172 82 L172 135" fill="none" stroke="#ddd" stroke-width="5"/>
+<path d="M0 135 L190 135" fill="none" stroke="#ddd" stroke-width="8"/><text x="4" y="131" font-size="8" fill="#999">street</text>
+<path d="M10 0 L10 150" fill="none" stroke="#ddd" stroke-width="8"/>
+<circle cx="116.5" cy="71" r="33" fill="#3a8a3a" fill-opacity=".12" stroke="#3a8a3a" stroke-width="1.5"/>
+<circle cx="116.5" cy="71" r="8" fill="#3a8a3a" stroke="#fff" stroke-width="2"/>
+<circle cx="10" cy="33" r="4" fill="#fff" stroke="#444" stroke-width="2"/>
+<circle cx="128" cy="80" r="5" fill="#2a6fdb" stroke="#fff" stroke-width="1.5"/><text x="134" y="92" font-size="8" fill="#2a6fdb">AM</text>
+<circle cx="105" cy="62" r="5" fill="#2a6fdb" stroke="#fff" stroke-width="1.5"/><text x="90" y="56" font-size="8" fill="#2a6fdb">PM</text>
+</svg></div>
+<span class="mut">Position: suggested <b>· not saved</b></span>
+<span>"At school" circle: 35 m</span>
+<div class="btn off"><span class="bd"></span>Suggested circle · here</div>
+<div class="btn"><span class="wd"></span>Back to BusPlanner's point · 119 m</div>
+<div class="btn fill">Save</div>
+</div>
+<div class="cap"><b>Centred between the two, 35 m:</b> half their distance plus 20 m. Back without Save leaves the school as it was.</div>
+</div>
+<div class="ar"><b>Save</b><span style="font-size:22px">→</span></div>
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>Sample School</b></div>
+<div class="map"><svg viewBox="0 0 190 150" aria-hidden="true">
+<rect x="18" y="4" width="170" height="122" rx="4" fill="#eef5ea" stroke="#b9d3b0" stroke-dasharray="4 3"/>
+<rect x="28" y="14" width="44" height="34" fill="#e2e2e2"/><text x="31" y="34" font-size="8" fill="#888">school</text>
+<rect x="88" y="62" width="62" height="38" rx="3" fill="none" stroke="#bbb" stroke-dasharray="3 2"/><text x="91" y="58" font-size="8" fill="#888">bus parking</text>
+<path d="M150 82 L172 82 L172 135" fill="none" stroke="#ddd" stroke-width="5"/>
+<path d="M0 135 L190 135" fill="none" stroke="#ddd" stroke-width="8"/><text x="4" y="131" font-size="8" fill="#999">street</text>
+<path d="M10 0 L10 150" fill="none" stroke="#ddd" stroke-width="8"/>
+<circle cx="116.5" cy="71" r="33" fill="#3a8a3a" fill-opacity=".12" stroke="#3a8a3a" stroke-width="1.5"/>
+<circle cx="116.5" cy="71" r="8" fill="#3a8a3a" stroke="#fff" stroke-width="2"/>
+<circle cx="10" cy="33" r="4" fill="#fff" stroke="#444" stroke-width="2"/>
+<circle cx="128" cy="80" r="5" fill="#2a6fdb" stroke="#fff" stroke-width="1.5"/><text x="134" y="92" font-size="8" fill="#2a6fdb">AM</text>
+<circle cx="105" cy="62" r="5" fill="#2a6fdb" stroke="#fff" stroke-width="1.5"/><text x="90" y="56" font-size="8" fill="#2a6fdb">PM</text>
+</svg></div>
+<span class="mut">Position: suggested</span>
+<span>"At school" circle: 35 m</span>
+<div class="btn off"><span class="bd"></span>Suggested circle · here</div>
+<div class="btn"><span class="wd"></span>Back to BusPlanner's point · 119 m</div>
+<div class="btn fill">Save</div>
+</div>
+<div class="cap"><b>Saved.</b> "Bus parked at the school" now checks this circle. The dots keep updating; when they move, the button offers a new suggestion.</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":1510}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

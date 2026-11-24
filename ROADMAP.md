@@ -37,13 +37,15 @@ The order of the work. **What** each feature does and **how** is in [DESIGN.md](
 | — | 2026-11-22 | Each merge into `main` is a pre-release; Run workflow promotes a tested one to an official version as it is, tag included, without rebuilding (§8) |
 | — | 2026-11-22 | Run workflow also builds the promoted commit again, so the official app is named after its version ("0.18") (§8) |
 | — | 2026-11-22 | The official app says when a newer official version is out: "Bus Tracker 0.19 is out · Download ›" on the run list, checked once a day on GitHub (§8, Updates) |
+| — | 2026-11-22 | Heads-up zone: one per run, a sound once when the bus enters it; option "Alarm only after the heads-up"; dashed on the map (§6.1, Artboard 1.6) |
+| — | 2026-11-23 | School page: each map dot has its button with the same mark ("Suggest a circle · 35 m", "Back to BusPlanner's point · 117 m"), and says when the parking spot is still to be learned (§5.3, Artboard 1.7) |
+| — | 2026-11-23 | Where the bus parks is learned on every run going to the school, within 100 m at least: on arrival in the morning, waiting in the afternoon; "Suggest a circle" proposes the circle that holds the two (§5.3, Artboard 1.7.3) |
 
 0.12 and 0.13 were committed together on 2026-11-06. 0.13 (with 0.11 and 0.12 in it) passed its first real run on the phone on 2026-11-09: automatic start, live checks, the main-zone alarm, and recovery from a short network loss.
 
 ## Next, in order
 
-1. **Heads-up zones** (§6.1)
-2. **"Ringing" option per alert type** (§7.1)
+1. **"Ringing" option per alert type** (§7.1)
 
 ## Later
 

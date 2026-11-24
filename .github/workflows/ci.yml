@@ -92,11 +92,26 @@ jobs:
           fi
           git log -1 --format=%B >> out/notes.txt
 
+      # Each APK on its own, not zipped, so it downloads as the .apk itself (user, 2026-11-23).
+      - uses: actions/upload-artifact@v7
+        with:
+          path: out/bus-tracker.apk
+          archive: false
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: out/bus-tracker-emulator.apk
+          archive: false
+          retention-days: 30
+
+      # For the release job only: the APKs with the version and the notes, kept one day.
       - uses: actions/upload-artifact@v4
+        if: env.MAIN_PUSH == 'true'
         with:
           name: apks
           path: out/
-          retention-days: 30
+          retention-days: 1
 
   release:
     needs: build

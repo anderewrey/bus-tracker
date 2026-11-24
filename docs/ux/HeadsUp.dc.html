@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Heads-up zone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.ph{width:220px;height:440px;border:2px solid #444;border-radius:22px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;background:#fff;font-size:12px}
+.bx{border:1.5px dashed #888;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:4px}
+.row{display:flex;justify-content:space-between;align-items:center}
+.sw{width:30px;height:16px;border-radius:9px;background:#2a6fdb}
+.ar{width:110px;height:440px;margin-top:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;color:#333;text-align:center;flex-shrink:0}
+.cap{width:220px;font-size:12px;color:#333;line-height:1.4}
+.mut{color:#666}
+.hd{opacity:.3;display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:2px 2px 4px}
+.dim{opacity:.3}
+.col{display:flex;flex-direction:column;gap:10px}
+.nt{width:220px;height:100px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px}
+.nb{background:#fff;border:1.5px solid #888;border-radius:10px;padding:6px 8px;font-size:11px;display:flex;flex-direction:column;gap:2px}
+.nl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.04em}
+.h2{font-size:16px;font-weight:600}
+.map{flex-grow:1;border:1.5px dashed #888;border-radius:8px;position:relative;overflow:hidden}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+</style>
+</helmet>
+<div style="width:1000px;height:2220px;box-sizing:border-box;padding:28px 32px;font-family:Inter,system-ui,sans-serif;background:#f6f6f4;display:flex;flex-direction:column;gap:18px">
+<div style="font-size:20px;font-weight:600">Heads-up zone: a sound once when the bus gets near, before the main zone rings</div>
+
+<div class="h2">Row 1.6.1 · Adding a heads-up zone to a run</div>
+<div style="display:flex;align-items:flex-start">
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>B101 · Pickup 7:33 AM</b></div>
+<div class="bx dim">About · Watching days · Watching period</div>
+<div class="bx"><b>Heads-up zone</b><span class="mut">None: no heads-up.</span><span>[Draw new] [Choose]</span></div>
+<div class="bx"><b>Main zone</b><span class="mut">Home zone: the alarm rings when the bus enters it.</span><span>[Draw new] [Edit] [Choose] [Remove] [Test alarm]</span></div>
+<div class="bx dim">End of watching</div>
+</div>
+<div class="cap"><b>The run's page.</b> The heads-up zone sits above the main zone, in the order the bus meets them.</div>
+</div>
+
+<div class="ar"><b>Heads-up zone: Draw new</b><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><b>New heads-up zone</b><span class="dim">Cancel</span></div>
+<div class="map"><svg viewBox="0 0 190 260" aria-hidden="true">
+<path d="M95 0 L95 200 L10 240 M95 200 L185 235" fill="none" stroke="#bbb" stroke-width="8"/>
+<polygon points="55,170 140,165 150,250 45,255" fill="#2a6fdb" fill-opacity=".08" stroke="#2a6fdb" stroke-opacity=".4" stroke-width="1.5"/>
+<polygon points="70,30 125,28 130,110 65,112" fill="none" stroke="#2a6fdb" stroke-width="2" stroke-dasharray="5 3"/>
+<g fill="#2a6fdb"><circle cx="70" cy="30" r="4"/><circle cx="125" cy="28" r="4"/><circle cx="130" cy="110" r="4"/><circle cx="65" cy="112" r="4"/></g>
+<circle cx="97" cy="200" r="5" fill="#fff" stroke="#444" stroke-width="2.5"/>
+</svg></div>
+<div class="row"><span>[Undo] [Done]</span></div>
+<div class="bx">That Street zone</div>
+<span>[Save]</span>
+</div>
+<div class="cap"><b>Same drawing as the main zone</b>, which shows faintly so the heads-up goes where the bus comes from.</div>
+</div>
+
+<div class="ar"><b>Save</b><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications: none</span></div>
+<div class="ph">
+<div class="row"><span class="dim">Back</span><b>B101 · Pickup 7:33 AM</b></div>
+<div class="bx dim">About · Watching days · Watching period</div>
+<div class="bx"><b>Heads-up zone</b><span class="mut">That Street zone: a sound once when the bus enters it.</span><span>[Draw new] [Edit] [Choose] [Remove] [Test sound]</span><span>☐ Alarm only after the heads-up</span></div>
+<div class="bx"><b>Main zone</b><span class="mut">Home zone: the alarm rings when the bus enters it.</span><span>[Draw new] [Edit] [Choose] [Remove] [Test alarm]</span></div>
+<div class="bx dim">End of watching</div>
+</div>
+<div class="cap"><b>One heads-up zone per run.</b> Like a main zone, it can serve several runs. Its sound and vibration are in Settings, apart from the alarm's. <b>Alarm only after the heads-up</b> is off at first (Row 1.6.3).</div>
+</div>
+
+</div>
+
+<div class="h2" style="margin-top:12px">Row 1.6.2 · A morning with a heads-up zone</div>
+<div style="display:flex;align-items:flex-start">
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications</span><div class="nb"><b>B101 · watching</b><span>2.4 km · That Street · GPS 7:12</span><span class="mut">[Open map] [Stop watching]</span></div></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>BusPlanner › · Settings ›</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>2.4 km · That Street · GPS 7:12</span><div class="row"><span>[Open map]</span><span class="mut">Watching until 8:08</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>7:12, watching</b> as usual.</div>
+</div>
+
+<div class="ar"><i>bus enters That Street zone</i><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications</span><div class="nb"><b>B101 entered That Street zone</b><span>1.2 km · That Street</span></div><div class="nb"><b>B101 · watching</b><span>1.2 km · That Street · GPS 7:24</span><span class="mut">[Open map] [Stop watching]</span></div></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>BusPlanner › · Settings ›</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>1.2 km · That Street · GPS 7:24</span><div class="row"><span>[Open map]</span><span class="mut">Heads-up 7:24 · watching</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>A sound, once.</b> Time to get boots on. Its own notification, beside the watching one; once per period, like the alarm.</div>
+</div>
+
+<div class="ar"><i>bus enters Home zone</i><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications</span><div class="nb" style="border-color:#c0392b;background:#fbeceb"><b>B101 entered Home zone · ringing</b><span>400 m · This Street</span><span class="mut">[Open map] [Silence]</span></div></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>BusPlanner › · Settings ›</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>400 m · This Street · GPS 7:30</span><div class="row"><span>[Open map]</span><span class="mut">Rang 7:30 · watching</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>The alarm, as before.</b> With "Alarm only after the heads-up" off, it rings even if no position fell in That Street zone. The heads-up notification goes away: the alarm takes over. Any left goes away when watching ends.</div>
+</div>
+
+</div>
+
+<div class="h2" style="margin-top:12px">Row 1.6.3 · Alarm only after the heads-up: the bus crosses the street, then comes back by it</div>
+<div style="display:flex;align-items:flex-start">
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications</span><div class="nb"><b>B101 · watching</b><span>350 m · This Street · GPS 7:10</span><span class="mut">[Open map] [Stop watching]</span></div></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>BusPlanner › · Settings ›</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>350 m · This Street · GPS 7:10</span><div class="row"><span>[Open map]</span><span class="mut">Watching until 8:08</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>7:10, the bus crosses This Street</b> at the corner, inside Home zone, on its way to another part of its route. It hasn't come through That Street zone yet: no alarm.</div>
+</div>
+
+<div class="ar"><i>later, the bus comes back by That Street</i><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications</span><div class="nb"><b>B101 entered That Street zone</b><span>1.2 km · That Street</span></div><div class="nb"><b>B101 · watching</b><span>1.2 km · That Street · GPS 7:24</span><span class="mut">[Open map] [Stop watching]</span></div></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>BusPlanner › · Settings ›</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>1.2 km · That Street · GPS 7:24</span><div class="row"><span>[Open map]</span><span class="mut">Heads-up 7:24 · watching</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>The heads-up sounds</b>: the bus is now on its way into the neighbourhood. The alarm is armed.</div>
+</div>
+
+<div class="ar"><i>bus enters Home zone</i><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"><span class="nl">System notifications</span><div class="nb" style="border-color:#c0392b;background:#fbeceb"><b>B101 entered Home zone · ringing</b><span>400 m · This Street</span><span class="mut">[Open map] [Silence]</span></div></div>
+<div class="ph">
+<div class="hd"><b>Bus runs</b><span>BusPlanner › · Settings ›</span></div>
+<div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>400 m · This Street · GPS 7:30</span><div class="row"><span>[Open map]</span><span class="mut">Rang 7:30 · watching</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>Now it rings.</b> The price: if no position ever falls in That Street zone, the alarm never rings. Draw it long enough along the route (500 m or more).</div>
+</div>
+
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":2220}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

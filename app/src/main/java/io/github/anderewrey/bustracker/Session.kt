@@ -107,10 +107,13 @@ data class ScanResult(val runs: List<Run>, val changes: List<RunChange>)
 /**
  * Live status of one run, shared by the service, the notification and the screens. [byHand]: the
  * answer to a tap on ↻; [at]: when it was set, on the monotonic clock ([System.nanoTime]).
+ * [kept]: the check failed and [reading] is the previous one, kept for the screens; it is not a
+ * new reading, so the zones and the end rule must not count it (a repeated position looked like a
+ * bus parked at the school; found by the scenario simulator, 2026-11-23).
  */
 data class RunStatus(
     val reading: Reading?, val line: String, val checkedAt: LocalTime?, val old: Boolean = false,
-    val byHand: Boolean = false, val at: Long = System.nanoTime(),
+    val byHand: Boolean = false, val at: Long = System.nanoTime(), val kept: Boolean = false,
 )
 
 /** What the screens show instead of the line of a run that isn't watched (DESIGN.md §4). */
@@ -181,6 +184,10 @@ object Session {
     /** When each run's alarm last rang; see [hasRung]. */
     private val _rang = MutableStateFlow<Map<String, LocalDateTime>>(emptyMap())
     val rang: StateFlow<Map<String, LocalDateTime>> = _rang
+
+    /** When each run's heads-up zone sounded (DESIGN.md §6.1), for the card's status. */
+    private val _headsUp = MutableStateFlow<Map<String, LocalDateTime>>(emptyMap())
+    val headsUp: StateFlow<Map<String, LocalDateTime>> = _headsUp
 
     /** The zones drawn on the phone (DESIGN.md §6); kept across logouts. */
     private val _zones = MutableStateFlow<List<Zone>>(emptyList())
@@ -373,6 +380,7 @@ object Session {
         _runs.value = store.runs
         _changes.value = store.changes
         _rang.value = store.rang
+        _headsUp.value = store.headsUp
         _choices.value = store.choices
         _zones.value = ZoneStore(context).zones
         refreshSchools(context)
@@ -458,12 +466,22 @@ object Session {
     /** Where the bus was last seen parked at each school. */
     private val _parked = MutableStateFlow<Map<String, Pair<Double, Double>>>(emptyMap())
     val parked: StateFlow<Map<String, Pair<Double, Double>>> = _parked
+    private val _parkedAt = MutableStateFlow<Map<String, LocalDateTime>>(emptyMap())
+    val parkedAt: StateFlow<Map<String, LocalDateTime>> = _parkedAt
+    /** Where, and when, the bus was last seen waiting at each school on an afternoon run. */
+    private val _parkedPm = MutableStateFlow<Map<String, Pair<Double, Double>>>(emptyMap())
+    val parkedPm: StateFlow<Map<String, Pair<Double, Double>>> = _parkedPm
+    private val _parkedPmAt = MutableStateFlow<Map<String, LocalDateTime>>(emptyMap())
+    val parkedPmAt: StateFlow<Map<String, LocalDateTime>> = _parkedPmAt
 
     fun refreshSchools(context: Context) {
         val store = Store(context)
         val ss = SchoolStore(context)
         _schoolFixes.value = ss.fixes
         _parked.value = ss.parked
+        _parkedAt.value = ss.parkedAt
+        _parkedPm.value = ss.parkedPm
+        _parkedPmAt.value = ss.parkedPmAt
         _schoolOptions.value = store.schoolOptions
         _schools.value = schoolSpots(store.runs.map { it.school }, store.schools, ss.fixes)
     }
@@ -505,12 +523,25 @@ object Session {
         AppLog.log("school $name: " + (found.school?.let { String.format(Locale.US, "%.6f,%.6f", it.lat, it.lon) } ?: "position not found"))
     }
 
-    /** The "parked at the school" rule saw the bus stop here; the School page can use it. */
-    fun markParked(context: Context, school: String, at: Pair<Double, Double>) {
+    /**
+     * The bus was seen parked here at the school; the School page can use it. [pm]: on an afternoon
+     * run, where it waits before leaving; otherwise where it parks on arrival.
+     */
+    fun markParked(context: Context, school: String, at: Pair<Double, Double>, pm: Boolean = false) {
         val ss = SchoolStore(context)
-        ss.parked = ss.parked + (school to at)
+        val now = LocalDateTime.now().withNano(0)
+        if (pm) {
+            ss.parkedPm = ss.parkedPm + (school to at)
+            ss.parkedPmAt = ss.parkedPmAt + (school to now)
+        } else {
+            ss.parked = ss.parked + (school to at)
+            ss.parkedAt = ss.parkedAt + (school to now)
+        }
         _parked.value = ss.parked
-        AppLog.log(String.format(Locale.US, "school %s: bus parked at %.6f,%.6f", school, at.first, at.second))
+        _parkedAt.value = ss.parkedAt
+        _parkedPm.value = ss.parkedPm
+        _parkedPmAt.value = ss.parkedPmAt
+        AppLog.log(String.format(Locale.US, "school %s: bus %s at %.6f,%.6f", school, if (pm) "waiting (PM)" else "parked", at.first, at.second))
     }
 
     /** Whether the run's alarm already rang in today's monitoring period. */
@@ -522,16 +553,46 @@ object Session {
         _rang.value = store.rang
     }
 
-    /** Lets the run's alarm ring again: at the next check if the bus is in the zone, or when it next enters. */
+    /** Whether the run's heads-up zone already sounded in today's period. */
+    fun hasHeadsUp(key: String): Boolean = _headsUp.value[key]?.toLocalDate() == LocalDate.now()
+
+    fun markHeadsUp(context: Context, key: String) {
+        val store = Store(context)
+        store.headsUp = store.headsUp + (key to LocalDateTime.now().withNano(0))
+        _headsUp.value = store.headsUp
+    }
+
+    /**
+     * Lets the run's alarm ring again: at the next check if the bus is in the zone, or when it next
+     * enters. The heads-up zone can sound again too.
+     */
     fun rearm(context: Context, key: String) {
         val store = Store(context)
         store.rang = store.rang - key
+        store.headsUp = store.headsUp - key
         _rang.value = store.rang
+        _headsUp.value = store.headsUp
         AppLog.log("$key: alarm re-armed")
     }
 
-    /** The runs whose main zone is [zoneId]. */
-    fun runsUsing(zoneId: String): List<Run> = _runs.value.filter { it.mainZone == zoneId }
+    /** The runs that use [zoneId] as their main or heads-up zone. */
+    fun runsUsing(zoneId: String): List<Run> = _runs.value.filter { it.mainZone == zoneId || it.headsUpZone == zoneId }
+
+    /** Makes [zoneId] the run's heads-up zone; null: none. The zone itself stays. */
+    fun setHeadsUpZone(context: Context, key: String, zoneId: String?) {
+        val store = Store(context)
+        store.runs = store.runs.map { if (it.key == key) it.copy(headsUpZone = zoneId) else it }
+        _runs.value = store.runs
+        AppLog.log("$key heads-up zone: ${_zones.value.firstOrNull { it.id == zoneId }?.name ?: "none"}")
+    }
+
+    /** The main zone's alarm only after the heads-up zone sounded (user, 2026-11-22). */
+    fun setAlarmAfterHeadsUp(context: Context, key: String, on: Boolean) {
+        val store = Store(context)
+        store.runs = store.runs.map { if (it.key == key) it.copy(alarmAfterHeadsUp = on) else it }
+        _runs.value = store.runs
+        AppLog.log("$key: alarm only after the heads-up ${if (on) "on" else "off"}")
+    }
 
     /** Makes [zoneId] the run's main zone; null: no main zone, no alarm. The zone itself stays. */
     fun setMainZone(context: Context, key: String, zoneId: String?) {
@@ -548,9 +609,14 @@ object Session {
      * - A changed zone, [copy] false: every run using it gets the new shape and name.
      * - [copy] true: a new zone for this run only; the others keep the old one.
      */
-    fun saveZone(context: Context, key: String, zone: Zone, copy: Boolean = false): List<String> {
+    fun saveZone(context: Context, key: String, zone: Zone, copy: Boolean = false, headsUp: Boolean = false): List<String> {
         val existing = _zones.value.any { it.id == zone.id }
         val saved = storeZone(context, zone, copy, "for $key")
+        // A heads-up zone is only this run's; only a main zone is offered to the other runs.
+        if (headsUp) {
+            setHeadsUpZone(context, key, saved.id)
+            return emptyList()
+        }
         setMainZone(context, key, saved.id)
         return if (existing && !copy) emptyList() else adoptZone(context, saved)
     }
@@ -590,7 +656,7 @@ object Session {
     }
 
     /** The runs that use [zoneId]: as their main zone, or for their end of monitoring. */
-    fun runsUsingAny(zoneId: String): List<Run> = _runs.value.filter { it.mainZone == zoneId || it.endZone == zoneId }
+    fun runsUsingAny(zoneId: String): List<Run> = _runs.value.filter { it.mainZone == zoneId || it.endZone == zoneId || it.headsUpZone == zoneId }
 
     /** Deletes a zone no run uses (DESIGN.md §5.3); one still in use is kept. */
     fun deleteZone(context: Context, zoneId: String) {
@@ -701,6 +767,7 @@ object Session {
                     it.copy(
                         mainZone = defaultZone(it, _zones.value), days = WORK_DAYS,
                         before = MONITOR_MINUTES, after = MONITOR_MINUTES, endRule = null, endZone = null,
+                        headsUpZone = null, alarmAfterHeadsUp = false,
                     )
                 } else it
             }
@@ -725,7 +792,7 @@ object Session {
         // No network (e.g. just after the phone woke up): wait for it, it is not the session's fault.
         if (!online(context)) {
             if (_status.value[run.key]?.line != WAITING_NETWORK) AppLog.log("poll ${run.key}: no network, waiting")
-            val status = RunStatus(_status.value[run.key]?.reading, WAITING_NETWORK, now, old = true, byHand = refreshButton)
+            val status = RunStatus(_status.value[run.key]?.reading, WAITING_NETWORK, now, old = true, byHand = refreshButton, kept = true)
             setStatus(run.key, status)
             return status
         }
@@ -765,12 +832,12 @@ object Session {
             networkFailures[run.key] = failures
             AppLog.log("poll ${run.key}: network error ${e.javaClass.simpleName}: ${e.message}")
             if (failures >= NETWORK_RELOAD_AFTER) needsReload += run.key
-            RunStatus(_status.value[run.key]?.reading, NETWORK_PROBLEM, now, old = true, byHand = refreshButton)
+            RunStatus(_status.value[run.key]?.reading, NETWORK_PROBLEM, now, old = true, byHand = refreshButton, kept = true)
         } catch (e: Exception) {
             val message = e.message ?: e.javaClass.simpleName
             AppLog.log("poll ${run.key}: error $message")
             needsReload += run.key
-            RunStatus(_status.value[run.key]?.reading, "Error: $message", now, old = true, byHand = refreshButton)
+            RunStatus(_status.value[run.key]?.reading, "Error: $message", now, old = true, byHand = refreshButton, kept = true)
         }
         setStatus(run.key, status)
         return status
@@ -887,6 +954,7 @@ object Session {
         _changes.value = emptyList()
         _autoStart.value = AutoStart()
         _rang.value = emptyMap()
+        _headsUp.value = emptyMap()
         _choices.value = PeriodChoices()
         _watchEnd.value = emptyMap()
         _notices.value = emptyMap()

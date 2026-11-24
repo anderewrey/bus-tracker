@@ -35,7 +35,7 @@
       "y": 0
     },
     "MapView.dc.html": {
-      "h": 2150,
+      "h": 2190,
       "page": "flows",
       "title": "Artboard 1.4 · The map",
       "w": 1000,
@@ -54,9 +54,25 @@
       "h": 2240,
       "page": "flows",
       "title": "Artboard 1.5 · Per-run rules",
-      "w": 1060,
+      "w": 1230,
       "x": 0,
-      "y": 6650
+      "y": 6690
+    },
+    "HeadsUp.dc.html": {
+      "h": 2220,
+      "page": "flows",
+      "title": "Artboard 1.6 · Heads-up zone",
+      "w": 1000,
+      "x": 0,
+      "y": 9050
+    },
+    "School.dc.html": {
+      "h": 1510,
+      "page": "flows",
+      "title": "Artboard 1.7 · School page",
+      "w": 1000,
+      "x": 0,
+      "y": 11390
     }
   },
   "createdOnFiles": {
@@ -75,7 +91,9 @@
     "AlarmSwitch.dc.html",
     "AutoStart.dc.html",
     "MapView.dc.html",
-    "PerRun.dc.html"
+    "PerRun.dc.html",
+    "HeadsUp.dc.html",
+    "School.dc.html"
   ],
   "pages": [
     {

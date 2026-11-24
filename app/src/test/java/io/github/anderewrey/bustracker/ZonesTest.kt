@@ -6,6 +6,7 @@ package io.github.anderewrey.bustracker
 import io.github.anderewrey.bustracker.data.Run
 import io.github.anderewrey.bustracker.data.Zone
 import io.github.anderewrey.bustracker.data.ZoneRole
+import io.github.anderewrey.bustracker.data.alarmArmed
 import io.github.anderewrey.bustracker.data.carryConfiguration
 import io.github.anderewrey.bustracker.data.defaultZone
 import io.github.anderewrey.bustracker.data.nameTaken
@@ -23,6 +24,44 @@ class ZonesTest {
 
     private fun run(lat: Double?, lon: Double?, key: String = "B1 PM", mainZone: String? = null) =
         Run(key, "B1", "PM Dropoff", "3:05 PM", "THIS ST & THAT ST", lat, lon, emptyList(), mainZone = mainZone)
+
+    @Test
+    fun headsUpZoneComesFirstThenTheMainZone() {
+        val heads = square.copy(id = "h1", name = "Heads", role = ZoneRole.HEADS_UP)
+        val r = run(45.005, -62.995, mainZone = "z1").copy(headsUpZone = "h1")
+        assertEquals(listOf("Heads", "Square"), zonesFor(r, listOf(square, heads)).map { it.name })
+    }
+
+    @Test
+    fun alarmOnlyAfterTheHeadsUpWhenAsked() {
+        val heads = square.copy(id = "h1", name = "Heads", role = ZoneRole.HEADS_UP)
+        val zones = listOf(square, heads)
+        val plain = run(45.005, -62.995, mainZone = "z1").copy(headsUpZone = "h1")
+        // Off (the default): the alarm rings whether or not the heads-up sounded.
+        assertTrue(alarmArmed(plain, zones, headsUpSounded = false))
+        val chained = plain.copy(alarmAfterHeadsUp = true)
+        assertFalse(alarmArmed(chained, zones, headsUpSounded = false))
+        assertTrue(alarmArmed(chained, zones, headsUpSounded = true))
+        // Asked for, but no heads-up zone (removed, or gone): nothing to wait for.
+        assertTrue(alarmArmed(chained.copy(headsUpZone = null), zones, headsUpSounded = false))
+        assertTrue(alarmArmed(chained.copy(headsUpZone = "gone"), zones, headsUpSounded = false))
+    }
+
+    @Test
+    fun headsUpSettingsAreSavedAndCarriedOverRescans() {
+        val r = run(45.005, -62.995, mainZone = "z1").copy(headsUpZone = "h1", alarmAfterHeadsUp = true)
+        val back = Run.fromJson(r.toJson())
+        assertEquals("h1", back.headsUpZone)
+        assertTrue(back.alarmAfterHeadsUp)
+        // A run saved before heads-up zones: none, and the alarm as before.
+        val old = r.toJson().apply { remove("headsUpZone"); remove("alarmAfterHeadsUp") }
+        assertNull(Run.fromJson(old).headsUpZone)
+        assertFalse(Run.fromJson(old).alarmAfterHeadsUp)
+        val fresh = run(45.005, -62.995)
+        val carried = carryConfiguration(listOf(fresh), emptyList(), listOf(r)).single()
+        assertEquals("h1", carried.headsUpZone)
+        assertTrue(carried.alarmAfterHeadsUp)
+    }
 
     @Test
     fun insideAndOutside() {

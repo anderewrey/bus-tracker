@@ -22,6 +22,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.alpha
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -53,7 +56,6 @@ import io.github.anderewrey.bustracker.Session
 import io.github.anderewrey.bustracker.data.AT_SCHOOL_M
 import io.github.anderewrey.bustracker.data.MAX_SCHOOL_RADIUS_M
 import io.github.anderewrey.bustracker.data.MIN_SCHOOL_RADIUS_M
-import io.github.anderewrey.bustracker.data.PositionSource
 import io.github.anderewrey.bustracker.data.SchoolFix
 import io.github.anderewrey.bustracker.data.Store
 import io.github.anderewrey.bustracker.data.circlePoints
@@ -66,6 +68,16 @@ import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.CircleLayer
+import io.github.anderewrey.bustracker.data.fitSpots
+import org.maplibre.android.style.layers.PropertyFactory.textOffset
+import org.maplibre.android.style.layers.PropertyFactory.textHaloWidth
+import org.maplibre.android.style.layers.PropertyFactory.textHaloColor
+import org.maplibre.android.style.layers.PropertyFactory.textColor
+import org.maplibre.android.style.layers.PropertyFactory.textSize
+import org.maplibre.android.style.layers.PropertyFactory.textFont
+import org.maplibre.android.style.layers.PropertyFactory.textField
+import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.PropertyFactory.circleColor
@@ -103,7 +115,11 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
     val runs by Session.runs.collectAsState()
     val spot = spots.firstOrNull { it.name == name }
     val busPlanner = remember(spots) { Store(context).schools.firstOrNull { it.name.equals(name, ignoreCase = true) } }
-    val parked = parkedAll[name]
+    val parkedPmAll by Session.parkedPm.collectAsState()
+    // Where the bus parks on arrival (AM) and waits before leaving (PM), and the circle they suggest.
+    val parkedAm = parkedAll[name]
+    val parkedPm = parkedPmAll[name]
+    val suggestion = listOfNotNull(parkedAm, parkedPm).takeIf { it.isNotEmpty() }?.let { fitSpots(it.first(), it.last()) }
     val options = optionsAll[name].orEmpty()
     val going = runs.filter { it.school.equals(name, ignoreCase = true) }
 
@@ -145,10 +161,20 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
                             circleRadius(5f), circleColor("#FFFFFF"), circleStrokeColor("#6D6D6D"), circleStrokeWidth(2f),
                         )
                     )
-                    s.addSource(GeoJsonSource("parked", parked?.let { FeatureCollection.fromFeature(Feature.fromGeometry(Point.fromLngLat(it.second, it.first))) }))
+                    // Morning and afternoon spots, each labelled, so the two can be told apart.
+                    val spotsShown = listOfNotNull(parkedAm?.let { it to "AM" }, parkedPm?.let { it to "PM" }).map { (at, label) ->
+                        Feature.fromGeometry(Point.fromLngLat(at.second, at.first)).also { it.addStringProperty("label", label) }
+                    }
+                    s.addSource(GeoJsonSource("parked", FeatureCollection.fromFeatures(spotsShown)))
                     s.addLayer(
                         CircleLayer("parked-dot", "parked").withProperties(
                             circleRadius(6f), circleColor("#1565C0"), circleStrokeColor("#FFFFFF"), circleStrokeWidth(2f),
+                        )
+                    )
+                    s.addLayer(
+                        SymbolLayer("parked-label", "parked").withProperties(
+                            textField(Expression.get("label")), textFont(arrayOf("Noto Sans Regular")), textSize(11f),
+                            textColor("#1565C0"), textHaloColor("#FFFFFF"), textHaloWidth(1.5f), textOffset(arrayOf(0f, 1.3f)),
                         )
                     )
                     style.value = s
@@ -234,14 +260,20 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
                     }) { Text(option) }
                 }
             }
+            // Where the pin on screen comes from (user, 2026-11-23), and whether it is saved yet.
+            val shown = pin.value
+            val saved = spot?.takeIf { it.known }
+            val unsaved = shown != null && (saved == null ||
+                distanceM(shown.latitude, shown.longitude, saved.lat!!, saved.lon!!) >= 1.0 || radius.roundToInt() != saved.radius.roundToInt())
             Text(
-                when (spot?.source) {
-                    PositionSource.CORRECTED -> "Position: corrected" + (busPlanner?.let { b ->
-                        pin.value?.let { " · ${distanceM(it.latitude, it.longitude, b.lat, b.lon).toInt()} m from BusPlanner's point (white dot)" }
-                    } ?: "")
-                    PositionSource.BUSPLANNER -> "Position: BusPlanner's"
-                    else -> "Position unknown: \"Bus parked at the school\" is off for the runs going there."
-                },
+                when {
+                    shown == null -> "Position unknown: \"Bus parked at the school\" is off for the runs going there."
+                    busPlanner != null && distanceM(shown.latitude, shown.longitude, busPlanner.lat, busPlanner.lon) < HERE_M -> "Position: BusPlanner's point"
+                    suggestion != null && distanceM(shown.latitude, shown.longitude, suggestion.first, suggestion.second) < HERE_M &&
+                        radius.roundToInt() == suggestion.third.roundToInt() -> "Position: suggested"
+                    listOfNotNull(parkedAm, parkedPm).any { distanceM(shown.latitude, shown.longitude, it.first, it.second) < HERE_M } -> "Position: bus parking"
+                    else -> "Position: placed by hand"
+                } + if (unsaved) " · not saved" else "",
                 style = MaterialTheme.typography.bodySmall,
             )
             if (going.isNotEmpty()) Text("Runs going there: ${going.joinToString { it.key }}", style = MaterialTheme.typography.bodySmall)
@@ -251,25 +283,63 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
                 onValueChange = { radius = (it / 5f).roundToInt() * 5f },
                 valueRange = MIN_SCHOOL_RADIUS_M.toFloat()..MAX_SCHOOL_RADIUS_M.toFloat(),
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(enabled = parked != null, onClick = {
-                    parked?.let { (lat, lon) ->
+            // Each dot on the map has the button that uses it, with the same mark (user, 2026-11-23;
+            // Artboard 1.7): no legend needed. A button about the pin's own place says "here" and rests.
+            val p = pin.value
+            val busPlannerM = if (p != null && busPlanner != null) distanceM(p.latitude, p.longitude, busPlanner.lat, busPlanner.lon) else null
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                // One button: a circle suggested from where the bus was seen parked (user, 2026-11-23;
+                // Artboard 1.7): centred between the morning and afternoon spots, or on the one known.
+                val suggestedR = suggestion?.third?.roundToInt()
+                val suggestedHere = suggestion != null && p != null &&
+                    distanceM(p.latitude, p.longitude, suggestion.first, suggestion.second) < HERE_M && radius.roundToInt() == suggestedR
+                DotButton(
+                    blue = true,
+                    enabled = suggestion != null && !suggestedHere,
+                    text = when {
+                        suggestion == null -> "Circle suggestion: after the next runs"
+                        suggestedHere -> "Suggested circle · here"
+                        else -> "Suggest a circle · $suggestedR m"
+                    },
+                ) {
+                    suggestion?.let { (lat, lon, r) ->
                         pin.value = LatLng(lat, lon)
+                        radius = r.toFloat()
                         mapRef.value?.let { m -> m.cameraPosition = CameraPosition.Builder().target(LatLng(lat, lon)).zoom(16.0).build() }
                     }
-                }) { Text("Use where the bus parked") }
-                OutlinedButton(enabled = busPlanner != null || fixes[name] != null, onClick = {
-                    Session.resetSchool(context, name)
-                    pin.value = busPlanner?.let { LatLng(it.lat, it.lon) }
-                    radius = AT_SCHOOL_M.toFloat()
-                    message = "Back to BusPlanner's position"
-                }) { Text("Reset") }
+                }
+                // Back to BusPlanner's point also brings the default circle back, so it stays
+                // useful at the point itself while another circle is set. Like the blue button, it
+                // only moves the pin: nothing is kept until Save (user, 2026-11-23: it used to save at once).
+                val busPlannerHere = busPlannerM != null && busPlannerM < HERE_M
+                val defaultCircle = radius.roundToInt() == AT_SCHOOL_M.toInt()
+                DotButton(
+                    blue = false,
+                    enabled = busPlanner != null && (!busPlannerHere || !defaultCircle),
+                    text = when {
+                        busPlanner == null -> "BusPlanner's point: unknown"
+                        busPlannerHere && defaultCircle -> "BusPlanner's point · here"
+                        busPlannerHere -> "Back to BusPlanner's point"
+                        else -> "Back to BusPlanner's point" + (busPlannerM?.let { " · ${it.roundToInt()} m" } ?: "")
+                    },
+                ) {
+                    busPlanner?.let { b ->
+                        pin.value = LatLng(b.lat, b.lon)
+                        radius = AT_SCHOOL_M.toFloat()
+                        mapRef.value?.let { m -> m.cameraPosition = CameraPosition.Builder().target(LatLng(b.lat, b.lon)).zoom(16.0).build() }
+                    }
+                }
             }
-            if (parked == null) Text("The blue dot shows where the bus parked, once a run has ended at the school.", style = MaterialTheme.typography.bodySmall)
             Button(enabled = pin.value != null, onClick = {
                 val p = pin.value ?: return@Button
                 // At BusPlanner's own point (within 1 m): no correction of the position, only the circle.
                 val same = busPlanner != null && distanceM(p.latitude, p.longitude, busPlanner.lat, busPlanner.lon) < 1.0
+                // BusPlanner's point and the default circle: no correction left (a chosen school stays chosen).
+                if (same && radius.roundToInt() == AT_SCHOOL_M.toInt()) {
+                    Session.resetSchool(context, name)
+                    message = "Saved"
+                    return@Button
+                }
                 Session.setSchoolFix(
                     context,
                     SchoolFix(
@@ -281,5 +351,25 @@ fun SchoolScreen(name: String, onBack: () -> Unit) {
             }) { Text("Save") }
             message?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }
         }
+    }
+}
+
+/** Within this distance, a dot is where the pin already is. */
+private const val HERE_M = 3.0
+
+/** A button that starts with the mark of the map dot it is about: blue (where the bus parked) or white (BusPlanner's point). */
+@Composable
+private fun DotButton(blue: Boolean, enabled: Boolean, text: String, onClick: () -> Unit) {
+    OutlinedButton(enabled = enabled, onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Box(
+            Modifier
+                .size(if (blue) 12.dp else 10.dp)
+                .alpha(if (enabled) 1f else 0.45f)
+                .clip(CircleShape)
+                .background(if (blue) Color(0xFF1565C0) else Color.White)
+                .border(2.dp, if (blue) Color.White else Color(0xFF6D6D6D), CircleShape)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(text, modifier = Modifier.weight(1f))
     }
 }

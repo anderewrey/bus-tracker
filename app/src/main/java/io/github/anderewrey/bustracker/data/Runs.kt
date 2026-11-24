@@ -60,6 +60,13 @@ data class Run(
     val endRule: EndRule? = null,
     /** The zone of [EndRule.LEAVES_ZONE] or [EndRule.ENTERS_ZONE]; null: the run's main zone. */
     val endZone: String? = null,
+    /**
+     * The run's heads-up zone (DESIGN.md §6.1, user 2026-11-22): a sound once when the bus enters
+     * it; null: none. Kept across rescans like the main zone.
+     */
+    val headsUpZone: String? = null,
+    /** The main zone's alarm rings only once the heads-up zone has sounded in this period. */
+    val alarmAfterHeadsUp: Boolean = false,
 ) {
     val planned: LocalTime? get() = parseTime(time)
     /** The period's start; never before midnight (the period stays on its day). */
@@ -112,6 +119,8 @@ data class Run(
         .put("before", before).put("after", after)
         .put("endRule", endRule?.name ?: JSONObject.NULL)
         .put("endZone", endZone ?: JSONObject.NULL)
+        .put("headsUpZone", headsUpZone ?: JSONObject.NULL)
+        .put("alarmAfterHeadsUp", alarmAfterHeadsUp)
 
     companion object {
         fun fromJson(o: JSONObject): Run {
@@ -137,6 +146,9 @@ data class Run(
                 after = o.optInt("after", MONITOR_MINUTES),
                 endRule = if (o.isNull("endRule")) null else EndRule.entries.firstOrNull { it.name == o.getString("endRule") },
                 endZone = if (o.isNull("endZone")) null else o.getString("endZone"),
+                // Absent from runs saved before 2026-11-22: no heads-up zone.
+                headsUpZone = if (o.isNull("headsUpZone")) null else o.getString("headsUpZone"),
+                alarmAfterHeadsUp = o.optBoolean("alarmAfterHeadsUp", false),
             )
         }
     }

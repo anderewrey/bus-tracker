@@ -110,7 +110,7 @@ fun OverviewScreen(onBack: () -> Unit, onChanges: () -> Unit, onSchool: (String)
         Section("Zones")
         if (zones.isEmpty()) Text("None yet.")
         zones.forEach { zone ->
-            val users = runs.filter { it.mainZone == zone.id || it.endZone == zone.id }
+            val users = runs.filter { it.mainZone == zone.id || it.endZone == zone.id || it.headsUpZone == zone.id }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(
                     Modifier.weight(1f).clickable {

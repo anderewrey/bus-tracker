@@ -25,9 +25,12 @@ import io.github.anderewrey.bustracker.data.EndRule
 import io.github.anderewrey.bustracker.data.EndWatch
 import io.github.anderewrey.bustracker.data.Store
 import java.time.LocalDate
-import io.github.anderewrey.bustracker.data.ZoneRole
 import io.github.anderewrey.bustracker.data.periodOn
-import io.github.anderewrey.bustracker.data.zonesFor
+import io.github.anderewrey.bustracker.data.SchoolArrival
+import io.github.anderewrey.bustracker.data.AT_SCHOOL_M
+import io.github.anderewrey.bustracker.data.alarmArmed
+import io.github.anderewrey.bustracker.data.headsUpZoneOf
+import io.github.anderewrey.bustracker.data.mainZoneOf
 import io.github.anderewrey.bustracker.net.BusAlert
 import io.github.anderewrey.bustracker.net.LoginFailed
 import io.github.anderewrey.bustracker.net.alertsFor
@@ -69,6 +72,9 @@ private fun alertId(key: String) = key.hashCode() + 1
 
 /** The run's BusPlanner notice: one per run, so a newer notice replaces the older one. */
 private fun noticeId(key: String) = key.hashCode() + 3
+
+/** The run's heads-up notification: apart from the run's own, so the alarm can't replace it. */
+private fun headsUpId(key: String) = key.hashCode() + 5
 
 /** The run's own notification: the tracking line while watching, the main-zone alarm while it rings. */
 private fun runNotificationId(key: String) = key.hashCode()
@@ -124,6 +130,37 @@ fun noticeAlert(context: Context, key: String, alert: BusAlert): Notification {
     val title = "${alert.bus}: ${alert.action}"
     val details = listOf(alert.routeRun, alert.created.substringAfter(' ').let { "posted $it" }).joinToString(" · ")
     return ringingAlert(context, Ringing.NOTICE, key, noticeId(key), title, alert.comment.ifEmpty { details }, "${alert.comment}\n\n$details".trim())
+}
+
+/**
+ * The heads-up zone's notification (DESIGN.md §6.1): sounds once (not insistent), on its own
+ * channel; opening it opens the run's map. It goes away when the main zone's alarm rings, or when
+ * watching ends.
+ */
+fun headsUpAlert(context: Context, key: String, title: String, text: String): Notification {
+    val id = headsUpId(key)
+    val open = PendingIntent.getActivity(
+        context, id,
+        Intent(context, MainActivity::class.java).putExtra(EXTRA_RUN, key)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+    val b = Notification.Builder(context, channelId(context, Ringing.HEADS_UP))
+        .setSmallIcon(R.drawable.ic_bus)
+        .setContentTitle(title)
+        .setContentText(text)
+        .setContentIntent(open)
+        .setAutoCancel(true)
+    if (AppSettings(context).quietOverride) b.setCategory(Notification.CATEGORY_ALARM)
+    return b.build()
+}
+
+/** Posts a test heads-up, so its sound can be checked too. */
+fun testHeadsUp(context: Context) {
+    ensureChannels(context)
+    context.getSystemService(NotificationManager::class.java)
+        .notify(headsUpId("test"), headsUpAlert(context, "test", "Test: the bus entered the heads-up zone", "This is how the heads-up sounds"))
+    AppLog.log("test heads-up posted")
 }
 
 /** Posts a test alert, so the sound can be checked before a real trip. */
@@ -198,6 +235,9 @@ class MonitorService : Service() {
     private var loop: Job? = null
     private var foregroundKey: String? = null
     private val inMainZone = HashMap<String, Boolean>()
+    private val inHeadsUpZone = HashMap<String, Boolean>()
+    /** Runs whose "bus in the main zone before the heads-up" was logged this period. */
+    private val blockedLogged = HashSet<String>()
     /**
      * Runs whose notification is the main-zone alarm, with when it rang (elapsedRealtime). The
      * checks don't update it (that would stop the sound) for [RING_MS]; then it goes back to the
@@ -207,6 +247,13 @@ class MonitorService : Service() {
     private val ringing = HashMap<String, Long>()
     /** Each watched run's end-of-monitoring rule (DESIGN.md §5.1), and the rule and zone it was made for. */
     private val endWatch = HashMap<String, EndWatch>()
+    /**
+     * Learns where the bus parks at the run's school, apart from the end rule (user, 2026-11-23):
+     * within the school's circle or 100 m, whichever is larger, for every watched run going there,
+     * so the blue dot shows up even when the circle misses the spot. Once per period. A morning run
+     * learns where the bus parks on arrival, an afternoon run where it waits before leaving.
+     */
+    private val learner = HashMap<String, SchoolArrival>()
     private val endWatchFor = HashMap<String, Pair<EndRule, String?>>()
     /** Minutes a BusPlanner delay notice added to each watched run's period. */
     private val delayMin = HashMap<String, Int>()
@@ -311,11 +358,20 @@ class MonitorService : Service() {
         periodStart[run.key] = period.start
         Session.setWatchEnd(run.key, period.end)
         inMainZone.remove(run.key)
+        inHeadsUpZone.remove(run.key)
+        blockedLogged.remove(run.key)
         ringing.remove(run.key)
         delayMin.remove(run.key)
         setEndWatch(run)
+        learner[run.key] = SchoolArrival(runSchools(run).map { it.copy(radius = maxOf(it.radius, AT_SCHOOL_M)) }, needAway = false)
         firstCheck += run.key
-        AppLog.log("zones of ${run.key}: ${zonesFor(run, Session.zones.value).joinToString { "${it.name} (${it.role.name.lowercase()})" }.ifEmpty { "none" }}")
+        val zs = Session.zones.value
+        AppLog.log(
+            "zones of ${run.key}: " + listOfNotNull(
+                headsUpZoneOf(run, zs)?.let { "${it.name} (heads-up${if (run.alarmAfterHeadsUp) ", alarm only after it" else ""})" },
+                mainZoneOf(run, zs)?.let { "${it.name} (main)" },
+            ).joinToString().ifEmpty { "none" }
+        )
         val status = Session.status.value[run.key] ?: RunStatus(null, "Starting…", null)
         promote(run.key, notification(run, status))
         Session.setActive(until.keys.toSet())
@@ -338,6 +394,7 @@ class MonitorService : Service() {
         periodStart.remove(key)
         endWatch.remove(key)
         endWatchFor.remove(key)
+        learner.remove(key)
         delayMin.remove(key)
         Session.setWatchEnd(key, null)
         // The notice stays on the run's card for the rest of the day (user, 2026-11-21).
@@ -359,6 +416,8 @@ class MonitorService : Service() {
             }
         }
         if (!keepAlarm) getSystemService(NotificationManager::class.java).cancel(runNotificationId(key))
+        // The heads-up is only about this trip: it goes away with it, whatever ended watching.
+        getSystemService(NotificationManager::class.java).cancel(headsUpId(key))
         if (until.isEmpty()) {
             loop?.cancel()
             releaseWakeLock()
@@ -410,8 +469,12 @@ class MonitorService : Service() {
                     continue
                 }
                 val status = read(run, manual)
-                if (key in until) checkZones(run, status)
-                if (key in until) checkEnd(run, status)
+                // A failed check keeps the previous reading for the screens: nothing new to decide
+                // on. Counted again, it made "parked at the school" out of a moving bus.
+                if (key in until && !status.kept) checkHeadsUp(run, status)
+                if (key in until && !status.kept) checkZones(run, status)
+                if (key in until && !status.kept) learnParking(run, status)
+                if (key in until && !status.kept) checkEnd(run, status)
                 if (key in until) {
                     showStatus(run, status)
                     if (firstCheck.remove(key)) warnIfNoVehicle(run, status)
@@ -432,11 +495,14 @@ class MonitorService : Service() {
      * corrected position and circle first (DESIGN.md §5.3). A school with no known position
      * never ends it: only the period's end and the Alarm switch do.
      */
+    /** The run's own school; every known school only for a run saved before 0.9, until the next scan. */
+    private fun runSchools(run: Run) =
+        Session.schools.value.filter { run.school.isEmpty() || it.name.equals(run.school, ignoreCase = true) }
+
     private fun setEndWatch(run: Run) {
         val rule = run.endOfWatch
         val zone = Session.zones.value.firstOrNull { it.id == run.endZoneId }
-        // The run's own school; every known school only for a run saved before 0.9, until the next scan.
-        val schools = Session.schools.value.filter { run.school.isEmpty() || it.name.equals(run.school, ignoreCase = true) }
+        val schools = runSchools(run)
         endWatch[run.key] = EndWatch(rule, zone, schools)
         endWatchFor[run.key] = rule to run.endZoneId
         AppLog.log(
@@ -476,9 +542,16 @@ class MonitorService : Service() {
         val r = status.reading ?: return
         val lat = r.busLat ?: return
         val lon = r.busLon ?: return
-        val main = zonesFor(run, Session.zones.value).firstOrNull { it.role == ZoneRole.MAIN } ?: return
+        val main = mainZoneOf(run, Session.zones.value) ?: return
         val inside = main.contains(lat, lon)
         val wasInside = inMainZone[run.key] == true
+        // Alarm only after the heads-up (user, 2026-11-22): before it, the bus inside the main zone
+        // only crosses it. It isn't counted as inside, so the first check inside after the
+        // heads-up sounded rings.
+        if (inside && !wasInside && !alarmArmed(run, Session.zones.value, Session.hasHeadsUp(run.key))) {
+            if (blockedLogged.add(run.key)) AppLog.log("${run.key}: bus in main zone ${main.name} before the heads-up zone, no alarm")
+            return
+        }
         if (inside && !wasInside) {
             inMainZone[run.key] = true
             if (Session.hasRung(run.key)) {
@@ -487,6 +560,8 @@ class MonitorService : Service() {
             }
             Session.markRang(this, run.key)
             AppLog.log("${run.key}: bus entered main zone ${main.name}, ringing")
+            // The alarm takes over from the heads-up: it goes away (user, 2026-11-23: it stayed in the list).
+            getSystemService(NotificationManager::class.java).cancel(headsUpId(run.key))
             val bus = r.runLabel?.substringBefore(' ') ?: run.bus
             // In place of the tracking notification: one notification per run, not two.
             ringing[run.key] = SystemClock.elapsedRealtime()
@@ -504,6 +579,31 @@ class MonitorService : Service() {
     }
 
     /**
+     * The heads-up zone (DESIGN.md §6.1): when the bus enters it, a notification that sounds once,
+     * beside the run's own; at most once per period (the Alarm switch off and on lets it sound
+     * again). It never stops or replaces the alarm.
+     */
+    private fun checkHeadsUp(run: Run, status: RunStatus) {
+        val r = status.reading ?: return
+        val lat = r.busLat ?: return
+        val lon = r.busLon ?: return
+        val zone = headsUpZoneOf(run, Session.zones.value) ?: return
+        val inside = zone.contains(lat, lon)
+        val wasInside = inHeadsUpZone[run.key] == true
+        inHeadsUpZone[run.key] = inside
+        if (!inside || wasInside) return
+        if (Session.hasHeadsUp(run.key)) {
+            AppLog.log("${run.key}: bus in heads-up zone ${zone.name}, already sounded this period")
+            return
+        }
+        Session.markHeadsUp(this, run.key)
+        AppLog.log("${run.key}: bus entered heads-up zone ${zone.name}, sounding once")
+        val bus = r.runLabel?.substringBefore(' ') ?: run.bus
+        getSystemService(NotificationManager::class.java)
+            .notify(headsUpId(run.key), headsUpAlert(this, run.key, "$bus entered ${zone.name}", status.line))
+    }
+
+    /**
      * Ends watching when the run's end-of-monitoring rule says so (DESIGN.md §5.1): e.g. the bus
      * parked at the school (three readings in a row at one spot inside its circle, after it was
      * seen away from it), or the bus leaving the main zone (children dropped off).
@@ -514,10 +614,20 @@ class MonitorService : Service() {
         val lon = r.busLon ?: return
         val watch = endWatch[run.key] ?: return
         val reason = watch.add(lat, lon) ?: return
-        val school = watch.school
-        val spot = school?.parkedSpot
-        if (school?.parkedAt != null && spot != null) Session.markParked(this, school.parkedAt!!.name, spot)
         stop(run.key, reason)
+    }
+
+    /** Where the bus parked at the school, for the School page's blue dot; it never ends watching. */
+    private fun learnParking(run: Run, status: RunStatus) {
+        val r = status.reading ?: return
+        val lat = r.busLat ?: return
+        val lon = r.busLon ?: return
+        val l = learner[run.key] ?: return
+        if (!l.add(lat, lon)) return
+        val school = l.parkedAt
+        val spot = l.parkedSpot
+        if (school != null && spot != null) Session.markParked(this, school.name, spot, pm = run.key.endsWith("PM"))
+        learner.remove(run.key)
     }
 
     /** The ids of the last answer from the alerts page, to log it only when it changes. */
