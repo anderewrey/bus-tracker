@@ -625,7 +625,7 @@ class MonitorService : Service() {
         if (!l.add(lat, lon)) return
         val school = l.parkedAt
         val spot = l.parkedSpot
-        if (school != null && spot != null) Session.markParked(this, school.name, spot, pm = run.key.endsWith("PM"))
+        if (school != null && spot != null) Session.markParked(this, school.name, spot, pm = run.isPm)
         learner.remove(run.key)
     }
 
