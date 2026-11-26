@@ -15,8 +15,14 @@ const val EXPORT_PERMISSION = "io.github.anderewrey.bustracker.permission.EXPORT
 /** The version of the export's layout; an import refuses another one. */
 const val TRANSFER_FORMAT = 1
 
-/** The preference files copied, by name: login and runs, zones, schools, settings. */
-val TRANSFER_FILES = listOf("bustracker", "zones", "schools", "settings")
+/** The app's preference files, each owned by one store. */
+const val STORE_FILE = "bustracker"
+const val ZONES_FILE = "zones"
+const val SCHOOLS_FILE = "schools"
+const val SETTINGS_FILE = "settings"
+
+/** The preference files copied: login and runs, zones, schools, settings. */
+val TRANSFER_FILES = listOf(STORE_FILE, ZONES_FILE, SCHOOLS_FILE, SETTINGS_FILE)
 
 /**
  * What a copy leaves out: the password, encrypted with a key only its own app can use (it travels
@@ -24,7 +30,7 @@ val TRANSFER_FILES = listOf("bustracker", "zones", "schools", "settings")
  * which belong to each app's own channels.
  */
 fun transferSkips(file: String, key: String): Boolean =
-    (file == "bustracker" && key == "password") || (file == "settings" && key.startsWith("channel_"))
+    (file == STORE_FILE && key == "password") || (file == SETTINGS_FILE && key.startsWith("channel_"))
 
 /** One preference file as JSON, each value with its type, so it comes back as the same type. */
 fun prefsToJson(file: String, all: Map<String, *>): JSONObject {

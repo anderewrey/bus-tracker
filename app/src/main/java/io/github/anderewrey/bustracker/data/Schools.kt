@@ -128,7 +128,7 @@ fun matchSchool(options: List<String>, name: String, chosen: String? = null): Sc
  * login like the zones: logging out keeps them.
  */
 class SchoolStore(context: Context) {
-    private val prefs = context.getSharedPreferences("schools", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(SCHOOLS_FILE, Context.MODE_PRIVATE)
 
     var fixes: Map<String, SchoolFix>
         get() {

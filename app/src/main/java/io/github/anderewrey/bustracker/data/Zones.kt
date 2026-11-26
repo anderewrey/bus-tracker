@@ -70,7 +70,7 @@ fun defaultZone(run: Run, zones: List<Zone>): String? {
 
 /** The zones, kept apart from the login so logging out doesn't lose what the user drew. */
 class ZoneStore(context: Context) {
-    private val prefs = context.getSharedPreferences("zones", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(ZONES_FILE, Context.MODE_PRIVATE)
 
     var zones: List<Zone>
         get() {

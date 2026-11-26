@@ -21,7 +21,7 @@ import javax.crypto.spec.GCMParameterSpec
 
 /** Login, runs and the last scan report, kept in app-private preferences. */
 class Store(context: Context) {
-    private val prefs = context.getSharedPreferences("bustracker", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(STORE_FILE, Context.MODE_PRIVATE)
 
     /** The BusPlanner portal, "https://host" (see portalAddress); none for a login saved before 0.13. */
     val portal: String? get() = prefs.getString("portal", null)
