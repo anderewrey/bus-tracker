@@ -87,8 +87,11 @@ fun circlePoints(lat: Double, lon: Double, radius: Double, steps: Int = 64): Lis
 
 /** Lower case, no accents, single spaces: "École  Mer et Monde" and "ecole mer et monde" are the same. */
 fun plainName(s: String): String =
-    Normalizer.normalize(s, Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "")
-        .lowercase(Locale.ROOT).replace(Regex("\\s+"), " ").trim()
+    Normalizer.normalize(s, Normalizer.Form.NFD).replace(ACCENTS, "")
+        .lowercase(Locale.ROOT).replace(SPACES, " ").trim()
+
+private val ACCENTS = Regex("\\p{M}+")
+private val SPACES = Regex("\\s+")
 
 /** How a school's name was found in BusPlanner's school list. */
 sealed class SchoolMatch {
@@ -143,51 +146,23 @@ class SchoolStore(context: Context) {
      * parks on arrival. The afternoon's spot, where it waits before leaving, is [parkedPm].
      */
     var parked: Map<String, Pair<Double, Double>>
-        get() {
-            val o = JSONObject(prefs.getString("parked", "{}"))
-            return o.keys().asSequence().mapNotNull { k ->
-                runCatching { o.getJSONObject(k).let { p -> k to (p.getDouble("lat") to p.getDouble("lon")) } }.getOrNull()
-            }.toMap()
-        }
-        set(value) {
-            val o = JSONObject()
-            value.forEach { (k, v) -> o.put(k, JSONObject().put("lat", v.first).put("lon", v.second)) }
-            prefs.edit().putString("parked", o.toString()).apply()
-        }
+        get() = prefs.latLons("parked")
+        set(value) = prefs.putLatLons("parked", value)
 
     /** Where the bus was last seen waiting at each school on an afternoon run (learned from 2026-11-23). */
     var parkedPm: Map<String, Pair<Double, Double>>
-        get() {
-            val o = JSONObject(prefs.getString("parkedPm", "{}"))
-            return o.keys().asSequence().mapNotNull { k ->
-                runCatching { o.getJSONObject(k).let { p -> k to (p.getDouble("lat") to p.getDouble("lon")) } }.getOrNull()
-            }.toMap()
-        }
-        set(value) {
-            val o = JSONObject()
-            value.forEach { (k, v) -> o.put(k, JSONObject().put("lat", v.first).put("lon", v.second)) }
-            prefs.edit().putString("parkedPm", o.toString()).apply()
-        }
+        get() = prefs.latLons("parkedPm")
+        set(value) = prefs.putLatLons("parkedPm", value)
 
     /** When [parkedPm] was seen. */
     var parkedPmAt: Map<String, LocalDateTime>
-        get() {
-            val o = JSONObject(prefs.getString("parkedPmAt", "{}"))
-            return o.keys().asSequence().mapNotNull { k -> runCatching { k to LocalDateTime.parse(o.getString(k)) }.getOrNull() }.toMap()
-        }
-        set(value) {
-            prefs.edit().putString("parkedPmAt", JSONObject(value.mapValues { it.value.toString() }).toString()).apply()
-        }
+        get() = prefs.times("parkedPmAt")
+        set(value) = prefs.putTimes("parkedPmAt", value)
 
     /** When the bus was last seen parked at each school; absent for spots learned before 2026-11-23. */
     var parkedAt: Map<String, LocalDateTime>
-        get() {
-            val o = JSONObject(prefs.getString("parkedAt", "{}"))
-            return o.keys().asSequence().mapNotNull { k -> runCatching { k to LocalDateTime.parse(o.getString(k)) }.getOrNull() }.toMap()
-        }
-        set(value) {
-            prefs.edit().putString("parkedAt", JSONObject(value.mapValues { it.value.toString() }).toString()).apply()
-        }
+        get() = prefs.times("parkedAt")
+        set(value) = prefs.putTimes("parkedAt", value)
 }
 
 /**

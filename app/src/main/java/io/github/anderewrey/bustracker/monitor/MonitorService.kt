@@ -79,6 +79,14 @@ private fun headsUpId(key: String) = key.hashCode() + 5
 /** The run's own notification: the tracking line while watching, the main-zone alarm while it rings. */
 private fun runNotificationId(key: String) = key.hashCode()
 
+/** Opens the app from a notification: on the run list, or where [extras] say (a run's map, a screen). */
+internal fun openAppIntent(context: Context, requestCode: Int, extras: Intent.() -> Unit = {}): PendingIntent =
+    PendingIntent.getActivity(
+        context, requestCode,
+        Intent(context, MainActivity::class.java).apply(extras).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+
 /** Asks the service to act on [key]'s notification (Silence, or the notification cleared by the user). */
 private fun serviceIntent(context: Context, action: String, key: String, id: Int): PendingIntent =
     PendingIntent.getService(
@@ -97,12 +105,7 @@ private fun ringingAlert(
     context: Context, type: Ringing, key: String, id: Int, title: String, text: String,
     long: String? = null, inPlace: Boolean = false,
 ): Notification {
-    val open = PendingIntent.getActivity(
-        context, id,
-        Intent(context, MainActivity::class.java).putExtra(EXTRA_RUN, key).putExtra(EXTRA_SILENCE, inPlace)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-    )
+    val open = openAppIntent(context, id) { putExtra(EXTRA_RUN, key).putExtra(EXTRA_SILENCE, inPlace) }
     val silence = serviceIntent(context, MonitorService.ACTION_SILENCE, key, id)
     val b = Notification.Builder(context, channelId(context, type))
         .setSmallIcon(R.drawable.ic_bus)
@@ -139,12 +142,7 @@ fun noticeAlert(context: Context, key: String, alert: BusAlert): Notification {
  */
 fun headsUpAlert(context: Context, key: String, title: String, text: String): Notification {
     val id = headsUpId(key)
-    val open = PendingIntent.getActivity(
-        context, id,
-        Intent(context, MainActivity::class.java).putExtra(EXTRA_RUN, key)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-    )
+    val open = openAppIntent(context, id) { putExtra(EXTRA_RUN, key) }
     val b = Notification.Builder(context, channelId(context, Ringing.HEADS_UP))
         .setSmallIcon(R.drawable.ic_bus)
         .setContentTitle(title)
@@ -206,12 +204,7 @@ private fun rescanIfDue(context: Context) {
 }
 
 private fun notifyChanges(context: Context, found: List<RunChange>) {
-    val open = PendingIntent.getActivity(
-        context, CHANGES_ID,
-        Intent(context, MainActivity::class.java).putExtra(EXTRA_SCREEN, SCREEN_CHANGES)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-    )
+    val open = openAppIntent(context, CHANGES_ID) { putExtra(EXTRA_SCREEN, SCREEN_CHANGES) }
     val text = if (found.size == 1) "${found[0].title}: see what changed" else "${found.size} runs changed: ${found.joinToString { it.title }}"
     val n = Notification.Builder(context, BUS_ALERT_CHANNEL)
         .setSmallIcon(R.drawable.ic_bus)
@@ -227,6 +220,9 @@ private fun notifyChanges(context: Context, found: List<RunChange>) {
 
 /** Polls BusPlanner for the monitored runs and keeps one notification per run. */
 class MonitorService : Service() {
+    /** The saved run [key], from what Session already holds (not parsed again from preferences). */
+    private fun runOf(key: String): Run? = Session.runs.value.firstOrNull { it.key == key }
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val until = LinkedHashMap<String, LocalDateTime>()
     /** The start of the period each watched run is in, to mark it ended when watching ends by itself. */
@@ -278,7 +274,7 @@ class MonitorService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val key = intent?.getStringExtra(EXTRA_RUN)
-        val run = key?.let { k -> Store(this).runs.firstOrNull { it.key == k } }
+        val run = key?.let { runOf(it) }
         when (intent?.action) {
             ACTION_START -> if (run != null) start(run)
             // From the Alarm switch (Session.setAlarm), which already saved the choice.
@@ -340,7 +336,7 @@ class MonitorService : Service() {
             // Only the Alarm switch, the automatic start and the app's catch-up start a run, all
             // inside its period. Android still wants startForeground after startForegroundService.
             AppLog.log("${run.key} not started: outside its monitoring period")
-            val shown = foregroundKey?.let { k -> Store(this).runs.firstOrNull { it.key == k } }
+            val shown = foregroundKey?.let { runOf(it) }
             if (shown != null) {
                 promote(shown.key, notification(shown, Session.status.value[shown.key] ?: RunStatus(null, "", null)))
             } else {
@@ -407,7 +403,7 @@ class MonitorService : Service() {
         if (keepAlarm) AppLog.log("$key: alarm just rang, left until answered")
         if (foregroundKey == key) {
             val next = until.keys.firstOrNull()
-            val run = next?.let { k -> Store(this).runs.firstOrNull { it.key == k } }
+            val run = next?.let { runOf(it) }
             if (run != null) {
                 promote(run.key, notification(run, Session.status.value[run.key] ?: RunStatus(null, "", null)))
             } else {
@@ -457,7 +453,7 @@ class MonitorService : Service() {
             Session.setNextCheck(null)
             val now = LocalDateTime.now()
             for (key in until.keys.toList()) {
-                val run = Store(this).runs.firstOrNull { it.key == key }
+                val run = runOf(key)
                 if (run == null) {
                     stop(key, "run no longer on the account after a rescan, see Changes")
                     continue
@@ -471,10 +467,13 @@ class MonitorService : Service() {
                 val status = read(run, manual)
                 // A failed check keeps the previous reading for the screens: nothing new to decide
                 // on. Counted again, it made "parked at the school" out of a moving bus.
-                if (key in until && !status.kept) checkHeadsUp(run, status)
-                if (key in until && !status.kept) checkZones(run, status)
-                if (key in until && !status.kept) learnParking(run, status)
-                if (key in until && !status.kept) checkEnd(run, status)
+                if (key in until && !status.kept) {
+                    checkHeadsUp(run, status)
+                    checkZones(run, status)
+                    learnParking(run, status)
+                    // Last: the only one that can stop watching.
+                    checkEnd(run, status)
+                }
                 if (key in until) {
                     showStatus(run, status)
                     if (firstCheck.remove(key)) warnIfNoVehicle(run, status)
@@ -490,15 +489,15 @@ class MonitorService : Service() {
         }
     }
 
+    /** The run's own school; every known school only for a run saved before 0.9, until the next scan. */
+    private fun runSchools(run: Run) =
+        Session.schools.value.filter { run.school.isEmpty() || it.name.equals(run.school, ignoreCase = true) }
+
     /**
      * The run's end-of-monitoring rule, for the zone and schools it is about: the school's
      * corrected position and circle first (DESIGN.md §5.3). A school with no known position
      * never ends it: only the period's end and the Alarm switch do.
      */
-    /** The run's own school; every known school only for a run saved before 0.9, until the next scan. */
-    private fun runSchools(run: Run) =
-        Session.schools.value.filter { run.school.isEmpty() || it.name.equals(run.school, ignoreCase = true) }
-
     private fun setEndWatch(run: Run) {
         val rule = run.endOfWatch
         val zone = Session.zones.value.firstOrNull { it.id == run.endZoneId }
@@ -638,7 +637,7 @@ class MonitorService : Service() {
      * monitored bus rings once. A failure is only logged; monitoring goes on.
      */
     private suspend fun checkNotices() {
-        val runs = until.keys.mapNotNull { k -> Store(this).runs.firstOrNull { it.key == k } }
+        val runs = until.keys.mapNotNull { runOf(it) }
         if (runs.isEmpty()) return
         val portal = Store(this).portal ?: return
         val all = try {
@@ -706,11 +705,7 @@ class MonitorService : Service() {
         if (r.busLat != null) return
         AppLog.log("${run.key}: no vehicle at monitoring start, warning posted")
         // A tap opens the app on the run list, where the run's card says "No vehicle" (user, 2026-11-21).
-        val open = PendingIntent.getActivity(
-            this, run.key.hashCode() + 2,
-            Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        val open = openAppIntent(this, run.key.hashCode() + 2)
         val n = Notification.Builder(this, BUS_ALERT_CHANNEL)
             .setSmallIcon(R.drawable.ic_bus)
             .setContentTitle("${run.bus}: BusPlanner reports no vehicle")
@@ -731,12 +726,7 @@ class MonitorService : Service() {
     }
 
     private fun notification(run: Run, status: RunStatus): Notification {
-        val open = PendingIntent.getActivity(
-            this, run.key.hashCode(),
-            Intent(this, MainActivity::class.java).putExtra(EXTRA_RUN, run.key)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        val open = openAppIntent(this, run.key.hashCode()) { putExtra(EXTRA_RUN, run.key) }
         val stopWatching = serviceIntent(this, ACTION_STOP_WATCHING, run.key, runNotificationId(run.key))
         // Cleared by the user (Android 14+ lets them): it comes back, watching goes on (user, 2026-11-14).
         val dismissed = serviceIntent(this, ACTION_DISMISSED, run.key, runNotificationId(run.key))

@@ -13,7 +13,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import io.github.anderewrey.bustracker.AppLog
-import io.github.anderewrey.bustracker.MainActivity
 import io.github.anderewrey.bustracker.R
 import io.github.anderewrey.bustracker.Session
 import io.github.anderewrey.bustracker.data.Store
@@ -109,11 +108,7 @@ class StartAlarmReceiver : BroadcastReceiver() {
     /** Asks the user to start it, since Android didn't let the app do it. */
     private fun notStarted(context: Context, key: String) {
         ensureChannels(context)
-        val open = PendingIntent.getActivity(
-            context, key.hashCode() + 4,
-            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        val open = openAppIntent(context, key.hashCode() + 4)
         val n = Notification.Builder(context, BUS_ALERT_CHANNEL)
             .setSmallIcon(R.drawable.ic_bus)
             .setContentTitle("$key: watching didn't start")

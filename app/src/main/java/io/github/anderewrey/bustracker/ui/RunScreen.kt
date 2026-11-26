@@ -57,7 +57,7 @@ import java.util.Locale
 
 /**
  * Everything about one run on one page (DESIGN.md §5.1): about the run, its monitoring period,
- * automatic start, main zone and end of monitoring. Heads-up zones are not built yet.
+ * automatic start, heads-up and main zones, and end of monitoring.
  */
 @Composable
 fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
@@ -361,11 +361,6 @@ private const val STEP = 5
 internal fun Section(title: String) {
     HorizontalDivider(Modifier.padding(top = 16.dp, bottom = 8.dp))
     Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-}
-
-@Composable
-internal fun NotBuilt(what: String) {
-    Text("$what: not built yet.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
 }
 
 @Composable
