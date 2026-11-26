@@ -338,7 +338,8 @@ object Session {
         val store = Store(context)
         val portal = store.portal ?: throw LoginFailed("portal address missing, log in again")
         val email = store.email ?: throw LoginFailed("not logged in")
-        val password = store.password ?: throw LoginFailed("password missing, log in again")
+        // Decrypted (Keystore) only when a login is needed, not on every check.
+        val password by lazy { store.password ?: throw LoginFailed("password missing, log in again") }
         val client = clientFor(portal)
         val idle = SystemClock.elapsedRealtime() - lastRequestAt
         val why = renewReason ?: if (lastRequestAt != 0L && idle > IDLE_MS) "nothing asked for ${idle / 60_000} min" else null
@@ -466,24 +467,19 @@ object Session {
     /** Where the bus was last seen parked at each school. */
     private val _parked = MutableStateFlow<Map<String, Pair<Double, Double>>>(emptyMap())
     val parked: StateFlow<Map<String, Pair<Double, Double>>> = _parked
-    private val _parkedAt = MutableStateFlow<Map<String, LocalDateTime>>(emptyMap())
-    val parkedAt: StateFlow<Map<String, LocalDateTime>> = _parkedAt
-    /** Where, and when, the bus was last seen waiting at each school on an afternoon run. */
+    /** Where the bus was last seen waiting at each school on an afternoon run (when: kept in SchoolStore). */
     private val _parkedPm = MutableStateFlow<Map<String, Pair<Double, Double>>>(emptyMap())
     val parkedPm: StateFlow<Map<String, Pair<Double, Double>>> = _parkedPm
-    private val _parkedPmAt = MutableStateFlow<Map<String, LocalDateTime>>(emptyMap())
-    val parkedPmAt: StateFlow<Map<String, LocalDateTime>> = _parkedPmAt
 
     fun refreshSchools(context: Context) {
         val store = Store(context)
         val ss = SchoolStore(context)
-        _schoolFixes.value = ss.fixes
+        val fixes = ss.fixes
+        _schoolFixes.value = fixes
         _parked.value = ss.parked
-        _parkedAt.value = ss.parkedAt
         _parkedPm.value = ss.parkedPm
-        _parkedPmAt.value = ss.parkedPmAt
         _schoolOptions.value = store.schoolOptions
-        _schools.value = schoolSpots(store.runs.map { it.school }, store.schools, ss.fixes)
+        _schools.value = schoolSpots(store.runs.map { it.school }, store.schools, fixes)
     }
 
     /** The position the app uses for [name], or null when unknown. */
@@ -538,9 +534,7 @@ object Session {
             ss.parkedAt = ss.parkedAt + (school to now)
         }
         _parked.value = ss.parked
-        _parkedAt.value = ss.parkedAt
         _parkedPm.value = ss.parkedPm
-        _parkedPmAt.value = ss.parkedPmAt
         AppLog.log(String.format(Locale.US, "school %s: bus %s at %.6f,%.6f", school, if (pm) "waiting (PM)" else "parked", at.first, at.second))
     }
 
@@ -575,30 +569,37 @@ object Session {
         AppLog.log("$key: alarm re-armed")
     }
 
+    /** Saves the runs [change] makes from the saved ones, and shows them; returns them. */
+    private fun saveRuns(context: Context, change: (List<Run>) -> List<Run>): List<Run> {
+        val store = Store(context)
+        val runs = change(store.runs)
+        store.runs = runs
+        _runs.value = runs
+        return runs
+    }
+
+    /** Saves the run [key] as [change] makes it; returns it, or null when there is no such run. */
+    private fun updateRun(context: Context, key: String, change: (Run) -> Run): Run? =
+        saveRuns(context) { runs -> runs.map { if (it.key == key) change(it) else it } }.firstOrNull { it.key == key }
+
     /** The runs that use [zoneId] as their main or heads-up zone. */
     fun runsUsing(zoneId: String): List<Run> = _runs.value.filter { it.mainZone == zoneId || it.headsUpZone == zoneId }
 
     /** Makes [zoneId] the run's heads-up zone; null: none. The zone itself stays. */
     fun setHeadsUpZone(context: Context, key: String, zoneId: String?) {
-        val store = Store(context)
-        store.runs = store.runs.map { if (it.key == key) it.copy(headsUpZone = zoneId) else it }
-        _runs.value = store.runs
+        updateRun(context, key) { it.copy(headsUpZone = zoneId) }
         AppLog.log("$key heads-up zone: ${_zones.value.firstOrNull { it.id == zoneId }?.name ?: "none"}")
     }
 
     /** The main zone's alarm only after the heads-up zone sounded (user, 2026-11-22). */
     fun setAlarmAfterHeadsUp(context: Context, key: String, on: Boolean) {
-        val store = Store(context)
-        store.runs = store.runs.map { if (it.key == key) it.copy(alarmAfterHeadsUp = on) else it }
-        _runs.value = store.runs
+        updateRun(context, key) { it.copy(alarmAfterHeadsUp = on) }
         AppLog.log("$key: alarm only after the heads-up ${if (on) "on" else "off"}")
     }
 
     /** Makes [zoneId] the run's main zone; null: no main zone, no alarm. The zone itself stays. */
     fun setMainZone(context: Context, key: String, zoneId: String?) {
-        val store = Store(context)
-        store.runs = store.runs.map { if (it.key == key) it.copy(mainZone = zoneId) else it }
-        _runs.value = store.runs
+        updateRun(context, key) { it.copy(mainZone = zoneId) }
         AppLog.log("$key main zone: ${_zones.value.firstOrNull { it.id == zoneId }?.name ?: "none"}")
     }
 
@@ -711,9 +712,7 @@ object Session {
 
     /** Adds or removes one day for every run at once. */
     fun setDayForAll(context: Context, day: DayOfWeek, on: Boolean) {
-        val store = Store(context)
-        store.runs = store.runs.map { it.copy(days = if (on) it.days + day else it.days - day) }
-        _runs.value = store.runs
+        saveRuns(context) { runs -> runs.map { it.copy(days = if (on) it.days + day else it.days - day) } }
         AppLog.log("all runs: ${day.name.lowercase()} ${if (on) "added" else "removed"}")
         applyNow(context, "days changed")
         Scheduler.reschedule(context)
@@ -725,11 +724,9 @@ object Session {
      */
     fun setPeriodMinutes(context: Context, key: String, before: Int, after: Int) {
         if (!validMinutes(before, after)) return
-        val store = Store(context)
-        val old = store.runs.firstOrNull { it.key == key } ?: return
+        val old = _runs.value.firstOrNull { it.key == key } ?: return
         val new = old.copy(before = before, after = after)
-        store.runs = store.runs.map { if (it.key == key) new else it }
-        _runs.value = store.runs
+        updateRun(context, key) { new }
         saveChoices(context, _choices.value.moved(old, new))
         AppLog.log("$key: monitoring ${new.periodRange} ($before min before, $after min after)")
         Scheduler.reschedule(context)
@@ -737,18 +734,14 @@ object Session {
 
     /** Sets what ends watching the run by itself; [zone] for a zone rule, null: the main zone. */
     fun setEndRule(context: Context, key: String, rule: EndRule, zone: String?) {
-        val store = Store(context)
-        store.runs = store.runs.map { if (it.key == key) it.copy(endRule = rule, endZone = zone) else it }
-        _runs.value = store.runs
-        val zoneName = _zones.value.firstOrNull { it.id == (zone ?: store.runs.firstOrNull { r -> r.key == key }?.mainZone) }?.name
+        val run = updateRun(context, key) { it.copy(endRule = rule, endZone = zone) }
+        val zoneName = _zones.value.firstOrNull { it.id == run?.endZoneId }?.name
         AppLog.log("$key: end of monitoring: ${rule.label}" + if (rule == EndRule.LEAVES_ZONE || rule == EndRule.ENTERS_ZONE) " (${zoneName ?: "no zone"})" else "")
     }
 
     /** Sets the days a run starts by itself. */
     fun setDays(context: Context, key: String, days: Set<DayOfWeek>) {
-        val store = Store(context)
-        store.runs = store.runs.map { if (it.key == key) it.copy(days = days) else it }
-        _runs.value = store.runs
+        updateRun(context, key) { it.copy(days = days) }
         AppLog.log("$key starts by itself: ${daysText(days)}")
         applyNow(context, "days changed")
         Scheduler.reschedule(context)
@@ -871,6 +864,10 @@ object Session {
         }
     }
 
+    /** The school whose circle (at least [SCHOOL_RADIUS_M]) holds this position: the place the status line names. */
+    private fun schoolAt(lat: Double, lon: Double): SchoolSpot? =
+        _schools.value.firstOrNull { it.known && distanceM(lat, lon, it.lat!!, it.lon!!) <= maxOf(it.radius, SCHOOL_RADIUS_M) }
+
     /**
      * What the status line's place says for this reading, without starting a lookup: the school,
      * the street known for this position, or "finding street…" (the lookup [line] starts next).
@@ -878,7 +875,7 @@ object Session {
     private fun placeNow(run: Run, r: Reading): String? {
         val lat = r.busLat ?: return null
         val lon = r.busLon ?: return null
-        val school = _schools.value.firstOrNull { it.known && distanceM(lat, lon, it.lat!!, it.lon!!) <= maxOf(it.radius, SCHOOL_RADIUS_M) }
+        val school = schoolAt(lat, lon)
         val known = streets[run.key]?.takeIf { it.at == positionKey(lat, lon) }?.state
         return placeText(school?.name, if (school == null) known ?: StreetState.Finding else null)
     }
@@ -887,7 +884,7 @@ object Session {
         // The place as the screen shows it, so each line says what the user saw (user, 2026-11-21).
         val place = placeNow(run, r)?.let { " ($it)" } ?: ""
         AppLog.log(
-            "poll ${run.key}$how: bus ${r.busLat?.let { String.format(Locale.US, "%.5f,%.5f", it, r.busLon) } ?: "none"}$place, " +
+            "poll ${run.key}$how: bus ${r.busLat?.let { lat -> r.busLon?.let { positionKey(lat, it) } } ?: "none"}$place, " +
                 "GPS ${r.reported ?: "?"}, updated ${r.updated ?: "?"}" + (r.bulletin?.let { ", bulletin: $it" } ?: "")
         )
     }
@@ -900,7 +897,7 @@ object Session {
         val sLat = run.lat ?: r.stopLat
         val sLon = run.lon ?: r.stopLon
         if (sLat != null && sLon != null) parts += formatDistance(distanceM(r.busLat, r.busLon, sLat, sLon))
-        val school = _schools.value.firstOrNull { it.known && distanceM(r.busLat, r.busLon, it.lat!!, it.lon!!) <= maxOf(it.radius, SCHOOL_RADIUS_M) }
+        val school = schoolAt(r.busLat, r.busLon)
         // Never waits for the geocoder: what is known for this position, or "finding street…".
         placeText(school?.name, if (school == null) street(context, run.key, r.busLat, r.busLon) else null)?.let { parts += it }
         r.reported?.let { parts += "GPS $it" }

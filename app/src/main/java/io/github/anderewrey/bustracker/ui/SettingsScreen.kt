@@ -63,10 +63,7 @@ fun SettingsScreen(onBack: () -> Unit, onOverview: () -> Unit, onDebug: () -> Un
         Modifier.safeDrawingPadding().padding(16.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Row(Modifier.fillMaxWidth()) {
-            TextButton(onClick = onBack) { Text("Back") }
-        }
-        Text("Settings", style = MaterialTheme.typography.headlineSmall)
+        BackHeader(onBack, "Settings")
 
         Section("Main zone alarm")
         RingingRows(Ringing.MAIN_ZONE, version, onChanged = { version++ }, onTest = { testRing(context) })

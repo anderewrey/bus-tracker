@@ -21,7 +21,7 @@ import javax.crypto.spec.GCMParameterSpec
 
 /** Login, runs and the last scan report, kept in app-private preferences. */
 class Store(context: Context) {
-    private val prefs = context.getSharedPreferences("bustracker", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(STORE_FILE, Context.MODE_PRIVATE)
 
     /** The BusPlanner portal, "https://host" (see portalAddress); none for a login saved before 0.13. */
     val portal: String? get() = prefs.getString("portal", null)
@@ -97,17 +97,13 @@ class Store(context: Context) {
 
     /** The day of the last successful scan, for the daily rescan. */
     var lastScan: LocalDate?
-        get() = prefs.getString("lastScan", null)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        set(value) {
-            prefs.edit().putString("lastScan", value?.toString()).apply()
-        }
+        get() = prefs.localDate("lastScan")
+        set(value) = prefs.putLocalDate("lastScan", value)
 
     /** The day GitHub was last asked for a newer official version (Updates). */
     var updateCheckedOn: LocalDate?
-        get() = prefs.getString("updateCheckedOn", null)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        set(value) {
-            prefs.edit().putString("updateCheckedOn", value?.toString()).apply()
-        }
+        get() = prefs.localDate("updateCheckedOn")
+        set(value) = prefs.putLocalDate("updateCheckedOn", value)
 
     /** The latest official version GitHub gave at that check, if any. */
     var latestRelease: LatestRelease?
@@ -132,36 +128,27 @@ class Store(context: Context) {
 
     /** When each run's main-zone alarm last rang; a run rings once per monitoring period (one a day). */
     var rang: Map<String, LocalDateTime>
-        get() = times("rang") { s ->
+        get() = prefs.times("rang") { s ->
             // Up to 0.10 only the day was kept.
             runCatching { LocalDateTime.parse(s) }.getOrElse { LocalDate.parse(s).atStartOfDay() }
         }
-        set(value) = putTimes("rang", value)
+        set(value) = prefs.putTimes("rang", value)
 
     /** When each run's heads-up zone last sounded; like [rang], it counts for today's period. */
     var headsUp: Map<String, LocalDateTime>
-        get() = times("headsUp") { LocalDateTime.parse(it) }
-        set(value) = putTimes("headsUp", value)
+        get() = prefs.times("headsUp")
+        set(value) = prefs.putTimes("headsUp", value)
 
     /** The Alarm switch's choices for single periods; entries older than two days are dropped. */
     var choices: PeriodChoices
-        get() = PeriodChoices(times("skipped"), times("forced"), times("ended"))
+        get() = PeriodChoices(prefs.times("skipped"), prefs.times("forced"), prefs.times("ended"))
         set(value) {
             val keep = LocalDateTime.now().minusDays(2)
             fun recent(m: Map<String, LocalDateTime>) = m.filterValues { it.isAfter(keep) }
-            putTimes("skipped", recent(value.skipped))
-            putTimes("forced", recent(value.forced))
-            putTimes("ended", recent(value.ended))
+            prefs.putTimes("skipped", recent(value.skipped))
+            prefs.putTimes("forced", recent(value.forced))
+            prefs.putTimes("ended", recent(value.ended))
         }
-
-    private fun times(name: String, parse: (String) -> LocalDateTime = LocalDateTime::parse): Map<String, LocalDateTime> {
-        val o = JSONObject(prefs.getString(name, "{}"))
-        return o.keys().asSequence().mapNotNull { k -> runCatching { k to parse(o.getString(k)) }.getOrNull() }.toMap()
-    }
-
-    private fun putTimes(name: String, value: Map<String, LocalDateTime>) {
-        prefs.edit().putString(name, JSONObject(value.mapValues { it.value.toString() }).toString()).apply()
-    }
 
     /** The BusPlanner notices that already rang, so a restarted app doesn't ring them again. */
     var seenNotices: Set<String>
@@ -174,7 +161,7 @@ class Store(context: Context) {
     var autoStart: AutoStart
         get() = AutoStart(
             prefs.getBoolean("autoOn", true),
-            prefs.getString("autoResumeOn", null)?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
+            prefs.localDate("autoResumeOn"),
         )
         set(value) {
             prefs.edit().putBoolean("autoOn", value.on).putString("autoResumeOn", value.resumeOn?.toString()).apply()

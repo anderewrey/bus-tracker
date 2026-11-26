@@ -5,6 +5,7 @@ package io.github.anderewrey.bustracker
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,13 +61,11 @@ object AppLog {
 
     // The version comes from git and the versionCode is the build time in minutes (DESIGN.md §8, Versions).
     private fun readBuild(context: Context) {
-        val pm = context.packageManager
-        val info = if (Build.VERSION.SDK_INT >= 33) pm.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
-        else @Suppress("DEPRECATION") pm.getPackageInfo(context.packageName, 0)
+        val info = packageInfo(context)
         val code = info.longVersionCode
         val built = Instant.ofEpochSecond(code * 60).atOffset(ZoneOffset.UTC).format(BUILT)
-        version = "${context.applicationInfo.loadLabel(pm)} ${info.versionName}, built $built UTC"
-        val type = if (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) "debug" else "release"
+        version = "${context.applicationInfo.loadLabel(context.packageManager)} ${info.versionName}, built $built UTC"
+        val type = if (isDebuggable(context)) "debug" else "release"
         build = "$version (${context.packageName}, versionCode $code, $type build, Android ${Build.VERSION.RELEASE})"
     }
 
@@ -100,3 +99,13 @@ object AppLog {
         }
     }
 }
+
+/** This app's installed package: its versionName and versionCode. */
+internal fun packageInfo(context: Context): PackageInfo {
+    val pm = context.packageManager
+    return if (Build.VERSION.SDK_INT >= 33) pm.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
+    else @Suppress("DEPRECATION") pm.getPackageInfo(context.packageName, 0)
+}
+
+/** A debug build (test apps); the official app is a release build. */
+internal fun isDebuggable(context: Context): Boolean = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0

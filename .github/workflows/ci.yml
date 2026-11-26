@@ -65,7 +65,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Unit tests and debug build
-        run: ./gradlew --console=plain testDebugUnitTest assembleDebug
+        # On main only the release APKs are kept: no debug APKs to package there.
+        run: ./gradlew --console=plain testDebugUnitTest $([ "$MAIN_PUSH" = true ] || echo assembleDebug)
 
       - name: Release build
         if: env.MAIN_PUSH == 'true'
@@ -74,20 +75,13 @@ jobs:
       # Same names as local builds: bus-tracker.apk for phones, bus-tracker-emulator.apk.
       - name: Name the APKs
         run: |
-          type=$([ "$MAIN_PUSH" = true ] && echo release || echo debug)
-          dir=app/build/outputs/apk/$type
-          mkdir out
-          cp "$dir/app-arm64-v8a-$type.apk" out/bus-tracker.apk
-          cp "$dir/app-x86_64-$type.apk" out/bus-tracker-emulator.apk
-          jq -r '.elements[0] | "\(.versionCode) \(.versionName)"' "$dir/output-metadata.json" > out/version.txt
-          cat out/version.txt
+          sh scripts/collect-apks.sh $([ "$MAIN_PUSH" = true ] && echo release || echo debug)
           # The release notes: on main, first what Run workflow would make of it (the input
           # descriptions can't say it: they are fixed text); then the commit's message.
           : > out/notes.txt
           if [ "$MAIN_PUSH" = true ]; then
             read code name < out/version.txt
-            last=$(git describe --tags --abbrev=0 --match "[0-9]*" 2>/dev/null || echo 0.0)
-            next=$(echo "$last" | awk -F. '{ print $1 "." $2 + 1 }')
+            next=$(sh scripts/next-version.sh)
             printf '%s\n\n' "To make this build version $next: Run workflow with empty fields while it is the latest pre-release, or with build build-$code." >> out/notes.txt
           fi
           git log -1 --format=%B >> out/notes.txt
@@ -167,8 +161,7 @@ jobs:
             || { echo "::error::$BUILD is not a pre-release"; exit 1; }
           sha=$(git rev-list -n 1 "refs/tags/$BUILD")
           if [ -z "$VERSION" ]; then
-            last=$(git describe --tags --abbrev=0 --match "[0-9]*" "$sha" 2>/dev/null || echo 0.0)
-            VERSION=$(echo "$last" | awk -F. '{ print $1 "." $2 + 1 }')
+            VERSION=$(sh scripts/next-version.sh "$sha")
           fi
           echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+(\.[0-9]+)?$' \
             || { echo "::error::Version $VERSION: digits and dots, e.g. 0.17"; exit 1; }
@@ -179,6 +172,8 @@ jobs:
           # The tag is made here and pushed only once the build has worked.
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # The build's commit may predate the scripts: keep this one for after the checkout.
+          cp scripts/collect-apks.sh "$RUNNER_TEMP/"
           git checkout -q "$sha"
           git tag -a "$VERSION" "$sha" -m "Bus Tracker $VERSION"
           { echo "BUILD=$BUILD"; echo "VERSION=$VERSION"; echo "NAME=$name"; } >> "$GITHUB_ENV"
@@ -199,11 +194,7 @@ jobs:
       - name: Release build under the version's name
         run: |
           ./gradlew --console=plain assembleRelease
-          dir=app/build/outputs/apk/release
-          mkdir out
-          cp "$dir/app-arm64-v8a-release.apk" out/bus-tracker.apk
-          cp "$dir/app-x86_64-release.apk" out/bus-tracker-emulator.apk
-          jq -r '.elements[0] | "\(.versionCode) \(.versionName)"' "$dir/output-metadata.json" | tee out/version.txt
+          sh "$RUNNER_TEMP/collect-apks.sh" release
 
       - name: Promote
         run: |

@@ -12,6 +12,8 @@ import android.net.Uri
 import android.os.Bundle
 import io.github.anderewrey.bustracker.data.EXPORT_PERMISSION
 import io.github.anderewrey.bustracker.data.OFFICIAL_APP_ID
+import io.github.anderewrey.bustracker.data.transferSkips
+import io.github.anderewrey.bustracker.data.SETTINGS_FILE
 import io.github.anderewrey.bustracker.data.PrefValue
 import io.github.anderewrey.bustracker.data.Store
 import io.github.anderewrey.bustracker.data.TRANSFER_FILES
@@ -99,8 +101,8 @@ fun importFromOfficial(context: Context): String {
     val prefs = o.getJSONObject("prefs")
     TRANSFER_FILES.forEach { f ->
         val e = context.getSharedPreferences(f, Context.MODE_PRIVATE).edit()
-        // The channel versions stay: they name this app's own channels.
-        if (f == "settings") context.getSharedPreferences(f, Context.MODE_PRIVATE).all.keys.filterNot { it.startsWith("channel_") }.forEach { e.remove(it) }
+        // The channel versions stay: they name this app's own channels (transferSkips).
+        if (f == SETTINGS_FILE) context.getSharedPreferences(f, Context.MODE_PRIVATE).all.keys.filterNot { transferSkips(f, it) }.forEach { e.remove(it) }
         else e.clear()
         prefsFromJson(f, prefs.optJSONObject(f) ?: JSONObject()).forEach { (k, v) ->
             when (v) {

@@ -87,6 +87,12 @@ data class Run(
     val isDropoff: Boolean
         get() = stopType.contains("Dropoff", ignoreCase = true)
 
+    /** The half-day, "AM" or "PM": the end of [key], set by [buildRuns]. */
+    val half: String get() = key.substringAfterLast(' ')
+
+    /** An afternoon run. */
+    val isPm: Boolean get() = half == "PM"
+
     /** e.g. "Pickup 7:33 AM". */
     val plannedLine: String
         get() = "${stopType.substringAfter(' ', stopType)} ${planned?.let { clock(it) } ?: time}"

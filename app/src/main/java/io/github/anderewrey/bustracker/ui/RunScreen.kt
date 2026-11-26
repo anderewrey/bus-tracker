@@ -18,7 +18,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -57,7 +56,7 @@ import java.util.Locale
 
 /**
  * Everything about one run on one page (DESIGN.md §5.1): about the run, its monitoring period,
- * automatic start, main zone and end of monitoring. Heads-up zones are not built yet.
+ * automatic start, heads-up and main zones, and end of monitoring.
  */
 @Composable
 fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
@@ -78,6 +77,13 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
     // A changed zone that other runs use too, waiting for "all runs" or "this run only".
     var sharedSave by remember { mutableStateOf<Zone?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
+    // Opens the zone screen for the run's heads-up or main zone: [zone] to change it, null for a new one.
+    fun openEditor(zone: Zone?, headsUpZone: Boolean) {
+        editZone = zone
+        editingHeadsUp = headsUpZone
+        notice = null
+        editing = true
+    }
 
     if (editing) {
         BackHandler { editing = false }
@@ -136,10 +142,7 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
         Modifier.safeDrawingPadding().padding(16.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Row(Modifier.fillMaxWidth()) {
-            TextButton(onClick = onBack) { Text("Back") }
-        }
-        Text("${run.bus} · ${run.plannedLine}", style = MaterialTheme.typography.headlineSmall)
+        BackHeader(onBack, "${run.bus} · ${run.plannedLine}")
 
         Section("About this run")
         Info("Bus", run.bus)
@@ -201,38 +204,10 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
             val others = runs.filter { (it.headsUpZone == z.id || it.mainZone == z.id) && it.key != run.key }
             if (others.isNotEmpty()) Text("Also used by ${others.joinToString { it.key }}", style = MaterialTheme.typography.bodySmall)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = {
-                editZone = null
-                editingHeadsUp = true
-                notice = null
-                editing = true
-            }) { Text("Draw new") }
-            if (headsUp != null) OutlinedButton(onClick = {
-                editZone = headsUp
-                editingHeadsUp = true
-                notice = null
-                editing = true
-            }) { Text("Edit") }
-            val choices = allZones.filter { it.id != headsUp?.id && it.id != main?.id }
-            if (choices.isNotEmpty()) Box {
-                var open by remember { mutableStateOf(false) }
-                OutlinedButton(onClick = { open = true }) { Text("Choose") }
-                DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-                    choices.forEach { z ->
-                        DropdownMenuItem(text = { Text(z.name) }, onClick = {
-                            Session.setHeadsUpZone(context, run.key, z.id)
-                            notice = null
-                            open = false
-                        })
-                    }
-                }
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (headsUp != null) TextButton(onClick = { Session.setHeadsUpZone(context, run.key, null) }) { Text("Remove") }
-            OutlinedButton(onClick = { testHeadsUp(context) }) { Text("Test sound") }
-        }
+        ZoneButtons(
+            zone = headsUp, choices = allZones.filter { it.id != headsUp?.id && it.id != main?.id }, testLabel = "Test sound",
+            onDraw = { openEditor(it, true) }, onSet = { Session.setHeadsUpZone(context, run.key, it); notice = null }, onTest = { testHeadsUp(context) },
+        )
         if (headsUp != null) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = run.alarmAfterHeadsUp, onCheckedChange = { Session.setAlarmAfterHeadsUp(context, run.key, it) })
@@ -255,41 +230,10 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
             if (others.isNotEmpty()) Text("Also used by ${others.joinToString { it.key }}", style = MaterialTheme.typography.bodySmall)
         }
         notice?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = {
-                editZone = null
-                editingHeadsUp = false
-                notice = null
-                editing = true
-            }) { Text("Draw new") }
-            if (main != null) OutlinedButton(onClick = {
-                editZone = main
-                editingHeadsUp = false
-                notice = null
-                editing = true
-            }) { Text("Edit") }
-            val choices = allZones.filter { it.id != main?.id && it.id != headsUp?.id }
-            if (choices.isNotEmpty()) Box {
-                var open by remember { mutableStateOf(false) }
-                OutlinedButton(onClick = { open = true }) { Text("Choose") }
-                DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-                    choices.forEach { z ->
-                        DropdownMenuItem(text = { Text(z.name) }, onClick = {
-                            Session.setMainZone(context, run.key, z.id)
-                            notice = null
-                            open = false
-                        })
-                    }
-                }
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (main != null) TextButton(onClick = {
-                Session.setMainZone(context, run.key, null)
-                notice = null
-            }) { Text("Remove") }
-            OutlinedButton(onClick = { testRing(context) }) { Text("Test alarm") }
-        }
+        ZoneButtons(
+            zone = main, choices = allZones.filter { it.id != main?.id && it.id != headsUp?.id }, testLabel = "Test alarm",
+            onDraw = { openEditor(it, false) }, onSet = { Session.setMainZone(context, run.key, it); notice = null }, onTest = { testRing(context) },
+        )
 
         Section("End of watching")
         Text("Watching ends by itself when:", style = MaterialTheme.typography.bodyMedium)
@@ -358,20 +302,40 @@ private fun MinutesRow(label: String, minutes: Int, canDown: Boolean, canUp: Boo
 private const val STEP = 5
 
 @Composable
-internal fun Section(title: String) {
-    HorizontalDivider(Modifier.padding(top = 16.dp, bottom = 8.dp))
-    Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-}
-
-@Composable
-internal fun NotBuilt(what: String) {
-    Text("$what: not built yet.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
-}
-
-@Composable
 private fun Info(label: String, value: String) {
     Row {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(72.dp))
         Text(value, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+/**
+ * The buttons of one of the run's zones (heads-up or main): Draw new, Edit, Choose another zone,
+ * Remove, and the test of its sound. [onSet] gets the chosen zone's id, or null to remove it.
+ */
+@Composable
+private fun ZoneButtons(
+    zone: Zone?, choices: List<Zone>, testLabel: String,
+    onDraw: (Zone?) -> Unit, onSet: (String?) -> Unit, onTest: () -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = { onDraw(null) }) { Text("Draw new") }
+        if (zone != null) OutlinedButton(onClick = { onDraw(zone) }) { Text("Edit") }
+        if (choices.isNotEmpty()) Box {
+            var open by remember { mutableStateOf(false) }
+            OutlinedButton(onClick = { open = true }) { Text("Choose") }
+            DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                choices.forEach { z ->
+                    DropdownMenuItem(text = { Text(z.name) }, onClick = {
+                        onSet(z.id)
+                        open = false
+                    })
+                }
+            }
+        }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (zone != null) TextButton(onClick = { onSet(null) }) { Text("Remove") }
+        OutlinedButton(onClick = onTest) { Text(testLabel) }
     }
 }

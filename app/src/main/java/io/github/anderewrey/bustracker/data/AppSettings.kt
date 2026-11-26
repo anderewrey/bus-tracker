@@ -10,7 +10,7 @@ import android.content.Context
  * and in again keeps them, like the phone keeps the notification channels.
  */
 class AppSettings(context: Context) {
-    private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(SETTINGS_FILE, Context.MODE_PRIVATE)
 
     /** One notification when monitoring starts while BusPlanner has no vehicle for the run. */
     var noVehicleWarning: Boolean

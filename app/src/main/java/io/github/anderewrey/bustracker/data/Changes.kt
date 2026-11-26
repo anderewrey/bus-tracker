@@ -62,8 +62,6 @@ data class RunChange(
     }
 }
 
-private fun half(run: Run) = run.key.substringAfterLast(' ')
-
 private fun guids(run: Run) = run.students.map { it.guid }.toSet()
 
 fun stopMoved(past: Run, new: Run): Boolean {
@@ -97,7 +95,7 @@ fun diffRuns(past: List<Run>, new: List<Run>, found: LocalDateTime): List<RunCha
     val unmatched = new.filter { it.key !in pastKeys }.toMutableList()
     val pairs = ArrayList<Pair<Run?, Run?>>()
     for (p in past) {
-        val n = newByKey[p.key] ?: unmatched.firstOrNull { half(it) == half(p) && (guids(it) intersect guids(p)).isNotEmpty() }
+        val n = newByKey[p.key] ?: unmatched.firstOrNull { it.half == p.half && (guids(it) intersect guids(p)).isNotEmpty() }
         unmatched.remove(n)
         pairs += p to n
     }
