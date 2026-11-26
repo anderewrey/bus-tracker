@@ -75,10 +75,7 @@ fun OverviewScreen(onBack: () -> Unit, onChanges: () -> Unit, onSchool: (String)
         Modifier.safeDrawingPadding().padding(16.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Row(Modifier.fillMaxWidth()) {
-            TextButton(onClick = onBack) { Text("Back") }
-        }
-        Text("Schools, runs and zones", style = MaterialTheme.typography.headlineSmall)
+        BackHeader(onBack, "Schools, runs and zones")
 
         // Waiting for an answer.
         val stopChanges = changes.count { it.needsChoice }

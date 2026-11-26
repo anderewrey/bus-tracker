@@ -18,7 +18,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -136,10 +135,7 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
         Modifier.safeDrawingPadding().padding(16.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Row(Modifier.fillMaxWidth()) {
-            TextButton(onClick = onBack) { Text("Back") }
-        }
-        Text("${run.bus} · ${run.plannedLine}", style = MaterialTheme.typography.headlineSmall)
+        BackHeader(onBack, "${run.bus} · ${run.plannedLine}")
 
         Section("About this run")
         Info("Bus", run.bus)
@@ -356,12 +352,6 @@ private fun MinutesRow(label: String, minutes: Int, canDown: Boolean, canUp: Boo
 }
 
 private const val STEP = 5
-
-@Composable
-internal fun Section(title: String) {
-    HorizontalDivider(Modifier.padding(top = 16.dp, bottom = 8.dp))
-    Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-}
 
 @Composable
 private fun Info(label: String, value: String) {

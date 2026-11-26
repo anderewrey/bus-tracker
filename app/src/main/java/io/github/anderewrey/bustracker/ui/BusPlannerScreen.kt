@@ -53,10 +53,7 @@ fun BusPlannerScreen(onBack: () -> Unit, onShowChanges: () -> Unit, onLogout: ()
         Modifier.safeDrawingPadding().padding(16.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Row(Modifier.fillMaxWidth()) {
-            TextButton(onClick = onBack) { Text("Back") }
-        }
-        Text("BusPlanner", style = MaterialTheme.typography.headlineSmall)
+        BackHeader(onBack, "BusPlanner")
 
         Section("Account")
         Text(store.email ?: "")
