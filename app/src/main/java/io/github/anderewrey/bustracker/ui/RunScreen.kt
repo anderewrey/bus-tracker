@@ -77,6 +77,13 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
     // A changed zone that other runs use too, waiting for "all runs" or "this run only".
     var sharedSave by remember { mutableStateOf<Zone?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
+    // Opens the zone screen for the run's heads-up or main zone: [zone] to change it, null for a new one.
+    fun openEditor(zone: Zone?, headsUpZone: Boolean) {
+        editZone = zone
+        editingHeadsUp = headsUpZone
+        notice = null
+        editing = true
+    }
 
     if (editing) {
         BackHandler { editing = false }
@@ -197,38 +204,10 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
             val others = runs.filter { (it.headsUpZone == z.id || it.mainZone == z.id) && it.key != run.key }
             if (others.isNotEmpty()) Text("Also used by ${others.joinToString { it.key }}", style = MaterialTheme.typography.bodySmall)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = {
-                editZone = null
-                editingHeadsUp = true
-                notice = null
-                editing = true
-            }) { Text("Draw new") }
-            if (headsUp != null) OutlinedButton(onClick = {
-                editZone = headsUp
-                editingHeadsUp = true
-                notice = null
-                editing = true
-            }) { Text("Edit") }
-            val choices = allZones.filter { it.id != headsUp?.id && it.id != main?.id }
-            if (choices.isNotEmpty()) Box {
-                var open by remember { mutableStateOf(false) }
-                OutlinedButton(onClick = { open = true }) { Text("Choose") }
-                DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-                    choices.forEach { z ->
-                        DropdownMenuItem(text = { Text(z.name) }, onClick = {
-                            Session.setHeadsUpZone(context, run.key, z.id)
-                            notice = null
-                            open = false
-                        })
-                    }
-                }
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (headsUp != null) TextButton(onClick = { Session.setHeadsUpZone(context, run.key, null) }) { Text("Remove") }
-            OutlinedButton(onClick = { testHeadsUp(context) }) { Text("Test sound") }
-        }
+        ZoneButtons(
+            zone = headsUp, choices = allZones.filter { it.id != headsUp?.id && it.id != main?.id }, testLabel = "Test sound",
+            onDraw = { openEditor(it, true) }, onSet = { Session.setHeadsUpZone(context, run.key, it); notice = null }, onTest = { testHeadsUp(context) },
+        )
         if (headsUp != null) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = run.alarmAfterHeadsUp, onCheckedChange = { Session.setAlarmAfterHeadsUp(context, run.key, it) })
@@ -251,41 +230,10 @@ fun RunScreen(run: Run, onBack: () -> Unit, onChanges: () -> Unit) {
             if (others.isNotEmpty()) Text("Also used by ${others.joinToString { it.key }}", style = MaterialTheme.typography.bodySmall)
         }
         notice?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = {
-                editZone = null
-                editingHeadsUp = false
-                notice = null
-                editing = true
-            }) { Text("Draw new") }
-            if (main != null) OutlinedButton(onClick = {
-                editZone = main
-                editingHeadsUp = false
-                notice = null
-                editing = true
-            }) { Text("Edit") }
-            val choices = allZones.filter { it.id != main?.id && it.id != headsUp?.id }
-            if (choices.isNotEmpty()) Box {
-                var open by remember { mutableStateOf(false) }
-                OutlinedButton(onClick = { open = true }) { Text("Choose") }
-                DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-                    choices.forEach { z ->
-                        DropdownMenuItem(text = { Text(z.name) }, onClick = {
-                            Session.setMainZone(context, run.key, z.id)
-                            notice = null
-                            open = false
-                        })
-                    }
-                }
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (main != null) TextButton(onClick = {
-                Session.setMainZone(context, run.key, null)
-                notice = null
-            }) { Text("Remove") }
-            OutlinedButton(onClick = { testRing(context) }) { Text("Test alarm") }
-        }
+        ZoneButtons(
+            zone = main, choices = allZones.filter { it.id != main?.id && it.id != headsUp?.id }, testLabel = "Test alarm",
+            onDraw = { openEditor(it, false) }, onSet = { Session.setMainZone(context, run.key, it); notice = null }, onTest = { testRing(context) },
+        )
 
         Section("End of watching")
         Text("Watching ends by itself when:", style = MaterialTheme.typography.bodyMedium)
@@ -358,5 +306,36 @@ private fun Info(label: String, value: String) {
     Row {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(72.dp))
         Text(value, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+/**
+ * The buttons of one of the run's zones (heads-up or main): Draw new, Edit, Choose another zone,
+ * Remove, and the test of its sound. [onSet] gets the chosen zone's id, or null to remove it.
+ */
+@Composable
+private fun ZoneButtons(
+    zone: Zone?, choices: List<Zone>, testLabel: String,
+    onDraw: (Zone?) -> Unit, onSet: (String?) -> Unit, onTest: () -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = { onDraw(null) }) { Text("Draw new") }
+        if (zone != null) OutlinedButton(onClick = { onDraw(zone) }) { Text("Edit") }
+        if (choices.isNotEmpty()) Box {
+            var open by remember { mutableStateOf(false) }
+            OutlinedButton(onClick = { open = true }) { Text("Choose") }
+            DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                choices.forEach { z ->
+                    DropdownMenuItem(text = { Text(z.name) }, onClick = {
+                        onSet(z.id)
+                        open = false
+                    })
+                }
+            }
+        }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (zone != null) TextButton(onClick = { onSet(null) }) { Text("Remove") }
+        OutlinedButton(onClick = onTest) { Text(testLabel) }
     }
 }
