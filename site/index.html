@@ -55,6 +55,7 @@ header.top .req { color: var(--mut); margin: 0; max-width: 46ch; }
 }
 .phone .bar { display: flex; justify-content: space-between; color: var(--mut); font-size: 11px; padding: 0 6px 4px; }
 .phone .hd { display: flex; justify-content: space-between; align-items: baseline; padding: 2px 4px 4px; }
+.phone .hd.v { flex-direction: column; align-items: flex-start; gap: 1px; }
 .phone .hd b { font-size: 15px; }
 .phone .hd span { color: var(--accent); font-size: 11.5px; }
 .bx { border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; display: flex; flex-direction: column; gap: 3px; }
@@ -116,7 +117,7 @@ footer a { color: var(--mut); }
   <template>
     <div class="bar"><span>7:03</span><span>▾ ▴ ▮</span></div>
     <div class="nt"><b>B101 · watching</b><span>2.4 km · That Street</span><span class="act">Open map · Stop watching</span></div>
-    <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
+    <div class="hd v"><b>Bus runs</b><span>BusPlanner › Schools &amp; zones › Settings ›</span></div>
     <div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
     <div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>2.4 km · That Street</span><span class="mut">GPS 7:03</span><div class="row"><span class="mut">Watching until 8:08</span><span class="sw"></span></div></div>
     <div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span></span><span class="sw"></span></div></div>
@@ -148,7 +149,7 @@ footer a { color: var(--mut); }
   <template>
     <div class="bar"><span>7:30</span><span>▾ ▴ ▮</span></div>
     <div class="nt ring"><b>B101 entered Home zone · ringing</b><span>400 m · This Street</span><span class="act">Open map · Silence</span></div>
-    <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
+    <div class="hd v"><b>Bus runs</b><span>BusPlanner › Schools &amp; zones › Settings ›</span></div>
     <div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
     <div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>400 m · This Street</span><span class="mut">GPS 7:30</span><div class="row"><span class="mut">Rang 7:30 · watching</span><span class="sw"></span></div></div>
     <div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span></span><span class="sw"></span></div></div>
@@ -161,7 +162,7 @@ footer a { color: var(--mut); }
   <p>When BusPlanner posts a delay or a cancellation, the app lets you know, and it stays in red on that bus for the rest of the day.</p>
   <template>
     <div class="bar"><span>6:52</span><span>▾ ▴ ▮</span></div>
-    <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
+    <div class="hd v"><b>Bus runs</b><span>BusPlanner › Schools &amp; zones › Settings ›</span></div>
     <div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
     <div class="bx"><b>B101 · Pickup 7:33 AM <span class="red">· delayed 15 minutes</span> ›</b><span class="mut">123 This Street</span><div class="row"><span></span><span class="sw"></span></div></div>
     <div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span></span><span class="sw"></span></div></div>
@@ -174,7 +175,7 @@ footer a { color: var(--mut); }
   <p>Sick day? Turn off this morning's bell. The afternoon stays as usual, and tomorrow it's back on by itself.</p>
   <template>
     <div class="bar"><span>6:50</span><span>▾ ▴ ▮</span></div>
-    <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
+    <div class="hd v"><b>Bus runs</b><span>BusPlanner › Schools &amp; zones › Settings ›</span></div>
     <div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
     <div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><div class="row"><span></span><span class="sw off"></span></div></div>
     <div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span></span><span class="sw"></span></div></div>
@@ -187,7 +188,7 @@ footer a { color: var(--mut); }
   <p>Turn Automatic start off until the day school is back. That morning, it picks up again without you.</p>
   <template>
     <div class="bar"><span>6:45</span><span>▾ ▴ ▮</span></div>
-    <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
+    <div class="hd v"><b>Bus runs</b><span>BusPlanner › Schools &amp; zones › Settings ›</span></div>
     <div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw off"></span></div><span class="mut">Off until Tue Nov 24 · Mon–Fri</span></div>
     <div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><div class="row"><span></span><span class="sw off"></span></div></div>
     <div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span></span><span class="sw off"></span></div></div>
@@ -200,7 +201,7 @@ footer a { color: var(--mut); }
   <p>New stop, new time, new bus: the app checks BusPlanner every day, tells you what changed, and asks before touching your zones.</p>
   <template>
     <div class="bar"><span>8:15</span><span>▾ ▴ ▮</span></div>
-    <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
+    <div class="hd v"><b>Bus runs</b><span>BusPlanner › Schools &amp; zones › Settings ›</span></div>
     <div class="bx alert"><b>Bus schedule changed · See changes ›</b></div>
     <div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
     <div class="bx"><b>B101 · Pickup 7:41 AM ›</b><span class="mut">123 This Street</span><div class="row"><span></span><span class="sw"></span></div></div>
@@ -215,7 +216,7 @@ footer a { color: var(--mut); }
   <template>
     <div class="bar"><span>2:24</span><span>▾ ▴ ▮</span></div>
     <div class="nt"><b>B101 · watching</b><span>1.6 km · That Street</span><span class="act">Open map · Stop watching</span></div>
-    <div class="hd"><b>Bus runs</b><span>BusPlanner › Settings ›</span></div>
+    <div class="hd v"><b>Bus runs</b><span>BusPlanner › Schools &amp; zones › Settings ›</span></div>
     <div class="bx"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
     <div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><div class="row"><span></span><span class="sw"></span></div></div>
     <div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><span>1.6 km · That Street</span><span class="mut">GPS 2:24</span><div class="row"><span class="mut">Watching until 3:14</span><span class="sw"></span></div></div>
