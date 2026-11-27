@@ -100,14 +100,10 @@ fun SettingsScreen(onBack: () -> Unit, onOverview: () -> Unit, onDebug: () -> Un
             style = MaterialTheme.typography.bodySmall,
         )
 
-        Section("Schools, runs and zones")
-        Text("Everything the app knows, and each school's position and \"at school\" circle.", style = MaterialTheme.typography.bodySmall)
-        OutlinedButton(onClick = onOverview) { Text("Open the overview") }
-
+        Section("More")
+        NavRow("Schools, runs and zones", "Everything the app knows, and each school's position and \"at school\" circle.", onOverview)
         // Moved here from the run list's header (user, 2026-11-21): a tool, not a main view.
-        Section("Debug")
-        Text("The log, test alarm and test geocoder.", style = MaterialTheme.typography.bodySmall)
-        OutlinedButton(onClick = onDebug) { Text("Open Debug") }
+        NavRow("Debug", "The log, test alarm and test geocoder.", onDebug)
 
         if (isTestBuild(context)) {
             Section("Test build")
