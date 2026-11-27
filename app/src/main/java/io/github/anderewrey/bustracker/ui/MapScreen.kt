@@ -219,6 +219,7 @@ fun MapScreen(run: Run, onBack: () -> Unit) {
             Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
                 RunTitle(run, latest?.reading?.runLabel ?: run.key, MaterialTheme.typography.titleMedium)
                 current?.let { if (it.line.isNotEmpty()) Text(it.line, color = if (it.old) MaterialTheme.colorScheme.error else Color.Unspecified) }
+                current?.reading?.reported?.let { Text("GPS $it", style = MaterialTheme.typography.bodySmall) }
                 current?.checkedAt?.let { Text("checked ${clockSeconds(it)}", style = MaterialTheme.typography.bodySmall) }
                 WatchingStatus(run)
                 if (current == null && latest != null) Text(NOT_WATCHING, color = MaterialTheme.colorScheme.onSurfaceVariant)

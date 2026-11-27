@@ -140,7 +140,7 @@ fun noticeAlert(context: Context, key: String, alert: BusAlert): Notification {
  * channel; opening it opens the run's map. It goes away when the main zone's alarm rings, or when
  * watching ends.
  */
-fun headsUpAlert(context: Context, key: String, title: String, text: String): Notification {
+fun headsUpAlert(context: Context, key: String, title: String, text: String? = null): Notification {
     val id = headsUpId(key)
     val open = openAppIntent(context, id) { putExtra(EXTRA_RUN, key) }
     val b = Notification.Builder(context, channelId(context, Ringing.HEADS_UP))
@@ -606,8 +606,9 @@ class MonitorService : Service() {
         Session.markHeadsUp(this, run.key)
         AppLog.log("${run.key}: bus entered heads-up zone ${zone.name}, sounding once")
         val bus = r.runLabel?.substringBefore(' ') ?: run.bus
+        // Being in the zone is the whole news: no street, which isn't known yet anyway (user, 2026-11-27).
         getSystemService(NotificationManager::class.java)
-            .notify(headsUpId(run.key), headsUpAlert(this, run.key, "$bus entered ${zone.name}", status.line))
+            .notify(headsUpId(run.key), headsUpAlert(this, run.key, "$bus entered ${zone.name}"))
     }
 
     /**

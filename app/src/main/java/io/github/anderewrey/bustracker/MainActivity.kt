@@ -372,6 +372,8 @@ private fun RunsScreen(
                                 shown.line, style = MaterialTheme.typography.bodyMedium,
                                 color = if (shown.old) MaterialTheme.colorScheme.error else Color.Unspecified,
                             )
+                            // The GPS time on its own line, not with the street (user, 2026-11-27).
+                            shown.reading?.reported?.let { Text("GPS $it", style = MaterialTheme.typography.bodySmall) }
                             shown.checkedAt?.let { t -> Text("checked ${clockSeconds(t)}", style = MaterialTheme.typography.bodySmall) }
                         } else if (status[run.key] != null) {
                             Text(NOT_WATCHING, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
