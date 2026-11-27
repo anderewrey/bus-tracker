@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -166,15 +166,19 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
 
     val mapRun = runs.firstOrNull { it.key == openRun }
     val pageRun = runs.firstOrNull { it.key == pageKey }
+    // A map opened from a notification shows the map, not a run's setup left open under it.
+    LaunchedEffect(openRun) { if (openRun != null) pageKey = null }
     when {
         showDebug -> {
             BackHandler { showDebug = false }
             DebugScreen { showDebug = false }
         }
-        pageRun != null && mapRun == null -> {
+        // Above the map: its "Run setup ›" opens it, and Back returns to the map (user, 2026-11-27).
+        pageRun != null -> {
             BackHandler { pageKey = null }
             RunScreen(pageRun, onBack = { pageKey = null }, onChanges = {
                 pageKey = null
+                onOpenRun(null)
                 showOverview = false
                 showSettings = false
                 onShowChanges(true)
@@ -204,7 +208,7 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
         }
         showSettings -> {
             BackHandler { showSettings = false }
-            SettingsScreen(onBack = { showSettings = false }, onOverview = { showOverview = true }, onDebug = { showDebug = true }, onImported = { loggedIn = Store(context).hasLogin })
+            SettingsScreen(onBack = { showSettings = false }, onDebug = { showDebug = true }, onImported = { loggedIn = Store(context).hasLogin })
         }
         showBusPlanner && !showChanges && mapRun == null -> {
             BackHandler { showBusPlanner = false }
@@ -220,7 +224,7 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
         }
         mapRun != null -> {
             BackHandler { onOpenRun(null) }
-            MapScreen(mapRun) { onOpenRun(null) }
+            MapScreen(mapRun, onSetup = { pageKey = mapRun.key }) { onOpenRun(null) }
         }
         showChanges -> {
             BackHandler { onShowChanges(false) }
@@ -231,9 +235,9 @@ private fun App(openRun: String?, onOpenRun: (String?) -> Unit, showChanges: Boo
             changes = changes.size,
             onShowChanges = { onShowChanges(true) },
             onOpenMap = { onOpenRun(it.key) },
-            onOpenPage = { pageKey = it.key },
             onWatchingDays = { watchingDays = true },
             onBusPlanner = { showBusPlanner = true },
+            onOverview = { showOverview = true },
             onSettings = { showSettings = true },
         )
     }
@@ -309,20 +313,22 @@ private fun RunsScreen(
     changes: Int,
     onShowChanges: () -> Unit,
     onOpenMap: (Run) -> Unit,
-    onOpenPage: (Run) -> Unit,
     onWatchingDays: () -> Unit,
     onBusPlanner: () -> Unit,
+    onOverview: () -> Unit,
     onSettings: () -> Unit,
 ) {
     val status by Session.status.collectAsState()
     val active by Session.active.collectAsState()
 
     Column(Modifier.safeDrawingPadding().padding(16.dp)) {
-        Row(Modifier.fillMaxWidth()) {
-            Text("Bus runs", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
-            // What comes from BusPlanner, and how the phone reacts (user, 2026-11-21).
-            TextButton(onClick = onBusPlanner) { Text("BusPlanner ›") }
-            TextButton(onClick = onSettings) { Text("Settings ›") }
+        Text("Bus runs", style = MaterialTheme.typography.headlineSmall)
+        // Under the title so the three fit on a phone: what comes from BusPlanner, the setup,
+        // and how the phone reacts (user, 2026-11-21 and 2026-11-27).
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            HeaderLink("BusPlanner ›", onBusPlanner)
+            HeaderLink("Schools & zones ›", onOverview)
+            HeaderLink("Settings ›", onSettings)
         }
         // No Play Store: this card is how a parent learns a new version is out (user, 2026-11-22).
         val update by Updates.available.collectAsState()
@@ -354,8 +360,9 @@ private fun RunsScreen(
         else AutoStartRow(runs, onWatchingDays)
         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
             items(runs, key = { it.key }) { run ->
-                // Tapping the card opens the run's page; its buttons keep their own actions.
-                Card(onClick = { onOpenPage(run) }, modifier = Modifier.fillMaxWidth()) {
+                // Tapping the card opens the run's map, what a parent wants while waiting; the bell
+                // keeps its own tap, and the map links to the run's setup (user, 2026-11-27).
+                Card(onClick = { onOpenMap(run) }, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         // "›": every card that opens something says so (user, 2026-11-21).
                         Row(verticalAlignment = Alignment.Top) {
@@ -378,16 +385,18 @@ private fun RunsScreen(
                         } else if (status[run.key] != null) {
                             Text(NOT_WATCHING, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedButton(onClick = { onOpenMap(run) }) { Text("Open map") }
-                            Spacer(Modifier.weight(1f))
-                            AlarmRow(run)
-                        }
+                        AlarmRow(run, Modifier.fillMaxWidth())
                     }
                 }
             }
         }
     }
+}
+
+/** A link of the run list's header, with less padding than a TextButton so three fit on a phone. */
+@Composable
+private fun HeaderLink(text: String, onClick: () -> Unit) {
+    TextButton(onClick = onClick, contentPadding = PaddingValues(horizontal = 4.dp)) { Text(text) }
 }
 
 private val FILE_STAMP = DateTimeFormatter.ofPattern("yyMMdd-HHmm")

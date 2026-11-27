@@ -49,7 +49,7 @@ import io.github.anderewrey.bustracker.monitor.testRing
 
 /** Settings that apply to all runs: sound, bus alerts and the account. */
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onOverview: () -> Unit, onDebug: () -> Unit, onImported: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onDebug: () -> Unit, onImported: () -> Unit) {
     val context = LocalContext.current
     val settings = remember { AppSettings(context) }
     // Bumped after each change, and when coming back from Android's settings, to read everything again.
@@ -100,9 +100,9 @@ fun SettingsScreen(onBack: () -> Unit, onOverview: () -> Unit, onDebug: () -> Un
             style = MaterialTheme.typography.bodySmall,
         )
 
-        Section("More")
-        NavRow("Schools, runs and zones", "Everything the app knows, and each school's position and \"at school\" circle.", onOverview)
         // Moved here from the run list's header (user, 2026-11-21): a tool, not a main view.
+        // Schools, runs and zones moved to the run list's header (user, 2026-11-27).
+        Section("Troubleshooting")
         NavRow("Debug", "The log, test alarm and test geocoder.", onDebug)
 
         if (isTestBuild(context)) {

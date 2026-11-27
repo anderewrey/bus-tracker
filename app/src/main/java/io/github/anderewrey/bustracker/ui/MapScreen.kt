@@ -4,6 +4,7 @@
 package io.github.anderewrey.bustracker.ui
 
 import io.github.anderewrey.bustracker.data.clockSeconds
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -112,7 +113,7 @@ internal fun hideTransit(s: Style): List<String> {
 }
 
 @Composable
-fun MapScreen(run: Run, onBack: () -> Unit) {
+fun MapScreen(run: Run, onSetup: () -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
     val status by Session.status.collectAsState()
     val active by Session.active.collectAsState()
@@ -223,6 +224,11 @@ fun MapScreen(run: Run, onBack: () -> Unit) {
                 current?.checkedAt?.let { Text("checked ${clockSeconds(it)}", style = MaterialTheme.typography.bodySmall) }
                 WatchingStatus(run)
                 if (current == null && latest != null) Text(NOT_WATCHING, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // The run's page, which the run list's card opened before it opened this map (user, 2026-11-27).
+                Text(
+                    "Run setup ›", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable(onClick = onSetup).padding(vertical = 4.dp),
+                )
             }
             AlarmSwitchCompact(run)
             RefreshRing(monitored = run.key in active, nextCheck = nextCheck, refreshing = refreshing) {
