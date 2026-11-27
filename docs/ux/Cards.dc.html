@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Run cards</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.ph{width:220px;height:440px;border:2px solid #444;border-radius:22px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;background:#fff;font-size:12px}
+.bx{border:1.5px dashed #888;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:4px}
+.row{display:flex;justify-content:space-between;align-items:center}
+.sw{width:30px;height:16px;border-radius:9px;background:#2a6fdb;flex-shrink:0}
+.ar{width:110px;height:440px;margin-top:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;color:#333;text-align:center;flex-shrink:0}
+.cap{width:220px;font-size:12px;color:#333;line-height:1.4}
+.mut{color:#666}
+.dim{opacity:.3}
+.col{display:flex;flex-direction:column;gap:10px}
+.nt{width:220px;height:100px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px}
+.nl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.04em}
+.h2{font-size:16px;font-weight:600}
+.lk{display:flex;gap:5px;flex-wrap:wrap;font-size:10px;color:#2a6fdb}
+.hl{outline:2px solid #2a6fdb;outline-offset:2px;border-radius:4px}
+.map{flex-grow:1;border:1.5px dashed #888;border-radius:8px;position:relative;overflow:hidden}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.rf{width:18px;height:18px;border-radius:50%;border:2px solid #888;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.gap{width:110px;flex-shrink:0}
+</style>
+</helmet>
+<div style="width:1290px;height:1480px;box-sizing:border-box;padding:28px 32px;font-family:Inter,system-ui,sans-serif;background:#f6f6f4;display:flex;flex-direction:column;gap:18px">
+<div style="font-size:20px;font-weight:600">Bus runs: a tap on a run's card opens its map; the setup is one step further</div>
+
+<div class="h2">Row 1.8.1 · The run list, today and proposed</div>
+<div style="display:flex;align-items:flex-start">
+
+<div class="col">
+<div class="nt"><span class="nl">Today</span></div>
+<div class="ph">
+<div class="row"><b>Bus runs</b><span class="mut" style="font-size:11px">BusPlanner › · Settings ›</span></div>
+<div class="bx dim"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>1.1 km · This Street</span><span class="mut">GPS 7:12</span><div class="row"><span>[Open map]</span><span class="mut">Watching until 8:08</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>Today.</b> The card opens the run's setup; the map needs the [Open map] button. Schools and zones sit in Settings, among the sounds.</div>
+</div>
+
+<div class="gap"></div>
+
+<div class="col">
+<div class="nt"><span class="nl">Proposed</span></div>
+<div class="ph">
+<b>Bus runs</b>
+<div class="lk"><span>BusPlanner ›</span><span class="hl">Schools &amp; zones ›</span><span>Settings ›</span></div>
+<div class="bx dim"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx hl"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>1.1 km · This Street</span><span class="mut">GPS 7:12</span><div class="row"><span class="mut">Watching until 8:08</span><span class="sw"></span></div></div>
+<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span></span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>Proposed.</b> The whole card opens the map: it is what a parent wants while waiting. No more [Open map]. The bell keeps its own tap. The links move under the title, so the three fit on a phone.</div>
+</div>
+
+</div>
+
+<div class="h2">Row 1.8.2 · From the card to the map, and on to the setup</div>
+<div style="display:flex;align-items:flex-start">
+
+<div class="col">
+<div class="nt"></div>
+<div class="ph">
+<b>Bus runs</b>
+<div class="lk dim"><span>BusPlanner ›</span><span>Schools &amp; zones ›</span><span>Settings ›</span></div>
+<div class="bx dim"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
+<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>1.1 km · This Street</span><span class="mut">GPS 7:12</span><div class="row"><span class="mut">Watching until 8:08</span><span class="sw"></span></div></div>
+<div class="bx dim"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span></span><span class="sw"></span></div></div>
+</div>
+<div class="cap"><b>The run list.</b> One tap anywhere on the pickup card.</div>
+</div>
+
+<div class="ar"><b>tap the card</b><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"></div>
+<div class="ph">
+<div class="row" style="align-items:flex-start"><span class="mut">Back</span><div style="display:flex;flex-direction:column;gap:2px;flex-grow:1;padding:0 6px"><b>B101 · Pickup</b><span>1.1 km · This Street</span><span class="mut">GPS 7:12</span><span class="hl" style="color:#2a6fdb;font-size:11px;align-self:flex-start">Run setup ›</span></div><span class="sw"></span><span class="rf">18</span></div>
+<div class="map"><svg viewBox="0 0 190 300" aria-hidden="true">
+<path d="M10 250 L90 230 L160 255" fill="none" stroke="#ddd" stroke-width="8" stroke-linecap="round"/>
+<path d="M90 230 L85 40" fill="none" stroke="#ddd" stroke-width="8" stroke-linecap="round"/>
+<polygon points="40,190 150,190 150,280 40,280" fill="#2a6fdb" fill-opacity=".08" stroke="#2a6fdb" stroke-dasharray="4 3"/>
+<circle cx="88" cy="110" r="7" fill="#2a6fdb"/><circle cx="120" cy="250" r="5" fill="#fff" stroke="#444" stroke-width="2"/>
+</svg></div>
+</div>
+<div class="cap"><b>The map, as today.</b> One new link under the title, <b>Run setup ›</b>: the page the card used to open.</div>
+</div>
+
+<div class="ar"><b>Run setup ›</b><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"></div>
+<div class="ph">
+<span class="mut">Back</span>
+<b>B101 · Pickup 7:33 AM</b>
+<div class="bx dim"><b>Watching days</b><span class="mut">Mon–Fri</span></div>
+<div class="bx dim"><b>Heads-up zone</b><span class="mut">That Street zone</span></div>
+<div class="bx dim"><b>Main zone</b><span class="mut">Home zone</span></div>
+<div class="bx dim"><b>Watching ends by itself</b><span class="mut">Bus parked at the school</span></div>
+</div>
+<div class="cap"><b>The run's page, unchanged.</b> Back returns to the map. It is also reached from <b>Schools &amp; zones › Runs</b>.</div>
+</div>
+
+<div class="ar"><b>Schools &amp; zones ›</b><br><span class="mut">from the run list</span><span style="font-size:22px">→</span></div>
+
+<div class="col">
+<div class="nt"></div>
+<div class="ph">
+<span class="mut">Back</span>
+<b>Schools, runs and zones</b>
+<div class="bx"><b>Schools</b><span>Sample School ›</span></div>
+<div class="bx"><b>Runs</b><span>B101 · Pickup 7:33 AM ›</span><span>B101 · Dropoff 2:39 PM ›</span></div>
+<div class="bx"><b>Zones</b><span>Home zone ›</span><span>That Street zone ›</span><span class="mut">[Draw new zone]</span></div>
+</div>
+<div class="cap"><b>The overview, unchanged</b>, now one tap from the run list instead of two through Settings. Settings keeps the sounds and Debug.</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1290,"height":1480}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
