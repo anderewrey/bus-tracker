@@ -27,43 +27,12 @@ body{margin:0}
 .map{flex-grow:1;border:1.5px dashed #888;border-radius:8px;position:relative;overflow:hidden}
 .map svg{position:absolute;inset:0;width:100%;height:100%}
 .rf{width:18px;height:18px;border-radius:50%;border:2px solid #888;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.gap{width:110px;flex-shrink:0}
 </style>
 </helmet>
-<div style="width:1290px;height:1480px;box-sizing:border-box;padding:28px 32px;font-family:Inter,system-ui,sans-serif;background:#f6f6f4;display:flex;flex-direction:column;gap:18px">
+<div style="width:1290px;height:780px;box-sizing:border-box;padding:28px 32px;font-family:Inter,system-ui,sans-serif;background:#f6f6f4;display:flex;flex-direction:column;gap:18px">
 <div style="font-size:20px;font-weight:600">Bus runs: a tap on a run's card opens its map; the setup is one step further</div>
 
-<div class="h2">Row 1.8.1 · The run list, today and proposed</div>
-<div style="display:flex;align-items:flex-start">
-
-<div class="col">
-<div class="nt"><span class="nl">Today</span></div>
-<div class="ph">
-<div class="row"><b>Bus runs</b><span class="mut" style="font-size:11px">BusPlanner › · Settings ›</span></div>
-<div class="bx dim"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
-<div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>1.1 km · This Street</span><span class="mut">GPS 7:12</span><div class="row"><span>[Open map]</span><span class="mut">Watching until 8:08</span><span class="sw"></span></div></div>
-<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span>[Open map]</span><span class="sw"></span></div></div>
-</div>
-<div class="cap"><b>Today.</b> The card opens the run's setup; the map needs the [Open map] button. Schools and zones sit in Settings, among the sounds.</div>
-</div>
-
-<div class="gap"></div>
-
-<div class="col">
-<div class="nt"><span class="nl">Proposed</span></div>
-<div class="ph">
-<b>Bus runs</b>
-<div class="lk"><span>BusPlanner ›</span><span class="hl">Schools &amp; zones ›</span><span>Settings ›</span></div>
-<div class="bx dim"><div class="row"><b>Automatic start ›</b><span class="sw"></span></div><span class="mut">Mon–Fri</span></div>
-<div class="bx hl"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>1.1 km · This Street</span><span class="mut">GPS 7:12</span><div class="row"><span class="mut">Watching until 8:08</span><span class="sw"></span></div></div>
-<div class="bx"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span></span><span class="sw"></span></div></div>
-</div>
-<div class="cap"><b>Proposed.</b> The whole card opens the map: it is what a parent wants while waiting. No more [Open map]. The bell keeps its own tap. The links move under the title, so the three fit on a phone.</div>
-</div>
-
-</div>
-
-<div class="h2">Row 1.8.2 · From the card to the map, and on to the setup</div>
+<div class="h2">Row 1.8.1 · From the card to the map, and on to the setup</div>
 <div style="display:flex;align-items:flex-start">
 
 <div class="col">
@@ -75,7 +44,7 @@ body{margin:0}
 <div class="bx"><b>B101 · Pickup 7:33 AM ›</b><span class="mut">123 This Street</span><span>1.1 km · This Street</span><span class="mut">GPS 7:12</span><div class="row"><span class="mut">Watching until 8:08</span><span class="sw"></span></div></div>
 <div class="bx dim"><b>B101 · Dropoff 2:39 PM ›</b><span class="mut">123 This Street</span><div class="row"><span></span><span class="sw"></span></div></div>
 </div>
-<div class="cap"><b>The run list.</b> One tap anywhere on the pickup card.</div>
+<div class="cap"><b>The run list.</b> The whole card opens the map: it is what a parent wants while waiting. The bell keeps its own tap. The links sit under the title, so the three fit on a phone.</div>
 </div>
 
 <div class="ar"><b>tap the card</b><span style="font-size:22px">→</span></div>
@@ -91,7 +60,7 @@ body{margin:0}
 <circle cx="88" cy="110" r="7" fill="#2a6fdb"/><circle cx="120" cy="250" r="5" fill="#fff" stroke="#444" stroke-width="2"/>
 </svg></div>
 </div>
-<div class="cap"><b>The map, as today.</b> One new link under the title, <b>Run setup ›</b>: the page the card used to open.</div>
+<div class="cap"><b>The map.</b> <b>Run setup ›</b> under the title opens the run's page.</div>
 </div>
 
 <div class="ar"><b>Run setup ›</b><span style="font-size:22px">→</span></div>
@@ -106,7 +75,7 @@ body{margin:0}
 <div class="bx dim"><b>Main zone</b><span class="mut">Home zone</span></div>
 <div class="bx dim"><b>Watching ends by itself</b><span class="mut">Bus parked at the school</span></div>
 </div>
-<div class="cap"><b>The run's page, unchanged.</b> Back returns to the map. It is also reached from <b>Schools &amp; zones › Runs</b>.</div>
+<div class="cap"><b>The run's page.</b> Back returns to the map. It is also reached from <b>Schools &amp; zones › Runs</b>.</div>
 </div>
 
 <div class="ar"><b>Schools &amp; zones ›</b><br><span class="mut">from the run list</span><span style="font-size:22px">→</span></div>
@@ -120,13 +89,13 @@ body{margin:0}
 <div class="bx"><b>Runs</b><span>B101 · Pickup 7:33 AM ›</span><span>B101 · Dropoff 2:39 PM ›</span></div>
 <div class="bx"><b>Zones</b><span>Home zone ›</span><span>That Street zone ›</span><span class="mut">[Draw new zone]</span></div>
 </div>
-<div class="cap"><b>The overview, unchanged</b>, now one tap from the run list instead of two through Settings. Settings keeps the sounds and Debug.</div>
+<div class="cap"><b>The overview</b>, one tap from the run list. Settings holds the sounds and Debug.</div>
 </div>
 
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1290,"height":1480}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1290,"height":780}}'>
 class Component extends DCLogic {
 renderVals() { return {}; }
 }

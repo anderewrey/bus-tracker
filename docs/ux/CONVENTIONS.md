@@ -6,6 +6,8 @@ changing a flow, an artboard or the navigation page.
 
 ## What a sketch shows
 
+- **The app as it is, not a comparison.** A change updates the artboards in place; no "today" and
+  "proposed" side by side (user, 2026-11-27). The why goes in the captions and DESIGN.md.
 - **Minimal, not 1:1.** Only the app's own elements that matter to the flow. Nothing decorative:
   every extra element is more to maintain. Exact pixels, the status bar and real styling are out.
 - **Same screen in every step.** All phones in a flow show the same screen with the same blocks
