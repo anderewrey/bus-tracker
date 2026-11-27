@@ -7,6 +7,7 @@ import io.github.anderewrey.bustracker.data.clockRange
 import io.github.anderewrey.bustracker.data.clock
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -97,6 +98,8 @@ fun AlarmRow(run: Run, modifier: Modifier = Modifier) {
         if (s.period == null || run.key in active) {
             Text(s.status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        // The status on the left, the bell on the right (the card has no Open map button any more).
+        Spacer(Modifier.weight(1f))
         AlarmSwitch(run, s)
     }
 }

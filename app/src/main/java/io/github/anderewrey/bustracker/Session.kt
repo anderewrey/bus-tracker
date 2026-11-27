@@ -900,7 +900,7 @@ object Session {
         val school = schoolAt(r.busLat, r.busLon)
         // Never waits for the geocoder: what is known for this position, or "finding street…".
         placeText(school?.name, if (school == null) street(context, run.key, r.busLat, r.busLon) else null)?.let { parts += it }
-        r.reported?.let { parts += "GPS $it" }
+        // The GPS time has its own line on the screens, and none in the notifications (user, 2026-11-27).
         // Old data is shown as such (in red on the screens), never as a live position.
         when {
             r.updated == null -> parts += "not live"
